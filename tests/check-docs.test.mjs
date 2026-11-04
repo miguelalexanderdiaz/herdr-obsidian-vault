@@ -27,7 +27,8 @@ let base;
 before(() => {
   base = fs.mkdtempSync(path.join(os.tmpdir(), "check-docs-base-"));
   // `scripts` is copied whole: the agent docs name several of its files and check-docs checks that they exist.
-  const keep = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "RECIPE.md", "LICENSE", "NOTICE", "llms.txt", "keys.json", "package.json", "docs", "mods", "examples", "scripts"];
+  // The claims table also points at one test file (the canary), so that goes along.
+  const keep = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "RECIPE.md", "LICENSE", "NOTICE", "llms.txt", "keys.json", "package.json", "docs", "mods", "examples", "scripts", "tests/render-e2e.test.mjs"];
   for (const k of keep) {
     const from = path.join(repo, k);
     if (!fs.existsSync(from)) continue;
