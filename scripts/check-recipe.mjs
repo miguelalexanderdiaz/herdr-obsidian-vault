@@ -199,6 +199,51 @@ export function checkRecipe(recipe, f, keysJson, modJson) {
   const bound = new Set(Object.values(keysJson ?? {}).flatMap((m) => Object.keys(m)));
   for (const m of recipe.matchAll(/`((?:ctrl|alt|shift|cmd|super)(?:-[\w\[\]]+)+)`/g)) if (!bound.has(m[1]) && !/-(?:Left|\[)$/.test(m[1])) bad("keys", `RECIPE.md names the key ${m[1]}, which keys.json does not bind`);
 
+  // 7b. The Node minimum: the smallest version nodeOk() accepts, as the platform file computes it.
+  const nodeMin = f.reader.nodeOk("v22.3.9") ? "22" : "22.4";
+  if (nodeMin === "22.4") {
+    if (/Node(?:\.js)? 22 or newer/.test(recipe) || /`node` 22 or newer/.test(recipe)) bad("node", "RECIPE.md says Node 22 or newer but the gate is 22.4 (nodeOk in platform.js)");
+    if (!/Node\.js 22\.4 or newer/.test(recipe)) bad("node", "RECIPE.md must say Node.js 22.4 or newer (nodeOk in platform.js)");
+  } else if (!/Node(?:\.js)? 22(?:\.\d+)? or newer|`node` 22(?:\.\d+)? or newer/.test(recipe)) bad("node", "RECIPE.md does not state the Node minimum");
+
+  // 7c. Messages quoted in the Degraded behaviour paragraph exist as string literals (template holes match anything).
+  {
+    const para = paragraph(recipe, "Degraded behaviour");
+    const lit = f.all;
+    const found = (msg) => {
+      const parts = msg.split(/<[^>]+>/).map((x) => x.trim()).filter((x) => x.length >= 8);
+      return parts.every((x) => lit.includes(x) || lit.includes(x.replace(/'/g, "\\'")));
+    };
+    // Quotes are paired in order ("a" ... "b"): the odd pieces of a split on the quote mark are the quoted ones.
+    const pieces = para.replace(/\s+/g, " ").split('"');
+    for (let i = 1; i < pieces.length; i += 2) {
+      const q = pieces[i];
+      if (q.length >= 20 && !found(q.replace(/\.$/, ""))) bad("messages", `RECIPE.md quotes "${q.slice(0, 70)}", which is not a string in the code`);
+    }
+  }
+
+  // 7d. Discovery order of the browser: RECIPE.md lists the sources in the order lib.mjs tries them.
+  {
+    const para = paragraph(recipe, "**Finding the browser");
+    if (/\bbrowserPath\b|\bpreferred\b/.test(f.get("mods/vault-reader/render/lib.mjs"))) {
+      if (!para) bad("discovery", "RECIPE.md has no \"Finding the browser and Obsidian's bundle\" paragraph, but the code reads a browser setting");
+      const seq = ["`browser` key", "`HERDR_VAULT_BROWSER`", "`CHROME_PATH`", "install", "PATH", "login shell"];
+      let at = -1;
+      for (const x of seq) {
+        const i = para.indexOf(x, at + 1);
+        if (i < 0) { bad("discovery", `the browser paragraph does not mention "${x}" after the previous source`); break; }
+        at = i;
+      }
+      const lib = f.get("mods/vault-reader/render/lib.mjs");
+      const fb = /export function findBrowser[\s\S]*?\n\}/.exec(lib)?.[0] ?? "";
+      const order = [/\.\.\.preferred/, /env\.HERDR_VAULT_BROWSER/, /env\.CHROME_PATH/, /of candidates/, /of names/, /firstThat\(fallback/].map((re) => fb.search(re));
+      if (order.some((i) => i < 0) || order.some((i, k) => k && i < order[k - 1])) bad("discovery", "findBrowser() in render/lib.mjs no longer tries the sources in the order RECIPE.md lists");
+      const fa = /export function findAsar[\s\S]*?\n\}/.exec(lib)?.[0] ?? "";
+      const ao = [/\.\.\.preferred/, /env\.HERDR_VAULT_ASAR/, /of candidates/].map((re) => fa.search(re));
+      if (ao.some((i) => i < 0) || ao.some((i, k) => k && i < ao[k - 1])) bad("discovery", "findAsar() in render/lib.mjs no longer tries the sources in the order RECIPE.md lists");
+    }
+  }
+
   // 8. What the mods write and read outside their folder.
   for (const d of f.dataFolders) {
     const base = d.replace(/-.*$/, "");
@@ -211,7 +256,14 @@ export function checkRecipe(recipe, f, keysJson, modJson) {
   if (f.networkCalls.length) bad("network", `new network code in ${f.networkCalls.join(", ")}: describe it in the Network row and teach scripts/check-recipe.mjs about it`);
   if (/\bcurl\b/.test(f.all) && !/^\| Network \|/m.test(recipe)) bad("network", "the code runs curl but RECIPE.md has no Network row");
   if (!/127\.0\.0\.1/.test(recipe) || !/--remote-debugging-port=0/.test(recipe)) bad("network", "RECIPE.md must state the loopback server and the --remote-debugging-port=0 DevTools port");
-  if (!/--remote-debugging-port=0/.test(f.get("mods/vault-reader/render/render.mjs"))) bad("network", "render.mjs no longer opens a DevTools port: update RECIPE.md");
+  const renderCode = ["render.mjs", "lib.mjs", "browser.mjs"].map((n) => f.get(`mods/vault-reader/render/${n}`)).join("\n");
+  if (!/--remote-debugging-port=0/.test(renderCode)) bad("network", "the render run no longer opens a DevTools port (--remote-debugging-port=0): update RECIPE.md");
+  // The page cannot reach the network: only claimed when the code has the two measures, and then both must be claimed.
+  if (/host-resolver-rules=MAP \* ~NOTFOUND , EXCLUDE 127\.0\.0\.1/.test(renderCode) && /--no-proxy-server/.test(renderCode)) {
+    if (!has("--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1") || !has("--no-proxy-server")) bad("network", "the browser runs with a host-resolver rule and --no-proxy-server but the Network row does not say so");
+  }
+  if (/\bPAGE_CSP\b/.test(renderCode) && !/content-security policy/i.test(recipe)) bad("network", "the render page has a content-security policy (PAGE_CSP) that RECIPE.md does not mention");
+  if (/-lc\b/.test(f.all) && !/-lc\b/.test(recipe)) bad("shell", "the login-shell lookup uses -lc; RECIPE.md must show the command");
   return out;
 }
 
@@ -233,7 +285,11 @@ async function selfTest() {
   const keys = JSON.parse(readText("keys.json"));
   const modJson = Object.fromEntries(["vault", "vault-reader"].map((m) => [m, JSON.parse(readText(`mods/${m}/mod.json`))]));
   const base = readText("RECIPE.md");
-  rep.check(checkRecipe(base, f, keys, modJson).length === 0, "the real RECIPE.md passes", "the real RECIPE.md has findings; fix it before trusting the self-test");
+  // Findings of the real RECIPE.md are the baseline (there are none once every role's branch is merged); a seeded
+  // fault counts as caught only when it adds a finding the baseline does not have.
+  const baseline = checkRecipe(base, f, keys, modJson);
+  rep.note(`baseline: ${baseline.length} finding(s) in the real RECIPE.md${baseline.length ? " (node scripts/check-recipe.mjs lists them)" : ""}`);
+  const added = (text, facts = f) => checkRecipe(text, facts, keys, modJson).filter((x) => !baseline.some((b) => b.msg === x.msg));
   const cases = [
     ["cmd /c start put back as the Windows opener", (t) => t.replace("`rundll32 url.dll,FileProtocolHandler` on\nWindows", "`cmd /c start` on Windows"), /opener/],
     ["the old \"Open externally\" label", (t) => t.replace('an "Open in Preview" (macOS)', 'an "Open externally" (macOS)'), /Open externally|Open in Preview/],
@@ -246,10 +302,13 @@ async function selfTest() {
     ["the profile folder is called chrome/", (t) => t.replace("`chrome-<pid>-<time>-<rand>/`", "`chrome/`"), /chrome/],
     ["the key binding is renamed", (t) => t.replaceAll("`ctrl-shift-m`", "`ctrl-shift-q`"), /keys/],
     ["a herdr function is not listed", (t) => t.replace("`watchFolder`,\n`exec`", "\n`exec`"), /watchFolder/],
+    ["a message that no string in the code has", (t) => t.replace("Degraded behaviour,", 'Degraded behaviour (the panel says "Nothing is wrong with this vault at all"),'), /messages/],
+    ["the Node gate is 22.4 but RECIPE says 22", (t) => t + "\nNeeds Node.js 22 or newer.\n", /node/, { ...f, reader: { ...f.reader, nodeOk: (v) => /v22\.(?:[4-9]|\d\d)/.test(v) || /v(?:2[3-9]|[3-9]\d)/.test(v) } }],
+    ["the DevTools port sentence is dropped", (t) => t.replaceAll("--remote-debugging-port=0", "--remote-debugging-off"), /network/],
   ];
-  for (const [what, mutate, expect] of cases) {
+  for (const [what, mutate, expect, facts] of cases) {
     const text = mutate(base);
-    const found = checkRecipe(text, f, keys, modJson);
+    const found = added(text, facts);
     rep.check(text !== base && found.some((x) => expect.test(`${x.id} ${x.msg}`)), `caught: ${what}`, `NOT caught: ${what}${text === base ? " (the mutation changed nothing: update the self-test)" : ""}`);
   }
   rep.finish();
