@@ -14,7 +14,9 @@
 // What it checks, and why:
 //   - every page in docs/ has lang, title, meta description and exactly one h1;
 //   - relative links, images and #anchors resolve (HTML pages and Markdown files);
-//   - the site loads nothing from other websites and has no scripts;
+//   - the site loads nothing from other websites; pages run no inline script and no event-handler attribute,
+//     the only scripts are the site's own files in docs/assets/ (<script src="assets/x.js"></script>), and those
+//     may not reach the network, load code, store anything or name an address (the site stays static and offline);
 //   - no personal paths or e-mail addresses in any doc;
 //   - the colour tokens in docs/assets/style.css pass WCAG AA contrast in light and dark;
 //   - llms.txt equals docs/llms.txt, and its links point at files that exist;
@@ -141,7 +143,13 @@ for (const name of pages) {
   if (h1s.length !== 1) fail(where, `expected one h1, found ${h1s.length}`);
   if (!/<main[\s>]/.test(html)) fail(where, "no <main> landmark");
   if (!/class="skip"/.test(html)) fail(where, "no skip link");
-  if (/<script[\s>]/i.test(html)) fail(where, "<script> found: the site needs none");
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+    const src = /\ssrc="([^"]+)"/i.exec(m[1])?.[1];
+    if (!src || m[2].trim()) fail(where, `an inline <script>; a page may only load the site's own scripts with <script src="assets/...">`);
+    else if (!/^assets\/[\w.-]+\.js$/.test(src) || !exists(path.join(DOCS, src))) fail(where, `<script src="${src}"> must be an existing file in docs/assets/`);
+  }
+  if ((html.match(/<script\b/gi) || []).length !== (html.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || []).length) fail(where, "a <script> is not closed");
+  if (/<[a-z][^>]*\son[a-z]+\s*=/i.test(html)) fail(where, "an event-handler attribute (on...=); behaviour belongs in docs/assets/*.js");
   if (/url\(\s*['"]?(https?:|\/\/)|@import/i.test(html)) fail(where, "inline style loads something from another site");
   if (name !== "404.html" && !/<link[^>]*rel="icon"/i.test(html)) fail(where, 'no <link rel="icon"> (every page would ask for /favicon.ico)');
   // Headings must not skip a level.
@@ -534,6 +542,17 @@ if (exists(claimsFile)) {
     if (file.endsWith("check-docs.mjs")) continue;
     const m = read(file).match(bad);
     if (m) fail(rel(file), `an unconditional support claim: "${m[0]}" (say only what has run, see SUPPORT)`);
+  }
+}
+
+// ---------------------------------------------------------------- the site's scripts
+
+// No network, no loading code, no storage, no addresses: a script may only change the page it is on.
+{
+  const walk = (d) => (exists(d) ? fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)])) : []);
+  for (const file of walk(DOCS).filter((f) => /\.m?js$/.test(f))) {
+    const bad = /\b(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|eval|Function|localStorage|sessionStorage|indexedDB|document\.cookie|Worker)\b\s*[.(]|\bimport\s*[(\s{*"']|\bnew\s+(Function|Worker|WebSocket|EventSource|XMLHttpRequest|Image)\b|\.src\s*=|https?:\/\//.exec(read(file));
+    if (bad) fail(rel(file), `uses ${bad[0]}; the site's scripts may not reach the network, load code or store anything`);
   }
 }
 

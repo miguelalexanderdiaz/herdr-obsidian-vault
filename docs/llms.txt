@@ -18,8 +18,8 @@ Facts an agent needs:
 - [AGENTS.md](https://github.com/<owner>/herdr-obsidian-vault/blob/main/AGENTS.md): install, adapt, test and edit safely
 - [README](https://github.com/<owner>/herdr-obsidian-vault/blob/main/README.md): what it is, install, requirements, privacy
 - [RECIPE.md](https://github.com/<owner>/herdr-obsidian-vault/blob/main/RECIPE.md): the brief to rebuild the mods
-- [Install](https://<owner>.github.io/herdr-obsidian-vault/install.html): agent prompt, manual copy, showing the panel
-- [Usage](https://<owner>.github.io/herdr-obsidian-vault/usage.html): panel, search, reader, keys, what is drawn
+- [Install](https://<owner>.github.io/herdr-obsidian-vault/install.html): the one-line installer, agent prompt, manual copy, options
+- [Usage](https://<owner>.github.io/herdr-obsidian-vault/usage.html): showing the panel, search, reader, keys, what is drawn
 - [Requirements](https://<owner>.github.io/herdr-obsidian-vault/requirements.html): per-OS table and what happens without each program
 - [Configuration](https://<owner>.github.io/herdr-obsidian-vault/configuration.html): settings, keys, public contract, limits
 - [Privacy](https://<owner>.github.io/herdr-obsidian-vault/privacy.html): what is read, run, downloaded and written

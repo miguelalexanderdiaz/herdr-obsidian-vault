@@ -34,78 +34,31 @@ A CI workflow template is in `scripts/ci.workflow.yml`. It has not run yet becau
 
 ## Install
 
-Both ways need the Herdr desktop app. Read [what the mods read, run and download](#privacy) first.
-
-### One command
-
-macOS and Linux:
+macOS / Linux:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/<owner>/herdr-obsidian-vault/main/install/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/miguelalexanderdiaz/herdr-obsidian-vault/main/install/install.sh | sh
 ```
 
 Windows (PowerShell):
 
 ```powershell
-irm https://raw.githubusercontent.com/<owner>/herdr-obsidian-vault/main/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/miguelalexanderdiaz/herdr-obsidian-vault/main/install/install.ps1 | iex
 ```
 
-It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies `mods/vault` and `mods/vault-reader` into your Herdr home, adds `ctrl-shift-m` to `keys.json` (asking before it replaces a key you use) and runs `herdr-app check`. Anything it replaces is backed up first under `community/herdr-obsidian-vault/` in the Herdr home;
-running it again updates in place. From a clone: `install/install.sh` (or `.\install\install.ps1`).
-No questions: `sh -s -- --yes` (Windows: `$env:HERDR_YES = 1` first). Another Herdr home: `--home
-<folder>` or `HERDR_APP_HOME`. Merging `keys.json` uses Node, or on macOS the system's own JavaScript;
-without either it prints the keys to add by hand.
+It shows what the mods reach and asks before writing anything, backs up anything it replaces, copies both mods (`vault` and `vault-reader`), adds one key to `keys.json` and checks each mod. Running it again updates. Then press Ctrl+Shift+M in any layout to open the Vault panel as a popup.
 
-### With a Herdr agent
+Remove it: the same command with the uninstall flag. It leaves `data/vault` (cache and settings); your vaults are never touched.
 
-Paste this to an agent running in Herdr, with the repository address filled in:
-
-```text
-Install the Herdr mods from https://github.com/<owner>/herdr-obsidian-vault .
-It has two mods, mods/vault and mods/vault-reader, and a keys.json.
-Read every file first, tell me what they run and fetch, copy both
-folders into my mods folder without overwriting anything, merge
-keys.json after asking me about clashes, run herdr-app check on both
-mods, then add the Vault panel to my layout.
+```sh
+curl -fsSL https://raw.githubusercontent.com/miguelalexanderdiaz/herdr-obsidian-vault/main/install/install.sh | sh -s -- --uninstall
 ```
 
-### By hand
-
-1. Clone or download this repository.
-2. Find your Herdr home: `herdr-app --help` ends with a line `Home: ~/.config/herdr-app (HERDR_APP_HOME picks another)`. Here `~` is your user folder; the default is `.config/herdr-app` inside it, unless `HERDR_APP_HOME` is set. This default is quoted from Herdr's help and has not been checked on Windows. Copy `mods/vault` and `mods/vault-reader` into the `mods` folder of that home. Do not overwrite a mod of the same name; rename instead (see [AGENTS.md](AGENTS.md#renaming-a-mod)).
-
-   ```sh
-   # macOS and Linux
-   cp -R mods/vault mods/vault-reader ~/.config/herdr-app/mods/
-   ```
-
-   ```powershell
-   # Windows PowerShell: $env:HERDR_APP_HOME if set, else the default under your user folder
-   $h = if ($env:HERDR_APP_HOME) { $env:HERDR_APP_HOME } else { "$HOME\.config\herdr-app" }
-   Copy-Item -Recurse mods\vault, mods\vault-reader "$h\mods"
-   ```
-
-3. Merge the optional key of `keys.json` (Ctrl+Shift+M opens the panel as a popup) into your own `keys.json`.
-4. Check both mods. Both must pass; Herdr reloads mods on its own, there is no restart.
-
-   ```sh
-   herdr-app check ~/.config/herdr-app/mods/vault
-   herdr-app check ~/.config/herdr-app/mods/vault-reader
-   ```
-
-### Show the panel
-
-The mods are installed with `"place": "none"`, so they do not dock anywhere by themselves. In any layout, Herdr's own included, press Ctrl+Shift+M (the key from `keys.json`): it opens the panel as a 420 by 640 popup, and pressed again closes it. No layout change is needed.
-
-To keep the panel docked instead, add a block to a column or stack of one of your own layout files:
-
-```json
-{ "id": "vault", "type": "block", "content": { "mod": "vault" } }
+```powershell
+$env:HERDR_UNINSTALL = 1; irm https://raw.githubusercontent.com/miguelalexanderdiaz/herdr-obsidian-vault/main/install/install.ps1 | iex
 ```
 
-Herdr's shipped layouts are read-only, so clone one first (`herdr-app do layout.clone '{"name":"main","as":"my-layout"}'`) and edit the clone. You can also split a pane with the app command `pane.split` and `mod` set to `vault`. See the [install page](docs/install.html) for more.
-
-On first run the panel lists the vaults Obsidian already knows. Otherwise use **Add vault** and pick a folder that contains `.obsidian`.
+With an agent, by hand, options and docking the panel: the [Install page](docs/install.html) and [Usage](docs/usage.html#show).
 
 ## Use
 
@@ -156,7 +109,7 @@ A browser or Obsidian in an unusual place: add `"browser"` and `"asar"` (absolut
 | Reads | the selected vault folder (the render script also reads the pictures that an Excalidraw drawing embeds), Obsidian's vault list (on first run and on Import), and Obsidian's `obsidian.asar` (only Mermaid and MathJax) |
 | Runs | `rg`, `node`, a headless Chromium-family browser (with a loopback-only debugging port for one render run), `pdfinfo`, `pdftoppm`, `curl`, the system opener (`open`, `xdg-open`, `rundll32`), `stat` or PowerShell for file timestamps, your login shell or `where` to find a program, and on macOS `qlmanage` and `sips` as fallbacks |
 | Downloads | web images that a note shows, with `curl`; switch off with the **Web images** button (setting `remoteImages`) |
-| Writes | only `data/vault` in the Herdr home: picture cache, Mermaid and MathJax copies, a temporary browser profile per render, settings. Herdr's own `shared.json` keeps vault paths after uninstall ([how to clear them](docs/install.html#uninstall)) |
+| Writes | only `data/vault` in the Herdr home: picture cache, Mermaid and MathJax copies, a temporary browser profile per render, settings. Herdr's own `shared.json` keeps vault paths after uninstall ([how to clear them](docs/privacy.html#writes)) |
 | Never | writes into the vault, sends note text anywhere, runs Dataview or other plugin code, opens `file:` or `obsidian:` links, launches programs from a note |
 
 The full list is on the [privacy page](docs/privacy.html).
@@ -175,13 +128,10 @@ The [troubleshooting page](docs/troubleshooting.html) has every message with its
 ## Uninstall
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/<owner>/herdr-obsidian-vault/main/install/install.sh | sh -s -- --uninstall
+curl -fsSL https://raw.githubusercontent.com/miguelalexanderdiaz/herdr-obsidian-vault/main/install/install.sh | sh -s -- --uninstall
 ```
 
-(Windows: `$env:HERDR_UNINSTALL = 1` before the `irm ... | iex` line.) It removes what it installed
-and the keys it added (not ones you changed since), backing them up first. It leaves `data/vault`, the cache and settings, in place.
-
-By hand: Remove the block from your layout and the keys you merged, delete `mods/vault` and `mods/vault-reader` from your Herdr home, and optionally delete `data/vault` there. Your vaults are never touched.
+Windows and by hand: see [Install](docs/install.html#uninstall).
 
 ## Repository map
 
