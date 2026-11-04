@@ -1,6 +1,6 @@
 // node test-parse.mjs <vault> : parses every note, reports exceptions and block counts.
 import fs from "fs"; import path from "path";
-import { splitFrontmatter, parseBlocks, makeResolver, section, headings } from "../parse.js";
+import { splitFrontmatter, parseBlocks, makeResolver, section, headings } from "../../mods/vault-reader/parse.js";
 const V = process.argv[2];
 const files = [];
 (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.name.startsWith(".")) continue; const p = path.join(d, e.name); e.isDirectory() ? walk(p) : files.push(path.relative(V, p)); } })(V);
