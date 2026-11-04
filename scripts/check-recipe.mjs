@@ -17,6 +17,9 @@ import { ROOT, SELF_ROOT, Report, abs, readText, repoFiles } from "./lib/repo.mj
 const PLATFORMS = ["macos", "linux", "windows"];
 const FROZEN_KEYS = ["vault.list", "vault.current", "vault.open", "vault.panes"]; // the contract with herdr-portrait-layout
 
+// Quoted in RECIPE.md but not a literal in the mods: Herdr's own menu names, product names and the like.
+const UI_NOT_IN_CODE = ["Feature tour", "Keep ▾ then New tab"]; // a sample-vault note name; a click path made of two labels
+
 /** Source text without whole-line comments and block comments, so a claim cannot be "backed" by a comment. */
 const stripComments = (t) => t.replace(/^\s*\/\*[\s\S]*?\*\//gm, "").replace(/^\s*\/\/.*$/gm, "");
 
@@ -144,6 +147,20 @@ export function checkRecipe(recipe, f, keysJson, modJson) {
     ["overlay width", Math.round((f.num("mods/vault/main.js", /key: READER, width: ([\d.]+)/) ?? 0) * 100), (v) => new RegExp(`\\b${v}%`), "reader window width"],
     ["overlay height", Math.round((f.num("mods/vault/main.js", /key: READER, width: [\d.]+, height: ([\d.]+)/) ?? 0) * 100), (v) => new RegExp(`\\b${v}%`), "reader window height"],
   ];
+  // Optional constants: checked only where the code has them (they arrived with code-review's later waves).
+  const opt = [
+    ["ROWS_MAX", f.num("mods/vault/main.js", /export const ROWS_MAX = ([\d_]+)/), (v) => new RegExp(`\\b${v} rows`), "tree rows drawn"],
+    ["REMOTE_MAX_BYTES", f.num("mods/vault-reader/assets-core.js", /REMOTE_MAX_BYTES = ([\d_]+)/), (v) => new RegExp(`\\b${v / 1e6} MB per picture`), "web picture size"],
+    ["IMAGE_MAX_BYTES", f.num("mods/vault-reader/assets-core.js", /IMAGE_MAX_BYTES = ([\d_]+)/), (v) => new RegExp(`over ${v / 1e6} MB`), "vault picture size"],
+    ["curl --max-redirs", Number(/"--max-redirs",\s*"(\d+)"/.exec(f.get("mods/vault-reader/assets-core.js"))?.[1]) || null, (v) => new RegExp(`at most ${v} redirects`), "curl redirects"],
+    ["curl --max-time", Number(/"--max-time",\s*"(\d+)"/.exec(f.get("mods/vault-reader/assets-core.js"))?.[1]) || null, (v) => new RegExp(`\\b${v} seconds and`), "curl time"],
+    ["FETCH_CONCURRENCY", f.num("mods/vault-reader/assets-core.js", /export const FETCH_CONCURRENCY = ([\d_]+)/), (v) => new RegExp(`at most ${["zero", "one", "two", "three", "four", "five", "six", "seven", "eight"][v] ?? v} pictures at a time`), "pictures fetched at once"],
+  ];
+  for (const [name, v, re, what] of opt) if (v && !re(v).test(recipe)) bad("limits", `RECIPE.md does not state ${what} = ${v} (${name} in the code)`);
+  // The CSP sentence may say "automated" only when the end-to-end test exists, and must say "not yet" while it does not.
+  const e2e = fs.existsSync(path.join(ROOT, "tests", "render-e2e.test.mjs"));
+  if (e2e && /not yet by an automated test/.test(recipe)) bad("network", "tests/render-e2e.test.mjs exists: RECIPE.md should no longer say the render page's isolation is not yet tested automatically");
+  if (!e2e && /automated end-to-end test/.test(recipe)) bad("network", "RECIPE.md claims an automated end-to-end test, but tests/render-e2e.test.mjs does not exist");
   for (const [name, v, re, what] of lim) {
     if (!v) bad("limits", `${name}: could not read its value from the code (the ledger must follow the code; update scripts/check-recipe.mjs)`);
     else if (!re(v).test(recipe)) bad("limits", `RECIPE.md does not state ${what} = ${v} (${name} in the code)`);
@@ -206,20 +223,32 @@ export function checkRecipe(recipe, f, keysJson, modJson) {
     if (!/Node\.js 22\.4 or newer/.test(recipe)) bad("node", "RECIPE.md must say Node.js 22.4 or newer (nodeOk in platform.js)");
   } else if (!/Node(?:\.js)? 22(?:\.\d+)? or newer|`node` 22(?:\.\d+)? or newer/.test(recipe)) bad("node", "RECIPE.md does not state the Node minimum");
 
-  // 7c. Messages quoted in the Degraded behaviour paragraph exist as string literals (template holes match anything).
+  // 7c. Every UI text RECIPE.md quotes ("...", at least 12 characters, no code spans) is a string literal in the code.
+  // `<name>` holes in the recipe match anything; a few constants are substituted in the code before comparing.
   {
-    const para = paragraph(recipe, "Degraded behaviour");
-    const lit = f.all;
-    const found = (msg) => {
-      const parts = msg.split(/<[^>]+>/).map((x) => x.trim()).filter((x) => x.length >= 8);
-      return parts.every((x) => lit.includes(x) || lit.includes(x.replace(/'/g, "\\'")));
-    };
-    // Quotes are paired in order ("a" ... "b"): the odd pieces of a split on the quote mark are the quoted ones.
-    const pieces = para.replace(/\s+/g, " ").split('"');
+    const consts = { ROWS_MAX: f.num("mods/vault/main.js", /export const ROWS_MAX = ([\d_]+)/) };
+    const lit = f.all.replace(/\$\{(\w+)\}/g, (m, k) => (consts[k] != null ? String(consts[k]) : m));
+    const found = (msg) => msg.split(/<[^>]+>/).map((x) => x.trim()).filter((x) => x.length >= 8).every((x) => lit.includes(x) || lit.includes(x.replace(/'/g, "\\'")));
+    // Quotes are paired in order ("a" ... "b"): the odd pieces of a split on the quote mark are the quoted ones. Code
+    // blocks and inline code are cut out first, because they hold JSON and key names, not messages.
+    const prose = recipe.replace(/```[\s\S]*?```/g, " ").replace(/`[^`]*`/g, " ").replace(/<!--[\s\S]*?-->/g, " ").replace(/\s+/g, " ");
+    const pieces = prose.split('"');
+    const skip = new Set(UI_NOT_IN_CODE);
     for (let i = 1; i < pieces.length; i += 2) {
-      const q = pieces[i];
-      if (q.length >= 20 && !found(q.replace(/\.$/, ""))) bad("messages", `RECIPE.md quotes "${q.slice(0, 70)}", which is not a string in the code`);
+      const q = pieces[i].trim().replace(/\.$/, "");
+      if (q.length >= 12 && !skip.has(q) && !found(q)) bad("messages", `RECIPE.md quotes "${q.slice(0, 70)}", which is not a string in the code`);
     }
+  }
+
+  // 7c2. The sample vault: every name and file the "Done when" list uses exists in examples/sample-vault.
+  {
+    const vaultDir = path.join(ROOT, "examples", "sample-vault");
+    const names = new Set();
+    if (fs.existsSync(vaultDir)) for (const e of fs.readdirSync(vaultDir)) if (!e.startsWith(".")) names.add(e.replace(/\.excalidraw\.md$|\.md$|\.canvas$/, ""));
+    const tree = /tree shows the folders ([^.]*)\./.exec(recipe.replace(/\s+/g, " "));
+    if (!tree) bad("sample", "the Done-when list no longer says what the tree shows (\"tree shows the folders ...\")");
+    else for (const m of tree[1].matchAll(/`([^`]+)`/g)) if (!names.has(m[1])) bad("sample", `RECIPE.md says the sample vault has \`${m[1]}\` at its top level; it does not`);
+    for (const m of recipe.matchAll(/`((?:attachments|projects)\/[^`]+)`/g)) if (!fs.existsSync(path.join(vaultDir, ...m[1].split("/")))) bad("sample", `RECIPE.md names \`${m[1]}\`, which is not in examples/sample-vault`);
   }
 
   // 7d. Discovery order of the browser: RECIPE.md lists the sources in the order lib.mjs tries them.
@@ -304,6 +333,7 @@ async function selfTest() {
     ["a herdr function is not listed", (t) => t.replace("`watchFolder`,\n`exec`", "\n`exec`"), /watchFolder/],
     ["a message that no string in the code has", (t) => t.replace("Degraded behaviour,", 'Degraded behaviour (the panel says "Nothing is wrong with this vault at all"),'), /messages/],
     ["the Node gate is 22.4 but RECIPE says 22", (t) => t + "\nNeeds Node.js 22 or newer.\n", /node/, { ...f, reader: { ...f.reader, nodeOk: (v) => /v22\.(?:[4-9]|\d\d)/.test(v) || /v(?:2[3-9]|[3-9]\d)/.test(v) } }],
+    ["a note the sample vault does not have", (t) => t.replace("`Other note`", "`Third note`"), /sample/],
     ["the DevTools port sentence is dropped", (t) => t.replaceAll("--remote-debugging-port=0", "--remote-debugging-off"), /network/],
   ];
   for (const [what, mutate, expect, facts] of cases) {

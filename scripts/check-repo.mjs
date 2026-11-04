@@ -13,9 +13,10 @@ import path from "node:path";
 import { ROOT, SELF_ROOT, Report, abs, badWorkflowCommand, exists, git, isBinaryName, pngSize, readBytes, readText, repoFiles, workflowCommands } from "./lib/repo.mjs";
 
 const RELEASE = process.argv.includes("--release");
-// Licence headers are written by code-review (R2-CR-15). A warning until they are on the branch; flipped to an error
-// by the last herdr-completeness task of round 2 (R2-HC-12) by changing this one constant.
-const HEADERS_ERROR = false;
+// Licence headers are written by code-review (R2-CR-15). Until that commit is on the branch the SPDX/copyright and the
+// lz-string pointer rules would only be warnings; R2-HC-12 made them errors. Set to false only to check a branch that
+// does not have code-review's work yet.
+const HEADERS_ERROR = true;
 const files = repoFiles();
 const has = (f) => files.includes(f);
 const r = new Report(RELEASE ? "check-repo --release" : "check-repo");
