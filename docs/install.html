@@ -35,7 +35,15 @@
 <h1>Install</h1>
 <p class="lede">Both mods are needed. The panel opens notes in the reader, and the reader is opened by the panel. Install them under exactly the names <code>vault</code> and <code>vault-reader</code>.</p>
 
-<h2 id="agent">Option 1: ask a Herdr agent</h2>
+<h2 id="one-command">One command</h2>
+<!-- publish: owner. Replace <owner> in the two lines below too. -->
+<p>macOS and Linux:</p>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/&lt;owner&gt;/herdr-obsidian-vault/main/install/install.sh | sh</code></pre>
+<p>Windows (PowerShell):</p>
+<pre><code>irm https://raw.githubusercontent.com/&lt;owner&gt;/herdr-obsidian-vault/main/install/install.ps1 | iex</code></pre>
+<p>It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies <code>mods/vault</code> and <code>mods/vault-reader</code> into your Herdr home, adds <code>ctrl-shift-m</code> to <code>keys.json</code> (asking before it replaces a key you use) and runs <code>herdr-app check</code>. The portrait layout's installer adds the Vault panel when it finds these mods. Anything it replaces is backed up first under <code>community/herdr-obsidian-vault/</code> in the Herdr home, and running it again updates in place. <code>sh -s -- --yes</code> answers every question with yes (Windows: <code>$env:HERDR_YES = 1</code> first); <code>--home &lt;folder&gt;</code> or <code>HERDR_APP_HOME</code> picks another Herdr home; from a clone, run <code>install/install.sh</code> or <code>.\install\install.ps1</code>. Merging <code>keys.json</code> uses Node, or on macOS the system's own JavaScript; without either the script prints the keys to add by hand. To remove it: the same line with <code>sh -s -- --uninstall</code> (Windows: <code>$env:HERDR_UNINSTALL = 1</code> first); it leaves <code>data/vault</code>, the cache and settings, in place.</p>
+
+<h2 id="agent">Or ask a Herdr agent</h2>
 <!-- publish: owner. Replace <owner> with the GitHub owner of the published repository here and in the clone line below. -->
 <!-- publish: herdr.dev. Once the repository is listed on herdr.dev, add that site's own install form next to this prompt. -->
 <p>Herdr agents know how to install shared mods. Paste this into an agent running in Herdr, with the repository address filled in:</p>
@@ -47,7 +55,7 @@ keys.json after asking me about clashes, run herdr-app check on both
 mods, then add the Vault panel to my layout.</code></pre>
 <p>The agent follows Herdr&rsquo;s own rule: it reads everything and tells you before adding a mod that reaches the network or runs programs. This one does both, so expect that message. The list is on the <a href="privacy.html">privacy page</a>.</p>
 
-<h2 id="manual">Option 2: copy the folders yourself</h2>
+<h2 id="manual">Or copy the folders yourself</h2>
 <ol>
 <li>Get the repository: <code>git clone https://github.com/&lt;owner&gt;/herdr-obsidian-vault.git</code> (or download the zip).</li>
 <li>Find your Herdr home folder. <code>herdr-app --help</code> ends with a line <code>Home: ~/.config/herdr-app (HERDR_APP_HOME picks another)</code>. Here <code>~</code> is your user folder, and the default is <code>.config/herdr-app</code> inside it unless the variable <code>HERDR_APP_HOME</code> is set. That default is quoted from Herdr&rsquo;s help and has not been checked on Windows. Below, <code>$HERDR_HOME</code> stands for that folder.</li>
