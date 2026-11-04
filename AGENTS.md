@@ -130,7 +130,7 @@ The test vault is `examples/sample-vault`. Open `Feature tour` in the reader to 
 ## Adapting for a different setup
 
 - A different mod name: [Renaming a mod](#renaming-a-mod).
-- A browser or Obsidian in an unusual place: the `HERDR_VAULT_BROWSER` / `CHROME_PATH` and `HERDR_VAULT_ASAR` environment variables, or add the path to the candidate lists in `platform.js` and its test. Other tools: put them on the person's login-shell PATH or add them to `toolCandidates` in both `platform.js` files.
+- A browser or Obsidian in an unusual place: the keys `browser` and `asar` (absolute paths) in `data/vault/settings.json` in the Herdr home, which need no restart and reach Herdr however it was started; the environment variables `HERDR_VAULT_BROWSER` / `CHROME_PATH` and `HERDR_VAULT_ASAR` count only if Herdr itself was started with them (a Finder or launcher start does not carry shell variables); or add the path to `browserCandidates` / `obsidianAsarCandidates` in `platform.js` and its test. The order is on `docs/requirements.html#order`. Other tools: put them on the person's login-shell PATH or add them to `toolCandidates` in both `platform.js` files.
 - No network wanted: set `remoteImages` to `false` in `data/vault/settings.json` (or press **Web images** in the reader bar).
 - Bigger or smaller limits: the constants listed on `docs/configuration.html`.
 - Another operating system's quirk: add it to `platform.js` in both mods, with a test that uses a fake platform and a fake `exec`.

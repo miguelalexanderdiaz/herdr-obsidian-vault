@@ -129,10 +129,10 @@ A browser or Obsidian in an unusual place: add `"browser"` and `"asar"` (absolut
 
 | | |
 | --- | --- |
-| Reads | the selected vault folder, Obsidian's vault list, and Obsidian's `obsidian.asar` (only Mermaid and MathJax) |
-| Runs | `rg`, `node`, a headless Chromium-family browser, `pdfinfo`, `pdftoppm`, `curl`, the system opener (`open`, `xdg-open`, `rundll32`), `stat` or PowerShell for file timestamps, your login shell or `where` to find a program, and on macOS `qlmanage` and `sips` as fallbacks |
+| Reads | the selected vault folder (the render script also reads the pictures that an Excalidraw drawing embeds), Obsidian's vault list (on first run and on Import), and Obsidian's `obsidian.asar` (only Mermaid and MathJax) |
+| Runs | `rg`, `node`, a headless Chromium-family browser (with a loopback-only debugging port for one render run), `pdfinfo`, `pdftoppm`, `curl`, the system opener (`open`, `xdg-open`, `rundll32`), `stat` or PowerShell for file timestamps, your login shell or `where` to find a program, and on macOS `qlmanage` and `sips` as fallbacks |
 | Downloads | web images that a note shows, with `curl`; switch off with the **Web images** button (setting `remoteImages`) |
-| Writes | only `data/vault` in the Herdr home: picture cache, Mermaid and MathJax copies, a temporary browser profile per render, settings |
+| Writes | only `data/vault` in the Herdr home: picture cache, Mermaid and MathJax copies, a temporary browser profile per render, settings. Herdr's own `shared.json` keeps vault paths after uninstall ([how to clear them](docs/install.html#uninstall)) |
 | Never | writes into the vault, sends note text anywhere, runs Dataview or other plugin code, opens `file:` or `obsidian:` links, launches programs from a note |
 
 The full list is on the [privacy page](docs/privacy.html).
@@ -140,7 +140,7 @@ The full list is on the [privacy page](docs/privacy.html).
 ## Troubleshooting
 
 - **Search says `ripgrep (rg) isn't installed`**: install `rg` (table above).
-- **Diagrams or formulas show their source**: Node.js 22+, a Chromium-family browser or the Obsidian app is missing; one line above the note names it.
+- **Diagrams or formulas show their source**: Node.js 22.4+, a Chromium-family browser or the Obsidian app is missing; one line above the note names it.
 - **A PDF shows one page or an install hint**: install Poppler.
 - **The vault is listed dimmed, or not at all**: it must be inside your home folder; use Add vault or Import from Obsidian.
 - **A web image is missing**: check the Web images button and that `curl` exists.
@@ -160,7 +160,7 @@ Remove the block from your layout and the keys you merged, delete `mods/vault` a
 | `examples/sample-vault` | a vault that exercises every feature |
 | `docs/` | the documentation site (GitHub Pages: branch `main`, folder `/docs`) |
 | `tests/` | the `npm test` suite, fixtures and helper tools |
-| `scripts/` | repository checks (`check-docs.mjs`, `check-repo.mjs`, `privacy-scan.mjs`), the CI workflow template and the publish checklists |
+| `scripts/` | repository checks (`check-docs.mjs`, `check-repo.mjs`, `check-recipe.mjs`, `install-sim.mjs`, `privacy-scan.mjs`, `typecheck.mjs`), the CI workflow template and the publish checklists |
 | `AGENTS.md`, `llms.txt` | instructions for AI agents |
 | `plans/` | the plans and logs of each improvement round |
 
