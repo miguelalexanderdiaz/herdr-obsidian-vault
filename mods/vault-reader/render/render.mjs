@@ -1,7 +1,9 @@
 // Renders a note's Mermaid diagrams, math and Excalidraw drawings to PNG, in a headless
 // Chromium-family browser, with Obsidian's own copies of Mermaid and MathJax (taken out of the
 // installed Obsidian app, so the output matches what Obsidian shows).
-// Nothing leaves the machine: the page is served from 127.0.0.1.
+// The page is served from 127.0.0.1 and may load nothing else: a content-security policy in page.html
+// (PAGE_CSP in lib.mjs), a browser that resolves no name but 127.0.0.1 and uses no proxy. A note's Mermaid
+// label with an <img src="http://..."> therefore fetches nothing (tests/render-e2e.test.mjs proves it).
 //
 //   node render.mjs <appHome> <jobs.json>
 //   jobs.json: { theme: {fg, bg, muted, accent, border, surface, dark, font, size},
@@ -18,7 +20,7 @@ import path from "path";
 import http from "http";
 import { spawn, spawnSync } from "child_process";
 import { fileURLToPath } from "url";
-import { findAsar, findBrowser, findNear, safeJoin, profileName, DEADLINE_MS } from "./lib.mjs";
+import { findAsar, findBrowser, findNear, safeJoin, profileName, browserArgs, DEADLINE_MS } from "./lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const started = Date.now();
@@ -150,10 +152,7 @@ function launch(bin) {
   // One profile per run: two readers drawing at once must not share one.
   profile = path.join(DATA, profileName(process.pid));
   fs.mkdirSync(profile, { recursive: true });
-  proc = spawn(bin, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
-    "--disable-extensions", "--disable-background-networking", "--disable-sync", "--mute-audio",
-    `--user-data-dir=${profile}`, "--remote-debugging-port=0", "--hide-scrollbars", "about:blank"],
-    { stdio: ["ignore", "ignore", "pipe"], detached: false });
+  proc = spawn(bin, browserArgs(profile), { stdio: ["ignore", "ignore", "pipe"], detached: false });
   return new Promise((ok, fail) => {
     let err = "";
     const t = setTimeout(() => fail(new Known("no-browser")), 15000);

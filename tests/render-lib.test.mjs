@@ -136,3 +136,28 @@ test("envWithout drops PATH in any letter case, so a Windows Path cannot survive
   const win = { Path: "C:\\Windows", PATH: "x", HOME: "h", pAtH: "y" };
   assert.deepEqual(envWithout(win, "path"), { HOME: "h" });
 });
+
+// ---- the render page cannot fetch what a note names (R2-CR-6, CR-2-3) ------------------------------------
+
+import { PAGE_CSP, browserArgs } from "../mods/vault-reader/render/lib.mjs";
+
+test("page.html carries exactly PAGE_CSP, as its first meta after the charset, and names no outside source", () => {
+  const html = fs.readFileSync(path.join(path.dirname(RENDER), "page.html"), "utf8");
+  const metas = [...html.matchAll(/<meta\s+([^>]*)>/g)].map((m) => m[1]);
+  assert.match(metas[0], /charset/);
+  const csp = metas[1].match(/http-equiv="Content-Security-Policy"\s+content="([^"]*)"/);
+  assert.ok(csp, "second meta is the CSP");
+  assert.equal(csp[1], PAGE_CSP);
+  assert.doesNotMatch(html, /(?:src|href)=["']https?:/i, "no outside script, style or image source");
+  assert.match(PAGE_CSP, /default-src 'none'/);
+  assert.match(PAGE_CSP, /connect-src 'none'/);
+  for (const d of PAGE_CSP.split(";")) assert.doesNotMatch(d, /https?:|\*/, d);
+});
+
+test("the browser starts with a resolver that maps everything but loopback to nothing, and no proxy", () => {
+  const args = browserArgs("/data/vault/chrome-1-x-y");
+  assert.ok(args.includes("--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1"));
+  assert.ok(args.includes("--no-proxy-server"));
+  assert.ok(args.includes("--user-data-dir=/data/vault/chrome-1-x-y"), "a per-run profile");
+  assert.ok(args.includes("--remote-debugging-port=0") && args.includes("--headless=new"));
+});

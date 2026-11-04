@@ -109,3 +109,18 @@ export const DEADLINE_MS = 24_000; // the mod's exec() gives a command 30 s; sto
 
 // A browser profile folder name for one run: two runs at once (two readers) never share one.
 export const profileName = (pid, now = Date.now(), rand = Math.random()) => `chrome-${pid}-${now.toString(36)}-${rand.toString(36).slice(2, 7)}`;
+
+// The content-security policy of render/page.html (page.html carries the same text in a <meta>; a test
+// compares the two). A note's Mermaid label may hold an <img src="http://...">, and Mermaid's sanitiser
+// lets it through: without this the browser would fetch it (reproduced in round 2). Nothing but the page's
+// own loopback origin, data: and blob: may load.
+export const PAGE_CSP = "default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; "
+  + "font-src 'self' data: blob:; img-src 'self' data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
+
+// The browser's command line for one run. Belt and braces behind the CSP: no name resolves except the
+// loopback address the page is served from (the rule list is comma separated), and no proxy is used, so a
+// system proxy could not be asked for an outside address either.
+export const browserArgs = (profile) => ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+  "--disable-extensions", "--disable-background-networking", "--disable-sync", "--mute-audio",
+  "--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1", "--no-proxy-server",
+  `--user-data-dir=${profile}`, "--remote-debugging-port=0", "--hide-scrollbars", "about:blank"];
