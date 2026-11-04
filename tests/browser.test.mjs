@@ -9,7 +9,7 @@ import { EventEmitter } from "node:events";
 import { createBrowser, Known } from "../mods/vault-reader/render/browser.mjs";
 
 // A fake child process: prints the DevTools line (unless told not to), exits when asked to.
-function fakeSpawn({ announce = true, exitOnClose = true, helperWrites = false } = {}) {
+function fakeSpawn({ announce = true, exitOnClose = true, helperWrites = false, exitAtStart = false } = {}) {
   const made = [];
   const spawn = (bin, args, opts) => {
     const proc = new EventEmitter();
@@ -23,7 +23,8 @@ function fakeSpawn({ announce = true, exitOnClose = true, helperWrites = false }
     made.push(proc);
     const profile = args.find((a) => a.startsWith("--user-data-dir=")).slice(16);
     if (helperWrites) fs.writeFileSync(path.join(profile, "Cookies"), "x"); // the browser writes into its profile
-    if (announce) setImmediate(() => proc.stderr.emit("data", "DevTools listening on ws://127.0.0.1:9/devtools/browser/abc\n"));
+    if (exitAtStart) setImmediate(proc.die);
+    else if (announce) setImmediate(() => proc.stderr.emit("data", "DevTools listening on ws://127.0.0.1:9/devtools/browser/abc\n"));
     proc.closeRequested = () => { if (exitOnClose) setImmediate(proc.die); };
     return proc;
   };
@@ -56,13 +57,32 @@ test("success: close politely, the process ends, the profile folder is gone", as
   } finally { t.cleanup(); }
 });
 
-test("error: the browser never announces itself -> no-browser, profile gone after stopNow", async () => {
+test("slow: a browser still starting after the allowance -> timeout (not no-browser), profile gone after stopNow", async () => {
   const t = setup({ announce: false });
   try {
-    await assert.rejects(t.b.launch("/bin/browser"), (e) => e instanceof Known && e.message === "no-browser");
+    await assert.rejects(t.b.launch("/bin/browser"), (e) => e instanceof Known && e.message === "timeout");
     assert.equal(profiles(t.dataDir).length, 1);
     t.b.stopNow();
     assert.deepEqual(profiles(t.dataDir), []);
+  } finally { t.cleanup(); }
+});
+
+test("error: a browser that exits before it announces itself -> no-browser", async () => {
+  const t = setup({ exitAtStart: true });
+  try {
+    await assert.rejects(t.b.launch("/bin/browser"), (e) => e instanceof Known && e.message === "no-browser");
+    t.b.stopNow();
+    assert.deepEqual(profiles(t.dataDir), []);
+  } finally { t.cleanup(); }
+});
+
+test("the start allowance is per launch: a longer one waits for a slow announcement", async () => {
+  const t = setup({ announce: false });
+  try {
+    const p = t.b.launch("/bin/browser", 400);
+    setTimeout(() => t.f.made[0].stderr.emit("data", "DevTools listening on ws://127.0.0.1:9/devtools/browser/late\n"), 150);
+    assert.match(await p, /late$/, "announced after the default 80 ms of this fake, inside the 400 ms given");
+    await t.b.stop(() => t.f.made[0].closeRequested());
   } finally { t.cleanup(); }
 });
 
