@@ -1088,7 +1088,7 @@ Followed by The Obsidian app wasn't found. Install the Obsidian app, or name its
 
 ### Drawing took too long and was stopped
 
-Open the note again to retry. Also possible: Mermaid and MathJax did not load in time; wait a moment and open the note again. The first run extracts the two libraries from Obsidian, which takes a few seconds.
+Open the note again to retry. Also possible: Mermaid and MathJax did not load in time; wait a moment and open the note again. The first run extracts the two libraries from Obsidian, which takes a few seconds. The same message appears when the browser was found but took too long to start, which can happen the first time it starts on a slow or busy machine; the next try usually starts faster.
 
 ### Couldn't draw this
 

@@ -11,8 +11,11 @@ export function createBrowser({ spawn, spawnSync, fs, path, dataDir, pid, platfo
   let profile = null;
   const win = platform === "win32";
 
-  // → the DevTools websocket URL once the browser prints it on stderr.
-  function launch(bin) {
+  // → the DevTools websocket URL once the browser prints it on stderr. A browser that cannot be started or
+  // exits first is "no-browser"; one that is still starting after `startMs` is "timeout", not "no-browser":
+  // a cold start on a slow or busy machine (Windows with a virus scan of a fresh Chrome) can take that long,
+  // and telling the person to install a browser they have would be wrong. The next run usually starts warm.
+  function launch(bin, startMs = startTimeoutMs) {
     // One profile per run: two readers drawing at once must not share one.
     profile = path.join(dataDir, profileName(pid));
     fs.mkdirSync(profile, { recursive: true });
@@ -20,7 +23,7 @@ export function createBrowser({ spawn, spawnSync, fs, path, dataDir, pid, platfo
     proc = spawn(bin, browserArgs(profile), { stdio: ["ignore", "ignore", "pipe"], detached: !win });
     return new Promise((ok, fail) => {
       let err = "";
-      const t = setTimeout(() => fail(new Known("no-browser")), startTimeoutMs);
+      const t = setTimeout(() => fail(new Known("timeout")), startMs);
       proc.on("error", () => { clearTimeout(t); fail(new Known("no-browser")); });
       proc.stderr.on("data", (d) => {
         err += d;

@@ -20,13 +20,28 @@ const { default: Vault } = await import("../mods/vault/main.js");
 const settle = (ms = 60) => new Promise((r) => setTimeout(r, ms));
 function fakeCx() {
   const cx = {
+    pending: [],
     focus_handle: () => ({ focus() {} }),
     timer: { after: () => ({ cancel() {} }), every: () => ({ cancel() {} }) },
-    spawn: (fn) => Promise.resolve(fn(cx)),
+    spawn: (fn) => { const p = Promise.resolve(fn(cx)); cx.pending.push(p); return p; },
     notify() {}, stop_propagation() {},
   };
   return cx;
 }
+// The reader loads in cx.spawn: the note, then its pictures (which call exec). The tests wait for that task
+// itself, not for a fixed time: a fixed 250 ms was not always enough on a busy Windows runner, and the reader
+// was drawn before its renderer notice existed. Other spawned tasks (a kept pane's command loop) never end,
+// so only the tasks that load() starts are awaited.
+function awaitLoads(r, cx) {
+  const runs = [];
+  const load = r.load.bind(r);
+  r.load = (c) => { const from = cx.pending.length; load(c); runs.push(...cx.pending.slice(from)); };
+  return async (limitMs = 20_000) => {
+    const limit = new Promise((_, no) => setTimeout(() => no(new Error("the reader's load did not finish")), limitMs).unref());
+    await Promise.race([Promise.allSettled(runs), limit]);
+  };
+}
+
 const FIXTURES = path.join(ROOT, "tests", "fixtures");
 
 async function drawReader(vault, file, extra = {}) {
@@ -35,8 +50,9 @@ async function drawReader(vault, file, extra = {}) {
   herdrTest.exec = async () => { throw new Error("spawn ENOENT"); };
   const cx = fakeCx();
   const r = new Reader();
+  const loaded = awaitLoads(r, cx);
   r.init({}, cx);
-  await settle(250);
+  await loaded();
   built.text.length = 0;
   assert.doesNotThrow(() => r.render(cx), `render ${file}`);
   return { r, cx, text: [...built.text] };
