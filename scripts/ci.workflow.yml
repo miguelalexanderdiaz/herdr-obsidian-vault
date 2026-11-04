@@ -1,0 +1,59 @@
+# Source of truth for .github/workflows/ci.yml. Pushing a workflow file needs a token with the "workflow" scope,
+# which the unattended round did not have: the author copies this file (see scripts/PUBLISH.md).
+name: CI
+
+# Pure Node checks: no Herdr app, Chrome, Obsidian, ripgrep or Poppler is needed on the runners.
+# `herdr-app check <mod folder>` is a local step (see CONTRIBUTING.md).
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the privacy scan also reads commit messages, check-repo --release reads history
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Syntax of every .js and .mjs
+        run: node scripts/syntax-check.mjs
+
+      - name: Repo structure, JSON, keys, contract, licenses
+        run: node scripts/check-repo.mjs
+
+      - name: Privacy scan self-test
+        run: node scripts/privacy-scan.mjs --self-test
+
+      - name: Privacy scan
+        run: node scripts/privacy-scan.mjs
+
+      - name: Unit tests
+        # Fails if tests/ exists but runs nothing; skipped only while the folder does not exist yet.
+        if: ${{ hashFiles('tests/**') != '' }}
+        run: node --test tests/
+
+      - name: Docs checks
+        if: ${{ hashFiles('scripts/check-docs.mjs') != '' }}
+        run: node scripts/check-docs.mjs
+
+      - name: Release gate (informational)
+        # Expected to fail until the author steps in scripts/PUBLISH.md are done; never blocks CI.
+        continue-on-error: true
+        run: node scripts/check-repo.mjs --release
