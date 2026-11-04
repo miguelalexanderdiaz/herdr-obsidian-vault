@@ -8,7 +8,9 @@ Agents may not do these: they change visibility, settings, topics or need the li
    commit (for example a new orphan branch, or a new repository with the current tree) before going public.
    `check-repo --release` fails while the blob is in history.
 2. **Take `preview.png`** at the repo root. Follow `scripts/PREVIEW.md` (sample vault only, never a real one).
-3. **Confirm the copyright name** in `LICENSE` and `NOTICE` (currently the git author name) and that you want
+3. **Replace the `<owner>` placeholder** that README, CHANGELOG, CONTRIBUTING, `llms.txt` and `docs/` use for the
+   GitHub owner (agents may not write usernames), then rerun `node scripts/check-docs.mjs`.
+   **Confirm the copyright name** in `LICENSE` and `NOTICE` (currently the git author name) and that you want
    that name public. It is the only place a real name appears.
 4. **Check Obsidian's trademark text** (https://obsidian.md/brand) once more and that `NOTICE` still says
    "not affiliated". Keep the generic icon; do not add the real logo to the repo.
