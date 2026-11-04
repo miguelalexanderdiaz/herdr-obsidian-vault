@@ -24,6 +24,8 @@ Third-party material included in this repository
 
 2. lz-string, decompressFromBase64 (MIT License)
    File: mods/vault-reader/render/lzstring.js (a port of the decompressor)
+   License text: mods/vault-reader/render/LICENSE-lz-string.txt (travels with
+   the mod folder; the text below is the same)
    Copyright (c) pieroxy
    Source: https://github.com/pieroxy/lz-string
    Used to read the compressed drawing data that the Excalidraw plugin stores
