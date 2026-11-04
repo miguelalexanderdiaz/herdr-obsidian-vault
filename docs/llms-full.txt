@@ -1186,7 +1186,7 @@ parse.js, doc.js, canvas.js | Pure functions: note text to blocks; a file to a d
 
 assets.js, assets-core.js | Everything that becomes a picture: images, PDF pages, web images, rendered jobs; the cache. The core holds the logic without Herdr imports.
 
-render/render.mjs, lib.mjs, page.js, excalidraw.js | The render script and the page it loads in the headless browser. Plain Node and browser code, not Herdr mod code.
+render/render.mjs, lib.mjs, browser.mjs, page.js, excalidraw.js | The render script, its helpers (browser.mjs runs and cleans up the browser process of one run), and the page it loads in the headless browser. Plain Node and browser code, not Herdr mod code.
 
 ## From a click to a picture
 
@@ -1198,7 +1198,7 @@ render/render.mjs, lib.mjs, page.js, excalidraw.js | The render script and the p
 
 - Cached pictures show at once. Missing ones are made: images are copied into the cache (Herdr only loads pictures from its own folder) and measured; PDF pages come from Poppler; math, Mermaid and drawings are batched to the render script.
 
-- The render script serves one page on 127.0.0.1, starts the headless browser with its own temporary profile, draws each job with Obsidian’s copies of Mermaid and MathJax or the project’s own drawing renderer, takes a screenshot of each result and writes a PNG plus a size file.
+- The render script serves one page on 127.0.0.1, starts the headless browser with its own temporary profile (a content-security policy in the page and a browser that resolves no name but 127.0.0.1 keep it from fetching anything else; the profile folder is removed when the run ends), draws each job with Obsidian’s copies of Mermaid and MathJax or the project’s own drawing renderer, takes a screenshot of each result and writes a PNG plus a size file.
 
 - Pictures appear as they are ready. A failure becomes a short message in place of that block, and a missing program becomes one line above the note; neither replaces the document, and neither is cached.
 
