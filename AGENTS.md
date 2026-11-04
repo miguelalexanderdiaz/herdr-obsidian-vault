@@ -63,7 +63,7 @@ These come from Herdr and from mistakes already made here.
 
 - **Never write inside a mod folder at run time.** Herdr reloads a mod whenever any file in its folder changes. Caches live in `<Herdr home>/data/vault`.
 - **No DOM and no Node APIs inside mod code** (`main.js`, `search.js`, `assets.js`). Use `exec`, `fetch`, `readTextFile`, `watchFolder` and `import * as fs from "fs/promises"` from Herdr. Mods may read under the home folder and write only under the Herdr home.
-- **Plain Node files are the exception**: `render/render.mjs` and anything under `tests/` and `scripts/` run under Node 22 and may use Node APIs. Mod code must never import them.
+- **Plain Node files are the exception**: `render/render.mjs` and anything under `tests/` and `scripts/` run under Node 22.4 or newer and may use Node APIs. Mod code must never import them.
 - **Keep every pure module free of `herdr` imports** (`parse.js`, `doc.js`, `canvas.js`, `platform.js`, `search-core.js`, `assets-core.js`, `tree.js`, `obsidian-config.js`, `watch.js`, `vault-files.js`), so `node --test` can load them. Anything that needs `exec`, `fs` or the clock takes it as an argument; the Herdr-facing files (`main.js`, `search.js`, `assets.js`) are thin glue. Two files are copies by design and a test compares them: the shared parts of the two `platform.js`, and `watch.js`.
 - **All operating-system literals live in `platform.js`** (one per mod, with identical tables; a test compares them). Do not write `/Applications`, `/opt/homebrew`, `Library/Application Support`, `stat -f` or similar anywhere else. `scripts/privacy-scan.mjs` fails on it.
 - **No top-level side effects, no `setTimeout`/`setInterval`** (use `cx.timer`), no top-level `await` (use `cx.spawn` in `init`). Never keep a `cx` and use it later; every callback gets its own.
@@ -122,22 +122,6 @@ herdr-app check /absolute/path/to/mods/vault-reader
 The CI template (`scripts/ci.workflow.yml`, not run yet) lists the first seven and the privacy and checker self-tests; `typecheck` and `herdr-app check` are local only. `node scripts/check-repo.mjs --release` and `node scripts/check-docs.mjs --release` are the publish gate: they fail by design until the author's steps in `scripts/PUBLISH.md` are done, so do not try to make them pass.
 
 Strict stubs: the test stand-ins for gpui-kit elements allow only method names that exist in `gpui-kit.d.ts` (read from the Herdr home when present, else from `tests/stubs/gpui-methods.json`; regenerate it with `node tests/tools/gen-gpui-methods.mjs`), and the `fs/promises` stand-in only the surface Herdr declares. A misspelt method or a `TextDecoder` in mod code fails a test. To find out whether Herdr itself has some global or method, use the throw-away probe mod procedure in `CONTRIBUTING.md`, not a live window.
-
-`herdr-app check` loads a mod once and checks its first description. It does not run later states, layout or async work.
-- The popup's placement (`kind`, `at` and `offset` in the `overlay` of `mods/vault/mod.json`) was taken from Herdr's picker mods and official examples and has not been checked on a small window; the popup is 640 pixels tall.
-
-## Testing
-
-Run from the repository root. Node 22 or newer; no dependencies; nothing needs Chrome, Obsidian, ripgrep or Poppler. `npm test` is `node --test` with a quoted glob (`tests/**/*.test.mjs`); a bare directory argument (`node --test tests/`) is read as a module path and fails, so use `npm test` or plain `node --test`.
-
-```sh
-npm test                                                 # unit tests on the pure modules and the sample vault
-node scripts/check-repo.mjs                              # manifests, keys, contract, third-party notices
-node scripts/privacy-scan.mjs                            # personal data and operating-system literals
-node scripts/check-docs.mjs                              # links, anchors, contrast, tables, messages
-herdr-app check /absolute/path/to/mods/vault             # Herdr loads the mod once
-herdr-app check /absolute/path/to/mods/vault-reader
-```
 
 `herdr-app check` loads a mod once and checks its first description. It does not lay out the mod or run later async states. Never call a mod done on that alone, and never use `herdr-app do`, `shot` or `status` against a window you do not own: it is somebody's live screen.
 
