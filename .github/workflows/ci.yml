@@ -1,0 +1,77 @@
+name: CI
+
+# Pure Node checks: no Herdr app, Chrome, Obsidian, ripgrep or Poppler is needed on the runners (tests that need
+# one of them skip with a stated reason). `herdr-app check <mod folder>` is a local step (see CONTRIBUTING.md).
+# Every step must run and none may be skipped or allowed to fail: scripts/check-repo.mjs verifies that each
+# `run:` command below is `npm test`, `npm run <script in package.json>` or `node scripts/<file that exists>`.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      # Actions are pinned to a full commit; the tag after # is the release the commit belongs to.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0   # the privacy scan also reads commit messages, check-repo --release reads history
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.x
+
+      - name: Optional private word list for the privacy scan
+        # Set the repository secret PRIVACY_WORDS (one word or phrase per line) to also catch names, employers and
+        # project names in CI. Without the secret this step does nothing and only the generic rules run.
+        shell: bash
+        env:
+          PRIVACY_WORDS: ${{ secrets.PRIVACY_WORDS }}
+        run: |
+          if [ -n "$PRIVACY_WORDS" ]; then
+            printf '%s\n' "$PRIVACY_WORDS" > "$RUNNER_TEMP/words.txt"
+            echo "HERDR_PRIVACY_WORDS=$RUNNER_TEMP/words.txt" >> "$GITHUB_ENV"
+          fi
+
+      - name: Syntax of every .js and .mjs
+        run: node scripts/syntax-check.mjs
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Repo structure, JSON, keys, contract, licenses
+        run: node scripts/check-repo.mjs
+
+      - name: RECIPE.md against the code
+        run: node scripts/check-recipe.mjs
+
+      - name: Install simulation
+        run: node scripts/install-sim.mjs
+
+      - name: Self-tests of the checks (each seeds faults and expects them to be caught)
+        run: |
+          node scripts/check-recipe.mjs --self-test
+          node scripts/install-sim.mjs --self-test
+          node scripts/check-repo.mjs --self-test
+
+      - name: Privacy scan self-test
+        run: node scripts/privacy-scan.mjs --self-test
+
+      - name: Privacy scan
+        run: node scripts/privacy-scan.mjs
+
+      - name: Docs checks
+        run: node scripts/check-docs.mjs
