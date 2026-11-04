@@ -189,7 +189,6 @@ By hand: Remove the block from your layout and the keys you merged, delete `mods
 | `tests/` | the `npm test` suite, fixtures and helper tools |
 | `scripts/` | repository checks (`check-docs.mjs`, `check-repo.mjs`, `check-recipe.mjs`, `install-sim.mjs`, `privacy-scan.mjs`, `typecheck.mjs`), the CI workflow template and the publish checklists |
 | `AGENTS.md`, `llms.txt` | instructions for AI agents |
-| `plans/` | the plans and logs of each improvement round |
 
 ## Credits, license and trademarks
 

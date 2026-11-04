@@ -11,7 +11,7 @@ so the list it prints is this list). `rg "publish:"` lists the sentences in the 
    `check-repo --release` fails while the blob is in history. The git author name and the noreply address of the new
    commit become public with it: decide that is what you want (`git config user.name`, `git config user.email`
    before you commit).
-2. **Decide whether `plans/` ships.** It holds the agents' plans, audits, logs and board copies (about 200 KB). It is
+2. **Decide whether `plans/` ships.** Done 2026-11-04: it is not tracked any more (`/plans/` in `.gitignore`). It holds the agents' plans, audits, logs and board copies (about 200 KB). It is
    scanned by `privacy-scan`, but it is working notes, not part of a mod. Default: leave it out of the first public
    commit and keep it on a private branch (`git rm -r --cached plans`, then add `/plans/` to `.gitignore`).
 3. **Take `preview.png`** at the repo root. Follow `scripts/PREVIEW.md` (sample vault only, never a real one), then
