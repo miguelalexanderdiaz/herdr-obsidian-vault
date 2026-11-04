@@ -97,7 +97,7 @@ Node has globals and options that Herdr's JavaScript runtime lacks, which is how
 2. Run `herdr-app check /absolute/path/to/that/folder`. The check fails on purpose and prints your message with the answer, for example `TextDecoder: undefined`. It writes `gpui-kit.d.ts` and `jsconfig.json` into that folder; delete the folder afterwards.
 3. Never put a probe inside the Herdr home or in this repository: Herdr reloads whatever is in its mods folder on screen.
 
-On the macOS machine used in round 2 this showed `TextDecoder`, `TextEncoder`, `structuredClone` and `Intl` as `undefined`, `localeCompare` ignoring `numeric`, and `setTimeout`, `process`, `Buffer` and `URL` present. That something is present does not make it allowed: Herdr's own notes forbid `setTimeout` and Node APIs, and the runtime-globals test lists what mod code may not use. Update that list and `AGENTS.md` ("Herdr facts behind the rules") when a probe changes an answer, and say which Herdr version it was.
+On macOS with Herdr 0.1.12 this showed `TextDecoder`, `TextEncoder`, `structuredClone` and `Intl` as `undefined`, `localeCompare` ignoring `numeric`, and `setTimeout`, `process`, `Buffer` and `URL` present. That something is present does not make it allowed: Herdr's own notes forbid `setTimeout` and Node APIs, and the runtime-globals test lists what mod code may not use. Update that list and `AGENTS.md` ("Herdr facts behind the rules") when a probe changes an answer, and say which Herdr version it was.
 
 ## Reporting a platform result
 

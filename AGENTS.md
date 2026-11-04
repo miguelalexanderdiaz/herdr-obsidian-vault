@@ -89,7 +89,7 @@ Each rule above has a reason. The reasons, with where they come from, so you can
 | A Finder launch loads the login shell's PATH, with the usual install folders as a fallback; other environment variables are not carried over | a variable set in a shell profile may not reach the mods, so programs are found by folder and login-shell lookup, and the settings file can name the browser and Obsidian | Herdr `AGENTS.md` (macOS section) |
 | No `setTimeout`/`setInterval`, no top-level `await`; callbacks get their own `cx` | `cx.timer`, `cx.spawn` in `init` | Herdr `AGENTS.md` |
 | A mod reloads when any file in its folder changes | caches live in `data/vault`, never in the mod folder | Herdr `AGENTS.md` |
-| `TextDecoder`, `TextEncoder`, `structuredClone`, `Intl` are missing; `localeCompare` ignores options | own UTF-8 decoder for SVG text, own natural-order comparator for the tree | **Probed, not documented by Herdr**: throw-away mods run with `herdr-app check` in round 2 (procedure in `CONTRIBUTING.md`); re-probe after a Herdr update |
+| `TextDecoder`, `TextEncoder`, `structuredClone`, `Intl` are missing; `localeCompare` ignores options | own UTF-8 decoder for SVG text, own natural-order comparator for the tree | **Probed, not documented by Herdr**: throw-away mods run with `herdr-app check` on Herdr 0.1.12 (procedure in `CONTRIBUTING.md`); re-probe after a Herdr update |
 
 ## Not verified
 
