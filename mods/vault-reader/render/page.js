@@ -3,6 +3,9 @@
   const stage = () => document.getElementById("stage");
   let theme = { fg: "#ffffff", bg: "#101010", muted: "#a0a0a0", accent: "#ffc799", border: "#282828", surface: "#1c1c1c", dark: true, size: 15 };
   let n = 0;
+  // The reader's own font first (when it names one), then fonts every OS has.
+  const GENERIC = 'system-ui, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif';
+  const stack = (f) => (typeof f === "string" && /^[\w .-]{1,60}$/.test(f) ? `"${f}", ` : "") + GENERIC;
 
   window.libsReady = false;
   const wait = setInterval(() => {
@@ -12,10 +15,11 @@
   window.setTheme = (t) => {
     theme = { ...theme, ...t };
     document.body.style.color = theme.fg;
+    document.body.style.fontFamily = stack(theme.font);
     window.mermaid.initialize({
       startOnLoad: false, securityLevel: "strict", theme: "base",
       themeVariables: {
-        darkMode: theme.dark, background: theme.bg, fontFamily: '"Helvetica Neue", Helvetica, sans-serif', fontSize: "14px",
+        darkMode: theme.dark, background: theme.bg, fontFamily: stack(theme.font), fontSize: "14px",
         primaryColor: theme.surface, primaryTextColor: theme.fg, primaryBorderColor: theme.muted,
         secondaryColor: theme.raised ?? theme.surface, secondaryTextColor: theme.fg, secondaryBorderColor: theme.border,
         tertiaryColor: theme.bg, tertiaryTextColor: theme.fg, tertiaryBorderColor: theme.border,
