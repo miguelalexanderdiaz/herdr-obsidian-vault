@@ -24,7 +24,6 @@ node --version   # v22.4 or newer
 | `examples/sample-vault/` | the test vault; keep it generic and small |
 | `scripts/` | repository checks and the publish checklists |
 | `docs/` | the Pages site; plain HTML and CSS, no scripts, nothing loaded from other sites |
-| `plans/` | each improvement round's plan, role logs and summary |
 
 Mod folders must stay self-contained: do not import from one mod into the other, and do not put a `package.json` inside a mod folder.
 
