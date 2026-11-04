@@ -16,7 +16,7 @@ const { default: Vault } = await import("../mods/vault/main.js");
 
 const tick = () => new Promise((r) => setImmediate(r));
 // Loops like nextCommand() never finish, so wait a moment instead of awaiting the tasks.
-const settle = (ms = 40) => new Promise((r) => setTimeout(r, ms));
+const settle = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 function fakeCx() {
   const tasks = [], timers = [];
   const cx = {

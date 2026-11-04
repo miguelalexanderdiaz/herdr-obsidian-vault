@@ -97,3 +97,31 @@ test("two parallel runs get distinct browser profile folders (CR-1-6)", () => {
   assert.match(a, /^chrome-1000-/);
   assert.ok(DEADLINE_MS < 30_000, "under the 30 s exec limit");
 });
+
+// ---- render.mjs itself: the machine problems it can report without any browser -------------------
+
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import { fileURLToPath } from "node:url";
+
+const RENDER = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "mods", "vault-reader", "render", "render.mjs");
+function runRender(spec, env) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "herdr-render-test-"));
+  const file = path.join(dir, "jobs.json");
+  fs.writeFileSync(file, JSON.stringify({ theme: {}, jobs: [], ...spec }));
+  const clean = { ...process.env, HERDR_VAULT_BROWSER: "", HERDR_VAULT_ASAR: "", CHROME_PATH: "", PATH: "" };
+  const r = spawnSync(process.execPath, [RENDER, dir, file], { env: { ...clean, ...env }, encoding: "utf8", timeout: 20000 });
+  return { out: JSON.parse(r.stdout || "null"), code: r.status, stderr: r.stderr };
+}
+
+test("render.mjs: no browser anywhere is a structured no-browser, exit 0, nothing thrown", () => {
+  const r = runRender({ discover: { asar: [], browsers: [], names: [] } }, {});
+  assert.deepEqual(r.out, [{ error: "no-browser" }]);
+  assert.equal(r.code, 0);
+});
+
+test("render.mjs: a browser but no Obsidian app is a structured no-obsidian", () => {
+  const r = runRender({ discover: { asar: ["/nonexistent/obsidian.asar"], browsers: [], names: [] } }, { HERDR_VAULT_BROWSER: process.execPath });
+  assert.deepEqual(r.out, [{ error: "no-obsidian" }]);
+});

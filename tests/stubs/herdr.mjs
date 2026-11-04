@@ -15,7 +15,7 @@ export const exec = (...a) => herdrTest.exec(...a);
 export const home = () => herdrTest.home;
 export const appHome = () => herdrTest.appHome;
 export const window = () => ({ platform: herdrTest.platform });
-export const settings = () => ({ zoom: 1 });
+export const settings = () => ({ zoom: 1, dark: true });
 export const readTextFile = async (p) => { try { return fs.readFileSync(p, "utf8"); } catch { return null; } };
 export const watchFolder = (p) => herdrTest.watch(p);
 export const nextCommand = () => (herdrTest.commands.length ? Promise.resolve(herdrTest.commands.shift()) : new Promise(() => {}));
