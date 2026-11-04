@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting - Herdr Obsidian Vault</title>
+<meta name="description" content="Messages shown by the Herdr Obsidian Vault mods, what causes them and how to fix them.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to the content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html">Herdr Obsidian Vault</a>
+<nav aria-label="Documentation">
+<ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="usage.html">Usage</a></li>
+<li><a href="requirements.html">Requirements</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+<li><a href="troubleshooting.html" aria-current="page">Troubleshooting</a></li>
+<li><a href="how-it-works.html">How it works</a></li>
+<li><a href="for-agents.html">For agents</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<main id="content">
+<div class="wrap">
+<h1>Troubleshooting</h1>
+<p class="lede">Each entry gives the message as it appears, why, and what to do. The messages are quoted from the code, and the docs check script verifies that they still exist there.</p>
+<div class="note">If a mod breaks right after you edit it, Herdr keeps the last good version and writes the reason to <code>&lt;name&gt;.error</code>. <code>herdr-app status</code> shows errors too. If a layout or key makes the window unusable, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Esc</kbd>: it sets the layout and <code>keys.json</code> aside.</div>
+<p>The install hint after a message depends on your system. The <a href="requirements.html">requirements table</a> lists them all.</p>
+
+<h2 id="panel">Panel</h2>
+
+<h3 id="no-vaults">The panel says <code class="msg">No vault yet</code></h3>
+<p>Obsidian has not been run on this machine, or its list is somewhere the mod does not look. If the panel also says <code class="msg">Obsidian's vault list wasn't found</code>, it names the places it looked (<a href="requirements.html#vault-list">file per system</a>). Click <strong>Add vault</strong> and pick the folder that holds <code>.obsidian</code>.</p>
+
+<h3 id="not-vault">Notification <code class="msg">Not an Obsidian vault</code></h3>
+<p>The folder you picked has no <code>.obsidian</code> inside. Pick the vault&rsquo;s own folder. A new vault needs to be opened in Obsidian once so it creates that folder.</p>
+
+<h3 id="folder-gone"><code class="msg">This vault's folder is gone</code></h3>
+<p>The folder was moved or deleted, or sits on a drive that is not connected. Remove it from the picker (the <kbd>x</kbd>) and add it again.</p>
+
+<h3 id="outside-home"><code class="msg">Outside your home folder: Herdr can't read it</code></h3>
+<p>Obsidian knows this vault, but Herdr mods can only read inside the home folder. Move the vault under your home folder (or link it there) and add it again.</p>
+
+<h3 id="rg-missing"><code class="msg">ripgrep (rg) isn't installed</code></h3>
+<p>Shown in the search results area instead of results. Install ripgrep with the command that follows the message, then search again. A program that was missing is looked for again after 30 seconds, so there is no need to restart Herdr. If it is installed and still not found, put its folder on the PATH that your login shell sets, or install it in a common location.</p>
+
+<h3 id="stale-tree"><code class="msg">Live updates are off for this folder</code></h3>
+<p>On Linux, Herdr refuses to watch a tree with more than 4096 folders. The panel then re-lists the vault every 10 seconds, and the reader checks the files of the open note every 10 seconds. Nothing is lost; changes just appear a little later.</p>
+
+<h3 id="more"><code class="msg">more not listed (search finds them)</code></h3>
+<p>The line reads <code>+N more not listed (search finds them)</code>. The tree lists the first 2000 entries of a folder. Use the search box to reach the others.</p>
+
+<h3 id="program"><code class="msg">is a program, not a document.</code></h3>
+<p>A notice titled <code class="msg">Not opened</code>. The panel and the reader never launch files that start programs (<code>.exe</code>, <code>.bat</code>, <code>.sh</code>, <code>.app</code> and similar). Open the file yourself if you trust it. In the reader the same rule shows as <code class="msg">is a program: the reader doesn't launch programs from notes</code>.</p>
+
+<h2 id="reader">Reader</h2>
+<p>Problems that depend on your machine appear once as a line above the note. The note and the source of each diagram or formula stay visible. They are never cached, so fixing the cause is enough.</p>
+
+<h3 id="needs-node"><code class="msg">Diagrams and math need Node.js 22 or newer</code></h3>
+<p>Also seen as <code class="msg">Node.js 22 or newer isn't installed</code>, followed by <code>Diagrams and math are shown as source until then.</code> Install Node.js 22 or newer (<code>node --version</code> tells you what you have). The render script uses the built-in <code>WebSocket</code>, which older versions lack.</p>
+
+<h3 id="needs-browser"><code class="msg">Diagrams and math need a browser to draw them</code></h3>
+<p>Followed by <code class="msg">A Chromium-based browser wasn't found</code> and an install hint. Install Chrome, Chromium, Brave or Edge, or set <code>HERDR_VAULT_BROWSER</code> (or <code>CHROME_PATH</code>) to its full path.</p>
+
+<h3 id="needs-obsidian"><code class="msg">Diagrams and math use Obsidian's own Mermaid and MathJax, read from the installed app</code></h3>
+<p>Followed by <code class="msg">The Obsidian app wasn't found</code>. Install the Obsidian app, or set <code>HERDR_VAULT_ASAR</code> to the full path of its <code>obsidian.asar</code>. Obsidian is needed only for this; notes, canvases and images open without it.</p>
+
+<h3 id="render-slow"><code class="msg">Drawing took too long and was stopped</code></h3>
+<p>Open the note again to retry. Also possible: <code class="msg">Mermaid and MathJax did not load in time</code>; wait a moment and open the note again. The first run extracts the two libraries from Obsidian, which takes a few seconds.</p>
+
+<h3 id="render-other"><code class="msg">Couldn't draw this</code></h3>
+<p>The renderer failed for another reason; the first line of its message follows, with paths replaced by <code>&lt;path&gt;</code>. A single diagram that Mermaid rejects shows <code class="msg">Mermaid:</code> and the reason, with its source below. A formula that MathJax rejects shows <code class="msg">Math:</code>. Check the syntax in Obsidian.</p>
+
+<h3 id="pdf-first"><code class="msg">Poppler (pdftoppm, pdfinfo) isn't installed</code></h3>
+<p>All pages of a PDF need Poppler. On Linux and Windows the message ends with <code class="msg">Until then PDFs open in your default app.</code>; on macOS page 1 is drawn by Quick Look with no message. A PDF with more than 30 pages shows the first 30 and a row <code class="msg">open all of it in</code> your viewer.</p>
+
+<h3 id="missing-target"><code class="msg">isn't in the vault</code> or <code class="msg">No file</code> &hellip; <code class="msg">in the vault</code></h3>
+<p>The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed). <code class="msg">This file is no longer in the vault</code> means the open note itself was deleted or moved.</p>
+
+<h3 id="anchor"><code class="msg">No heading or block</code></h3>
+<p>The link asks for a heading or a block id (<code>^id</code>) that the note does not have. The reader shows the whole note instead.</p>
+
+<h3 id="canvas-empty"><code class="msg">This canvas is empty</code></h3>
+<p>The canvas file has no cards. If you expected cards, check that the file is a valid JSON Canvas (<code class="msg">Not a canvas file</code> is shown when it is not).</p>
+
+<h3 id="deep"><code class="msg">Embedded too deep to show here</code></h3>
+<p>Embeds of embeds are followed two levels deep. Open the embedded note itself with its title link.</p>
+
+<h3 id="web-image">A web image does not show</h3>
+<p>The picture slot says why:</p>
+<ul>
+<li><code class="msg">Images from the web are turned off</code>: press <em>Web images: off</em> in the reader bar to turn them on.</li>
+<li><code class="msg">curl isn't installed</code>: install curl (it ships with macOS and recent Windows).</li>
+<li><code class="msg">Couldn't download the image</code>: followed by curl&rsquo;s last error line. Check the address in a browser. A failed download is not saved, and is tried again after 5 minutes or when you reopen the note.</li>
+<li><code class="msg">The address isn't a picture</code>: the address answered with something that is not an image.</li>
+<li><code class="msg">This image is too large to show here</code>: larger than 40 MB (web images stop at 20 MB).</li>
+<li><code class="msg">Not a web address this reader will fetch</code>: only <code>http</code> and <code>https</code> addresses are downloaded.</li>
+<li><code class="msg">Not an image this reader can show</code>: the file is damaged or is not a supported image.</li>
+<li><code class="msg">Not drawn (see the note above)</code>: this diagram is waiting on the problem named in the line above the note.</li>
+</ul>
+
+<h3 id="stale-picture">A picture looks old</h3>
+<p>Diagrams and formulas are cached per theme and per render version, so a new theme draws new ones. If a picture is wrong for another reason, delete <code>data/vault/cache</code> in the Herdr home.</p>
+
+<h3 id="link-nothing">Clicking a link does nothing</h3>
+<p>Only <code>http</code>, <code>https</code> and <code>mailto</code> links are opened, and other schemes are dropped without a message. Other files open with the system opener (<code>open</code>, <code>xdg-open</code>, <code>rundll32</code>); a missing opener fails silently, so check that it exists.</p>
+
+<h2 id="report">Still stuck</h2>
+<p>Open an issue in the repository with: your operating system, <code>node --version</code>, the output of <code>herdr-app check</code> on both mods, and the exact text of the message. Do not paste note content or paths that name you.</p>
+<div class="pager"><a href="privacy.html" rel="prev">&larr; Privacy</a><a href="how-it-works.html" rel="next">How it works &rarr;</a></div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
+<p>This site loads nothing from other websites and runs no scripts.</p>
+</div>
+</footer>
+</body>
+</html>

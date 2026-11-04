@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Requirements - Herdr Obsidian Vault</title>
+<meta name="description" content="Programs the Herdr Obsidian Vault mods use on macOS, Linux and Windows, and what you lose without each.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to the content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html">Herdr Obsidian Vault</a>
+<nav aria-label="Documentation">
+<ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="usage.html">Usage</a></li>
+<li><a href="requirements.html" aria-current="page">Requirements</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="how-it-works.html">How it works</a></li>
+<li><a href="for-agents.html">For agents</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<main id="content">
+<div class="wrap">
+<h1>Requirements</h1>
+<p class="lede">Only Herdr is required. Everything else is optional and adds a feature. When a program is missing, the panel or the reader says which one in plain words instead of failing.</p>
+<p>These programs are not bundled. For each one the mods try the bare name on your PATH, then the usual install folders of your operating system (Homebrew, Snap, Linuxbrew, Nix, Volta, Scoop, WinGet, Chocolatey, Program Files), then, for Node, the folders of nvm, fnm and asdf, and last your login shell (<code>command -v</code>) on macOS and Linux or <code>where</code> on Windows. A program that was missing is looked for again after 30 seconds, so installing it while Herdr runs works. The only thing the mods ever download is a web image that a note shows (see <a href="privacy.html">privacy</a>).</p>
+
+<div class="table-wrap" role="region" aria-label="Requirements per operating system" tabindex="0">
+<table id="requirements-table">
+<thead><tr><th scope="col">Program</th><th scope="col">Used for</th><th scope="col">Without it</th><th scope="col">macOS</th><th scope="col">Linux</th><th scope="col">Windows</th></tr></thead>
+<tbody>
+<tr><th scope="row">Herdr desktop app</th><td>Runs both mods.</td><td>Nothing works.</td><td>Install Herdr.</td><td>Install Herdr.</td><td>Install Herdr.</td></tr>
+<tr><th scope="row">ripgrep (<code>rg</code>)</th><td>The search box in the Vault panel.</td><td>Search shows <code>ripgrep (rg) isn't installed:</code> and the install hint for your system. Browsing and reading still work.</td><td><code>brew install ripgrep</code></td><td>install ripgrep with your package manager (for example: <code>apt install ripgrep</code>)</td><td><code>winget install BurntSushi.ripgrep.MSVC</code></td></tr>
+<tr><th scope="row">Node.js 22 or newer (<code>node</code>)</th><td>Drawing math, Mermaid diagrams and Excalidraw drawings (the render script).</td><td>One line above the note names what is missing; the source of each diagram, formula or drawing stays visible.</td><td><code>brew install node</code></td><td>install Node.js 22 or newer (nodejs.org, or your package manager)</td><td><code>winget install OpenJS.NodeJS</code></td></tr>
+<tr><th scope="row">A Chromium-family browser (Chrome, Chromium, Edge or Brave)</th><td>Runs headless to take a picture of each diagram, formula and drawing.</td><td>Same: one line above the note, <code>A Chromium-based browser wasn't found</code>, and the source stays visible.</td><td>Chrome, Chromium, Brave or Edge in <code>/Applications</code> (or <code>~/Applications</code>)</td><td><code>google-chrome</code>, <code>chromium</code>, <code>brave-browser</code> or <code>microsoft-edge</code> on PATH</td><td>Edge, Chrome or Brave in Program Files or Local AppData (Edge is built into Windows)</td></tr>
+<tr><th scope="row">Obsidian desktop app</th><td>Supplies its own Mermaid and MathJax, read at run time from <code>obsidian.asar</code>.</td><td>Same: one line above the note, <code>The Obsidian app wasn't found</code>, and the source stays visible. Notes, canvases and images still open.</td><td>Obsidian in <code>/Applications</code> (or <code>~/Applications</code>)</td><td>Obsidian from <code>/opt</code>, <code>/usr/lib</code>, <code>/usr/share</code>, Snap or Flatpak</td><td>Obsidian in <code>%LOCALAPPDATA%</code> or Program Files</td></tr>
+<tr><th scope="row">Poppler (<code>pdftoppm</code>, <code>pdfinfo</code>)</th><td>Every page of a PDF (the first 30).</td><td>macOS draws page 1 through Quick Look. Linux and Windows show <code>Poppler (pdftoppm, pdfinfo) isn't installed:</code> with the hint, and the PDF opens in your default app.</td><td><code>brew install poppler</code></td><td>install poppler-utils with your package manager (for example: <code>apt install poppler-utils</code>)</td><td><code>scoop install poppler</code></td></tr>
+<tr><th scope="row">curl</th><td>Downloading web images that a note shows with <code>![](https://...)</code>.</td><td>Those images show <code>curl isn't installed:</code> with the hint. Turn web images off on purpose with the Web images button.</td><td>Ships with macOS</td><td>install curl with your package manager (for example: <code>apt install curl</code>)</td><td>Ships with Windows 10 and newer</td></tr>
+<tr><th scope="row">System file opener</th><td>Opening files the reader cannot show, web links, and PDFs in your viewer.</td><td>The click does nothing.</td><td><code>open</code> (built in)</td><td><code>xdg-open</code> (package <code>xdg-utils</code>)</td><td><code>rundll32 url.dll,FileProtocolHandler</code> (built in)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="vault-list">Where Obsidian keeps its vault list</h2>
+<p>On first run, and when you choose <em>Import from Obsidian</em>, the panel reads Obsidian&rsquo;s own list of vaults, so you do not have to add them again. The first file in the order below that holds at least one vault is used. If none is found, the empty panel says <em>Obsidian&rsquo;s vault list wasn&rsquo;t found</em> and names the places it looked.</p>
+<div class="table-wrap" role="region" aria-label="Obsidian vault list location per OS" tabindex="0"><table>
+<thead><tr><th scope="col">System</th><th scope="col">File read</th></tr></thead>
+<tbody>
+<tr><th scope="row">macOS</th><td><code>~/Library/Application Support/obsidian/obsidian.json</code></td></tr>
+<tr><th scope="row">Linux</th><td><code>~/.config/obsidian/obsidian.json</code>; for Flatpak <code>~/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json</code>; for Snap <code>~/snap/obsidian/current/.config/obsidian/obsidian.json</code></td></tr>
+<tr><th scope="row">Windows</th><td><code>~/AppData/Roaming/obsidian/obsidian.json</code> (that is <code>%APPDATA%\obsidian</code>)</td></tr>
+</tbody></table></div>
+<div class="warn"><strong>Vaults must live inside your home folder.</strong> Herdr mods can only read files under the home folder. A vault on another drive or a network share cannot be shown; the panel lists it as outside the home folder and not readable.</div>
+
+<h2 id="overrides">Pointing the mods at a program</h2>
+<p>If the browser or Obsidian is installed somewhere unusual, set one of these environment variables before starting Herdr. They are read by the render script, first in the search order.</p>
+<ul>
+<li><code>HERDR_VAULT_BROWSER</code>, then <code>CHROME_PATH</code>: the full path of the browser program.</li>
+<li><code>HERDR_VAULT_ASAR</code>: the full path of Obsidian&rsquo;s <code>obsidian.asar</code>.</li>
+</ul>
+<p>For the other programs, put their folder on the PATH that your login shell sets, or install them in one of the usual places.</p>
+<div class="pager"><a href="usage.html" rel="prev">&larr; Usage</a><a href="configuration.html" rel="next">Configuration &rarr;</a></div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
+<p>This site loads nothing from other websites and runs no scripts.</p>
+</div>
+</footer>
+</body>
+</html>
