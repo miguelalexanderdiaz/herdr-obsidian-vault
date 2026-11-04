@@ -207,12 +207,16 @@ export function createAssets(deps) {
     return { path: `${REL}/${key}.png`, ...shown };
   }
 
+  // The first page of a PDF that sits inside a note or a canvas → { path, w, h } | { error, missing? }.
+  // Poppler's pdftoppm wherever it is installed (the same page-1 picture the opened-PDF view uses);
+  // macOS falls back to Quick Look only when Poppler is missing; elsewhere the install hint.
   async function pdfPage(file, stamp) {
+    if (await tool("pdftoppm")) return pdfPageAt(file, stamp, 1);
+    if (platform !== "macos") return { error: missingMessage(platform, "poppler") + ". Until then PDFs open in your default app.", missing: "poppler" };
     await ensureDir();
     const key = hash(`pdf2:${file}:${stamp}`);
     const m = await meta(key);
     if (m) return hit(key, "png", m);
-    if (platform !== "macos") return { error: missingMessage(platform, "poppler") + ". Until then PDFs open in your default app.", missing: "poppler" };
     try { return await quickLook(file, key); } catch (e) { return fail(key, e); }
   }
 

@@ -353,3 +353,47 @@ test("poisoned cache entries from before the fix are ignored: the image key chan
   assert.deepEqual([r.w, r.h], [1, 2]);
   void fs;
 });
+
+// ---- a PDF inside a note goes through Poppler where it is installed (R2-CR-5, CR-2-2) -----------------------
+
+const poppler = (fs, log = []) => (cmd, args) => {
+  log.push([cmd, args]);
+  if (args.includes("-v")) return cmd === "pdftoppm" || cmd === "pdfinfo" ? { stderr: `${cmd} version 24` } : undefined;
+  if (cmd === "pdftoppm" || cmd.endsWith("pdftoppm")) { fs.files.set(args.at(-1) + ".png", png(1224, 1584)); return { code: 0 }; }
+  if (cmd === "qlmanage") { fs.files.set(`${args[args.indexOf("-o") + 1]}/a.pdf.png`, png(100, 100)); return { code: 0 }; }
+  return undefined;
+};
+
+test("embedded pdf: pdftoppm page 1 on linux, windows and macOS when Poppler is installed (CR-2-2)", async () => {
+  for (const platform of ["linux", "windows", "macos"]) {
+    const fs = fakeFs();
+    const log = [];
+    const exec = fakeExec(poppler(fs, log));
+    const a = createAssets({ exec, fs, appHome: APP, home: "/h", platform });
+    const r = await a.pdfPage("/h/v/a.pdf", "1:1");
+    assert.equal(r.error, undefined, platform);
+    assert.deepEqual([r.w, r.h], [612, 792], platform);
+    const ppm = log.filter(([cmd, args]) => cmd.includes("pdftoppm") && args.includes("-f"));
+    assert.equal(ppm.length, 1, platform);
+    assert.deepEqual(ppm[0][1].slice(ppm[0][1].indexOf("-f"), ppm[0][1].indexOf("-f") + 4), ["-f", "1", "-l", "1"]);
+    assert.ok(!log.some(([cmd]) => cmd === "qlmanage"), `${platform}: Quick Look is only the fallback`);
+    // the same picture the opened-PDF view uses for page 1
+    const again = await a.pdfPageAt("/h/v/a.pdf", "1:1", 1);
+    assert.equal(again.path, r.path);
+  }
+});
+
+test("embedded pdf without Poppler: macOS uses Quick Look, others get the install hint (CR-2-2)", async () => {
+  for (const [platform, hint] of [["linux", /poppler-utils/], ["windows", /scoop install poppler/]]) {
+    const { assets } = mk(() => undefined, { platform });
+    const r = await assets.pdfPage("/h/v/a.pdf", "1:1");
+    assert.match(r.error, hint);
+    assert.match(r.error, /default app/);
+    assert.equal(r.missing, "poppler");
+  }
+  const fs = fakeFs();
+  const log = [];
+  const exec = fakeExec((cmd, args) => (cmd === "qlmanage" ? poppler(fs, log)(cmd, args) : undefined));
+  const mac = createAssets({ exec, fs, appHome: APP, home: "/Users/x", platform: "macos" });
+  assert.deepEqual([(await mac.pdfPage("/Users/x/v/a.pdf", "1:1")).w], [50]);
+});
