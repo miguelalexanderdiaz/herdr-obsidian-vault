@@ -32,10 +32,9 @@ const CONTRACT = {
   iconPaths: ["mods/vault/icons/book-open.svg"],
 };
 // The Obsidian logo that was imported by mistake. It is judged by content, never by file name (PLAN D2).
-// ctrl-shift-<letter> chords Herdr binds by default (Linux/Windows defaults of Herdr 0.1.12; macOS has none of
-// these) plus the ones the sibling portrait layout binds. keys.json must not take them.
-const TAKEN_CHORDS = new Set(["ctrl-shift-b", "ctrl-shift-n", "ctrl-shift-t", "ctrl-shift-k", "ctrl-shift-p", "ctrl-shift-o", "ctrl-shift-e",
-  "ctrl-shift-w", "ctrl-shift-x", "ctrl-shift-z", "ctrl-shift-l", "ctrl-shift-c", "ctrl-shift-v", "ctrl-shift-f", "ctrl-shift-g", "ctrl-shift-y", "ctrl-shift-j"]);
+// ctrl-shift-<letter> chords Herdr binds by default, plus the portrait layout's: a snapshot in scripts/herdr-default-keys.json.
+const SNAPSHOT = JSON.parse(readText("scripts/herdr-default-keys.json"));
+const TAKEN_CHORDS = new Set(SNAPSHOT.chords);
 const LOGO_SHA256 = "df5329070f7ff72c589e97abae5498f5bbe0d3fa8f59fdad4867856666e7911f";
 const LOGO_GIT_BLOB = "7c7b02d475b3edb51bceabe36f08f3257df47061";
 
@@ -203,6 +202,34 @@ if (has("keys.json")) {
       }
     }
     r.ok(`${rows} key row(s) checked`);
+  }
+}
+
+// The snapshot is only as good as the Herdr it was taken from. With herdr-app on this machine, say whether the version
+// is the same and whether every command keys.json uses exists; without it, say that only the snapshot was used.
+{
+  const v = spawnSync("herdr-app", ["--version"], { encoding: "utf8" });
+  if (v.error || v.status !== 0) {
+    r.note(`herdr-app is not on PATH: default chords checked against the snapshot of Herdr ${SNAPSHOT.herdr} only`);
+  } else {
+    const installed = (/(\d+\.\d+\.\d+)/.exec(v.stdout) ?? [])[1];
+    if (installed === SNAPSHOT.herdr) r.ok(`default chords: snapshot matches the installed Herdr ${installed}`);
+    else r.warn(`default chords: scripts/herdr-default-keys.json is the snapshot of Herdr ${SNAPSHOT.herdr}, this machine has ${installed}: re-check the chords`);
+    const cmds = spawnSync("herdr-app", ["commands"], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+    let names = null;
+    try {
+      names = new Set(JSON.parse(cmds.stdout).map((c) => c.name));
+    } catch {}
+    if (names && has("keys.json")) {
+      const k = readJson("keys.json") ?? {};
+      for (const [section, map] of Object.entries(k)) {
+        for (const action of Object.values(map ?? {})) {
+          const base = String(action).split(":")[0];
+          if (/^[a-z]+\.[a-z.]+$/.test(base) && !CONTRACT.mods.includes(base.split(".")[0]) && !names.has(base)) r.error(`keys.json (${section}): "${base}" is not a command of Herdr ${installed} (herdr-app commands)`);
+        }
+      }
+      r.ok("every Herdr command keys.json uses exists in herdr-app commands");
+    }
   }
 }
 
