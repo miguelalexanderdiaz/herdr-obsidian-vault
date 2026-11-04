@@ -7,12 +7,13 @@
 //
 //   node render.mjs <appHome> <jobs.json>
 //   jobs.json: { theme: {fg, bg, muted, accent, border, surface, dark, font, size},
-//                discover: { asar: [paths], browsers: [paths], names: [programs] },   (from ../platform.js)
+//                discover: { asar: [paths], browsers: [paths], names: [programs],   (from ../platform.js)
+//                            browserPath?, asarPath? (settings.json), browserFound?: [paths] (login shell) },
 //                jobs: [{ id, kind: "mermaid" | "math" | "excalidraw", src?, display?, file?, out }] }
 //   out: an absolute path without extension; writes <out>.png and <out>.json ({w, h}, logical px).
 // Prints [{ id, ok, w, h, error }] as JSON. A problem with the machine (no browser, no Obsidian,
-// Node older than 22) is one entry without id: [{ error: "no-browser" | "no-obsidian" | "needs-node-22" }]
-// and nothing is cached for it. Environment: HERDR_VAULT_ASAR, HERDR_VAULT_BROWSER, CHROME_PATH.
+// Node older than 22.4) is one entry without id: [{ error: "no-browser" | "no-obsidian" | "needs-node-22" }]
+// and nothing is cached for it. Environment: HERDR_VAULT_ASAR, HERDR_VAULT_BROWSER, CHROME_PATH (settings.json wins over them).
 
 import fs from "fs";
 import os from "os";
@@ -29,7 +30,8 @@ const say = (list) => process.stdout.write(JSON.stringify(list));
 
 class Known extends Error {}
 
-if (typeof WebSocket !== "function" || Number(process.versions.node.split(".")[0]) < 22) {
+// WebSocket is global (unflagged) from Node 22.4; that, not the version number, is what is needed.
+if (typeof WebSocket !== "function") {
   say([{ error: "needs-node-22" }]);
   process.exit(0);
 }
@@ -219,10 +221,13 @@ async function main() {
   const env = process.env;
   const exists = (p) => { try { return fs.statSync(p).isFile(); } catch { return false; } };
   const common = { env, home: os.homedir(), exists, readdirSync: fs.readdirSync };
-  const bin = findBrowser({ ...common, candidates: discover.browsers ?? [], names: discover.names ?? [], win: process.platform === "win32" });
-  if (!bin) throw new Known("no-browser");
-  const asar = findAsar({ ...common, candidates: discover.asar ?? [] });
-  if (!asar) throw new Known("no-obsidian");
+  // Order: settings.json (discover.browserPath / asarPath), environment, install folders, PATH, then what the
+  // mod found through the login shell (discover.browserFound).
+  const bin = findBrowser({ ...common, candidates: discover.browsers ?? [], names: discover.names ?? [], win: process.platform === "win32",
+    preferred: discover.browserPath ? [discover.browserPath] : [], fallback: discover.browserFound ?? [] });
+  if (!bin) throw new Known(discover.browserPath ? "no-browser-setting" : "no-browser");
+  const asar = findAsar({ ...common, candidates: discover.asar ?? [], preferred: discover.asarPath ? [discover.asarPath] : [] });
+  if (!asar) throw new Known(discover.asarPath ? "no-obsidian-setting" : "no-obsidian");
   await ensureLib(asar);
   const server = await serve();
   const wsUrl = await launch(bin);

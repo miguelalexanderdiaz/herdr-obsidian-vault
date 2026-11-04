@@ -9,7 +9,7 @@
 
 import {
   normPlatform, openCommand, stampsOf, macImageSizeCommand, macThumbnailCommand, imageInfo, svgSize, looksLikeSvg, utf8Text, makeToolFinder,
-  missingMessage, renderProblem, nodeOk, obsidianAsarCandidates, browserCandidates, browserNames,
+  missingMessage, renderProblem, nodeOk, obsidianAsarCandidates, browserCandidates, browserNames, browserLookupCommand, pathsFromLookup,
 } from "./platform.js";
 import { MOD_DIR } from "./mod-name.js";
 
@@ -45,10 +45,19 @@ export function themeKey(t) {
 // ---- settings: data/vault/settings.json ---------------------------------------------
 
 export const DEFAULT_SETTINGS = { remoteImages: true };
+// An absolute path in either style ("/x", "C:\\x", "C:/x", "\\\\server\\x"): the only kind a setting may name.
+const absolutePath = (v) => typeof v === "string" && v.length < 1024 && /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(v.trim()) && !/[\0\r\n]/.test(v);
+// Keys: remoteImages (boolean), browser and asar (absolute paths of a Chromium-family browser and of
+// Obsidian's obsidian.asar; they win over discovery and are the one override that reaches a Herdr started
+// from Finder or a launcher). Anything else, or a value of the wrong type, is ignored.
 export function parseSettings(text) {
   let data = {};
   try { data = JSON.parse(text ?? "{}") ?? {}; } catch { data = {}; }
-  return { remoteImages: typeof data.remoteImages === "boolean" ? data.remoteImages : DEFAULT_SETTINGS.remoteImages };
+  if (typeof data !== "object" || Array.isArray(data)) data = {};
+  const out = { remoteImages: typeof data.remoteImages === "boolean" ? data.remoteImages : DEFAULT_SETTINGS.remoteImages };
+  if (absolutePath(data.browser)) out.browser = data.browser.trim();
+  if (absolutePath(data.asar)) out.asar = data.asar.trim();
+  return out;
 }
 
 // ---- remote images -----------------------------------------------------------------
@@ -343,22 +352,34 @@ export function createAssets(deps) {
       onBatch?.(out);
       return out;
     }
-    const discover = { asar: obsidianAsarCandidates(platform), browsers: browserCandidates(platform), names: browserNames(platform) };
-    for (let i = 0; i < todo.length; i += BATCH) {
-      const batch = todo.slice(i, i + BATCH);
-      const spec = { theme, discover, jobs: batch.map((j) => ({ id: j.key, kind: j.kind, src: j.src, display: j.display, file: j.file, out: abs(`${REL}/${j.key}`) })) };
+    // Read afresh: someone who just added "browser" to settings.json should not have to restart Herdr.
+    const { browser, asar } = parseSettings(await fs.readText(abs("data/vault/settings.json")).catch(() => null));
+    const discover = { asar: obsidianAsarCandidates(platform), browsers: browserCandidates(platform), names: browserNames(platform), browserPath: browser, asarPath: asar };
+    // Runs one batch: → { problem } (null when it went well). `found` are browsers the login shell knows.
+    const attempt = async (batch, found) => {
+      const spec = { theme, discover: { ...discover, browserFound: found }, jobs: batch.map((j) => ({ id: j.key, kind: j.kind, src: j.src, display: j.display, file: j.file, out: abs(`${REL}/${j.key}`) })) };
       const file = abs(`${REL}/jobs-${hash(`${batch[0].key}:${now()}:${++seq}`)}.json`);
       await fs.writeFile(file, JSON.stringify(spec));
-      let problem = null;
       try {
         const r = await exec(ready.bin, [abs(`${MOD_DIR}/render/render.mjs`), appHome, file]);
         let results = null;
         try { results = JSON.parse(r.stdout); } catch { /* not JSON: handled below */ }
         const global = Array.isArray(results) ? results.find((x) => x && !x.id && x.error) : null;
-        if (global) problem = renderProblem(platform, global);
-        else if (r.code !== 0 || !Array.isArray(results)) problem = renderProblem(platform, r.stderr || r.stdout || "the renderer stopped");
-      } catch (e) { problem = renderProblem(platform, e); }
-      await fs.unlink(file).catch(() => {});
+        if (global) return { problem: renderProblem(platform, global), kind: global.error };
+        if (r.code !== 0 || !Array.isArray(results)) return { problem: renderProblem(platform, r.stderr || r.stdout || "the renderer stopped") };
+        return { problem: null };
+      } catch (e) { return { problem: renderProblem(platform, e) }; }
+      finally { await fs.unlink(file).catch(() => {}); } // also when exec throws: no job file is left
+    };
+    for (let i = 0; i < todo.length; i += BATCH) {
+      const batch = todo.slice(i, i + BATCH);
+      const known = await shellBrowsers(false);
+      let { problem, kind } = await attempt(batch, known);
+      // Nothing found by the usual ways: ask the person's login shell once, and try again with its answer.
+      if (kind === "no-browser" || kind === "no-browser-setting") {
+        const found = await shellBrowsers(true);
+        if (found.length && found.join("\n") !== known.join("\n")) ({ problem } = await attempt(batch, found));
+      }
       for (const j of batch) {
         const m = await meta(j.key);
         out.set(j.key, m ? hit(j.key, "png", m) : { error: problem ?? "Not drawn", transient: true });
@@ -366,6 +387,18 @@ export function createAssets(deps) {
       onBatch?.(out);
     }
     return out;
+  }
+
+  // Browsers found by the person's shell (`command -v` / `where`), asked for only after the install folders
+  // and PATH failed (a login shell takes a moment to start); remembered for the session, a miss for 30 s.
+  let shellFound = null; // { list, at }
+  async function shellBrowsers(ask) {
+    if (shellFound && (shellFound.list.length || now() - shellFound.at < 30_000)) return shellFound.list;
+    if (!ask) return shellFound?.list ?? [];
+    const [cmd, args] = browserLookupCommand(platform, browserNames(platform));
+    const r = await exec(cmd, args).catch(() => null);
+    shellFound = { list: pathsFromLookup(r?.stdout), at: now() };
+    return shellFound.list;
   }
 
   // ---- cache size ----

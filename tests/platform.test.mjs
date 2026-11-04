@@ -161,8 +161,12 @@ test("tool finder: found stays, a miss is retried after 30 s (installing while H
 });
 
 test("node version check", () => {
-  assert.equal(P.nodeOk("v22.0.0\n"), true);
+  assert.equal(P.nodeOk("v22.4.0\n"), true);
+  assert.equal(P.nodeOk("v22.14.0"), true);
   assert.equal(P.nodeOk("v26.5.0"), true);
+  assert.equal(P.nodeOk("v22.3.0"), false, "Node 22.0 to 22.3 has no global WebSocket (R2-CR-8)");
+  assert.equal(P.nodeOk("v22.0.0"), false);
+  assert.equal(P.nodeOk("v22"), false);
   assert.equal(P.nodeOk("v20.11.1"), false);
   assert.equal(P.nodeOk(""), false);
 });
@@ -175,7 +179,7 @@ test("messages name the missing piece and an install hint for this OS", () => {
   assert.match(P.missingMessage("linux", "poppler"), /poppler-utils/);
   assert.match(P.missingMessage("macos", "poppler"), /brew install poppler/);
   assert.match(P.missingMessage("linux", "browser"), /wasn't found/);
-  assert.match(P.missingMessage("windows", "node"), /Node\.js 22 or newer/);
+  assert.match(P.missingMessage("windows", "node"), /Node\.js 22\.4 or newer/);
   for (const os of OS) for (const what of ["rg", "poppler", "node", "curl", "browser", "obsidian"]) {
     const m = P.missingMessage(os, what);
     assert.ok(m.length > 10, `${os} ${what}`);
@@ -204,7 +208,9 @@ test("candidates handed to the renderer: asar and browsers per OS", () => {
   assert.ok(P.obsidianAsarCandidates("windows").some((c) => c.startsWith("%LOCALAPPDATA%/Programs/Obsidian")));
   assert.ok(P.browserCandidates("macos").some((c) => c.endsWith("Google Chrome.app/Contents/MacOS/Google Chrome")));
   assert.ok(P.browserCandidates("windows").some((c) => c.endsWith("Microsoft/Edge/Application/msedge.exe")));
-  assert.deepEqual(P.browserCandidates("linux"), []);
+  const linux = P.browserCandidates("linux");
+  for (const c of ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser", "/opt/google/chrome/chrome", "/snap/bin/chromium", "/usr/bin/microsoft-edge", "/usr/bin/brave-browser"]) assert.ok(linux.includes(c), c);
+  assert.ok(linux.every((c) => c.startsWith("/") && !/flatpak/.test(c)), "absolute paths; Flatpak wrappers do not take --remote-debugging-port=0 the same way");
   assert.ok(P.browserNames("linux").includes("chromium"));
   assert.ok(P.browserNames("windows").includes("msedge"));
 });
@@ -254,4 +260,21 @@ test("utf8Text decodes like TextDecoder, including invalid bytes, without needin
   assert.ok(bad.startsWith("a\ufffd(") && bad.endsWith("b") && !/[\ud800-\udfff]/.test(bad));
   assert.equal(P.utf8Text(enc.encode("abcdef"), 3), "abc");
   assert.equal(P.utf8Text(undefined), "");
+});
+
+test("browser lookup through the login shell: one command per OS, names only from our list (R2-CR-8)", () => {
+  const [cmd, args] = P.browserLookupCommand("linux", P.browserNames("linux"));
+  assert.equal(cmd, "sh");
+  assert.match(args[1], /command -v google-chrome google-chrome-stable chromium /);
+  assert.doesNotMatch(args.join(" "), /\$0/);
+  assert.deepEqual(P.browserLookupCommand("windows", ["chrome", "msedge"]), ["where", ["chrome", "msedge"]]);
+  assert.deepEqual(P.browserLookupCommand("macos", ["a b", "c;rm -rf", "chromium"])[1][1].includes("rm"), false, "odd names are dropped");
+  assert.deepEqual(P.pathsFromLookup("alias chrome='x'\n/usr/bin/chromium\r\nC:\\Program Files\\Edge\\msedge.exe\n/usr/bin/chromium\nnot found\n"),
+    ["/usr/bin/chromium", "C:\\Program Files\\Edge\\msedge.exe"]);
+  assert.deepEqual(P.pathsFromLookup(undefined), []);
+});
+
+test("renderer problems for a settings.json path that does not exist (R2-CR-8)", () => {
+  assert.match(P.renderProblem("macos", { error: "no-browser-setting" }), /settings\.json \("browser"\).*Chromium/);
+  assert.match(P.renderProblem("linux", { error: "no-obsidian-setting" }), /settings\.json \("asar"\).*Obsidian/);
 });

@@ -53,7 +53,7 @@ test("when the renderer's folder cannot be written, the note stays and a line sa
   // appHome is a regular file, so every write under it fails; node is "found" and new enough.
   const blocker = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "herdr-blocker-")), "file");
   fs.writeFileSync(blocker, "x");
-  const exec = async (cmd, args) => (args?.[0] === "--version" ? { code: 0, stdout: "v22.1.0", stderr: "" } : { code: 1, stdout: "", stderr: "" });
+  const exec = async (cmd, args) => (args?.[0] === "--version" ? { code: 0, stdout: "v22.14.0", stderr: "" } : { code: 1, stdout: "", stderr: "" });
   const { r } = await open(FIXTURES, "note-with-broken-image.md", { exec, appHome: blocker });
   assert.equal(r.doc.error, undefined);
   assert.ok(r.doc.blocks.some((b) => b.type === "mermaid"));

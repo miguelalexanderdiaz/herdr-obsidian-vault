@@ -35,6 +35,14 @@ test("settings: remote images default on, only booleans accepted", () => {
   assert.deepEqual(parseSettings('{"remoteImages":"no"}'), { remoteImages: true });
 });
 
+test("settings: browser and asar are absolute paths in either style, anything else is ignored (R2-CR-8)", () => {
+  assert.deepEqual(parseSettings('{"browser":"/usr/bin/chromium","asar":"C:\\\\Apps\\\\Obsidian\\\\resources\\\\obsidian.asar"}'),
+    { remoteImages: true, browser: "/usr/bin/chromium", asar: "C:\\Apps\\Obsidian\\resources\\obsidian.asar" });
+  assert.deepEqual(parseSettings('{"browser":"D:/b/chrome.exe"}'), { remoteImages: true, browser: "D:/b/chrome.exe" });
+  for (const bad of ['"chromium"', '"./chrome"', "42", "null", "true", '["/x"]', '"~/chrome"', '""']) assert.deepEqual(parseSettings(`{"browser":${bad},"asar":${bad}}`), { remoteImages: true }, bad);
+  assert.deepEqual(parseSettings('["/x"]'), { remoteImages: true });
+});
+
 test("remote urls and curl arguments (CR-1-1)", () => {
   assert.equal(remoteUrlOk("https://example.com/a.png?x=1&y=2"), true);
   for (const bad of ["file:///etc/passwd", "-o/etc/x", "ftp://x/y", "https://a b", "https://a\"b", "javascript:x"]) assert.equal(remoteUrlOk(bad), false, bad);
@@ -199,11 +207,11 @@ test("render: no node, old node and a missing browser are one sentence each, nev
   assert.match(r1.error, /Node\.js 22/);
 
   const old = mk((cmd, args) => (args[0] === "--version" ? { stdout: "v20.11.1" } : undefined));
-  assert.match((await old.assets.renderJobs(jobs, {})).get("k1").error, /Node\.js 22 or newer/);
+  assert.match((await old.assets.renderJobs(jobs, {})).get("k1").error, /Node\.js 22\.4 or newer/);
 
   const fs = fakeFs();
   const exec = fakeExec((cmd, args) => {
-    if (args[0] === "--version") return { stdout: "v22.3.0" };
+    if (args[0] === "--version") return { stdout: "v22.14.0" };
     if (args[0].endsWith("render.mjs")) return { stdout: JSON.stringify([{ error: "no-browser" }]) };
     return undefined;
   });
@@ -219,7 +227,7 @@ test("render: no node, old node and a missing browser are one sentence each, nev
 test("render: the raw ENOENT JSON from the old renderer becomes a sentence naming Obsidian (DOC 2)", async () => {
   const fs = fakeFs();
   const exec = fakeExec((cmd, args) => {
-    if (args[0] === "--version") return { stdout: "v22.3.0" };
+    if (args[0] === "--version") return { stdout: "v22.14.0" };
     return { code: 1, stdout: '[{"error":"ENOENT: no such file or directory, stat \'/Applications/Obsidian.app/Contents/Resources/obsidian.asar\'"}]' };
   });
   const a = createAssets({ exec, fs, appHome: APP, home: "/h", platform: "macos" });
@@ -233,7 +241,7 @@ test("render: successes are read from the files the renderer wrote; batches stay
   const keys = Array.from({ length: BATCH + 2 }, (_, i) => `k${i}`);
   const specs = [];
   const exec = fakeExec(async (cmd, args) => {
-    if (args[0] === "--version") return { stdout: "v22.3.0" };
+    if (args[0] === "--version") return { stdout: "v22.14.0" };
     const spec = JSON.parse(await fs.readText(args[2]));
     specs.push(spec);
     for (const j of spec.jobs) { fs.files.set(j.out + ".png", png(5, 5)); fs.files.set(j.out + ".json", JSON.stringify({ w: 50, h: 20 })); }
@@ -258,7 +266,7 @@ test("render: two readers at once run one after the other with distinct job file
   let running = 0, peak = 0;
   const jobFiles = [];
   const exec = fakeExec(async (cmd, args) => {
-    if (args[0] === "--version") return { stdout: "v22.3.0" };
+    if (args[0] === "--version") return { stdout: "v22.14.0" };
     jobFiles.push(args[2]);
     running++; peak = Math.max(peak, running);
     await new Promise((r) => setTimeout(r, 5));
@@ -396,4 +404,81 @@ test("embedded pdf without Poppler: macOS uses Quick Look, others get the instal
   const exec = fakeExec((cmd, args) => (cmd === "qlmanage" ? poppler(fs, log)(cmd, args) : undefined));
   const mac = createAssets({ exec, fs, appHome: APP, home: "/Users/x", platform: "macos" });
   assert.deepEqual([(await mac.pdfPage("/Users/x/v/a.pdf", "1:1")).w], [50]);
+});
+
+// ---- browser and asar discovery in the mod (R2-CR-8, CR-2-9) ---------------------------------------------
+
+test("render: Node 22.0 to 22.3 is rejected with a plain sentence (no global WebSocket there) (CR-2-9)", async () => {
+  for (const v of ["v22.3.0", "v22.0.0"]) {
+    const old = mk((cmd, args) => (args[0] === "--version" ? { stdout: v } : undefined));
+    const r = (await old.assets.renderJobs([{ key: "k1", kind: "mermaid", src: "graph TD" }], {})).get("k1");
+    assert.match(r.error, /Node\.js 22\.4 or newer/);
+    assert.equal(r.transient, true);
+  }
+});
+
+const renderEnv = ({ settings, noBrowserUntil = null, shell = "" } = {}) => {
+  const fs = fakeFs(settings ? { [`${APP}/data/vault/settings.json`]: JSON.stringify(settings) } : {});
+  const specs = [];
+  const exec = fakeExec(async (cmd, args) => {
+    if (args[0] === "--version") return { stdout: "v22.14.0" };
+    if (cmd === "sh" || cmd === "where") return { stdout: shell };
+    if (args[0]?.endsWith("render.mjs")) {
+      const spec = JSON.parse(await fs.readText(args[2]));
+      specs.push(spec);
+      const d = spec.discover;
+      if (noBrowserUntil && !(d.browserFound ?? []).includes(noBrowserUntil)) return { stdout: JSON.stringify([{ error: d.browserPath ? "no-browser-setting" : "no-browser" }]) };
+      for (const j of spec.jobs) { fs.files.set(j.out + ".png", png(5, 5)); fs.files.set(j.out + ".json", JSON.stringify({ w: 5, h: 5 })); }
+      return { stdout: JSON.stringify(spec.jobs.map((j) => ({ id: j.id, ok: true }))) };
+    }
+    return undefined;
+  });
+  return { assets: createAssets({ exec, fs, appHome: APP, home: "/h", platform: "linux" }), specs, exec, fs };
+};
+const job = [{ key: "kk", kind: "math", src: "x" }];
+
+test("render: settings.json browser and asar travel in the job spec, read fresh each run (CR-2-9)", async () => {
+  const { assets, specs, fs } = renderEnv({ settings: { browser: "/opt/mine/chrome", asar: "/opt/mine/obsidian.asar" } });
+  await assets.renderJobs(job, {});
+  assert.equal(specs[0].discover.browserPath, "/opt/mine/chrome");
+  assert.equal(specs[0].discover.asarPath, "/opt/mine/obsidian.asar");
+  assert.ok(specs[0].discover.browsers.includes("/usr/bin/chromium"), "the candidates are still there for after the setting");
+  // edited while Herdr runs
+  fs.files.set(`${APP}/data/vault/settings.json`, JSON.stringify({ browser: "/other/chrome" }));
+  await assets.renderJobs([{ key: "k2", kind: "math", src: "y" }], {});
+  assert.equal(specs[1].discover.browserPath, "/other/chrome");
+  assert.equal(specs[1].discover.asarPath, undefined);
+});
+
+test("render: no browser by the usual ways asks the login shell once and runs again with its answer (CR-2-9)", async () => {
+  const { assets, specs, exec } = renderEnv({ noBrowserUntil: "/home/me/.local/bin/chromium", shell: "alias x=y\n/home/me/.local/bin/chromium\n" });
+  const r = (await assets.renderJobs(job, {})).get("kk");
+  assert.equal(r.error, undefined);
+  assert.equal(specs.length, 2, "first without, then with the shell's answer");
+  assert.deepEqual(specs[0].discover.browserFound, []);
+  assert.deepEqual(specs[1].discover.browserFound, ["/home/me/.local/bin/chromium"]);
+  assert.equal(exec.calls.filter((c) => c.cmd === "sh").length, 1);
+  // the session remembers it: the next batch already carries the path, no second lookup
+  await assets.renderJobs([{ key: "k2", kind: "math", src: "y" }], {});
+  assert.deepEqual(specs[2].discover.browserFound, ["/home/me/.local/bin/chromium"]);
+  assert.equal(exec.calls.filter((c) => c.cmd === "sh").length, 1);
+});
+
+test("render: no browser anywhere (shell finds nothing) is the browser sentence, and the shell is not asked again for 30 s", async () => {
+  let t = 0;
+  const fs = fakeFs();
+  const exec = fakeExec(async (cmd, args) => {
+    if (args[0] === "--version") return { stdout: "v22.14.0" };
+    if (cmd === "sh") return { stdout: "" };
+    if (args[0]?.endsWith("render.mjs")) return { stdout: JSON.stringify([{ error: "no-browser" }]) };
+    return undefined;
+  });
+  const a = createAssets({ exec, fs, appHome: APP, home: "/h", platform: "linux", now: () => t });
+  assert.match((await a.renderJobs(job, {})).get("kk").error, /browser/);
+  t = 5_000;
+  await a.renderJobs([{ key: "k2", kind: "math", src: "y" }], {});
+  assert.equal(exec.calls.filter((c) => c.cmd === "sh").length, 1, "one lookup inside 30 s");
+  t = 40_000;
+  await a.renderJobs([{ key: "k3", kind: "math", src: "z" }], {});
+  assert.equal(exec.calls.filter((c) => c.cmd === "sh").length, 2, "asked again later");
 });

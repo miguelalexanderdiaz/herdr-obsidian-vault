@@ -299,10 +299,14 @@ export function makeToolFinder(opts) {
   };
 }
 
-// Node 22 or newer: "v22.14.0" → true.
+// Node 22.4 or newer: "v22.14.0" → true. render.mjs needs the global WebSocket, which Node 22 only has
+// unflagged from 22.4 (22.0 to 22.3 are "Node 22" and would still fail). render.mjs stays the authority.
+export const NODE_MIN = "22.4";
 export function nodeOk(versionText) {
-  const m = String(versionText ?? "").match(/v?(\d+)\./);
-  return Boolean(m) && Number(m[1]) >= 22;
+  const m = String(versionText ?? "").match(/v?(\d+)\.(\d+)/);
+  if (!m) return false;
+  const [major, minor] = [Number(m[1]), Number(m[2])];
+  return major > 22 || (major === 22 && minor >= 4);
 }
 
 // ---- what to tell the person ----------------------------------------------------
@@ -310,7 +314,7 @@ export function nodeOk(versionText) {
 const HINTS = {
   rg: { macos: "brew install ripgrep", linux: "install ripgrep with your package manager (for example: apt install ripgrep)", windows: "winget install BurntSushi.ripgrep.MSVC" },
   poppler: { macos: "brew install poppler", linux: "install poppler-utils with your package manager (for example: apt install poppler-utils)", windows: "scoop install poppler" },
-  node: { macos: "brew install node", linux: "install Node.js 22 or newer (nodejs.org, or your package manager)", windows: "winget install OpenJS.NodeJS" },
+  node: { macos: "brew install node", linux: "install Node.js 22.4 or newer (nodejs.org, or your package manager)", windows: "winget install OpenJS.NodeJS" },
   curl: { macos: "curl ships with macOS", linux: "install curl with your package manager (for example: apt install curl)", windows: "curl ships with Windows 10 and newer" },
   browser: { macos: "install Google Chrome, Chromium, Brave or Microsoft Edge", linux: "install Chrome, Chromium, Brave or Microsoft Edge", windows: "Microsoft Edge is built into Windows; or install Chrome or Brave" },
   obsidian: { macos: "install the Obsidian app (obsidian.md)", linux: "install the Obsidian app (obsidian.md)", windows: "install the Obsidian app (obsidian.md)" },
@@ -318,7 +322,7 @@ const HINTS = {
 
 // → "<what> isn't installed: <hint>" for the UI. what: rg | poppler | node | curl | browser | obsidian.
 export function missingMessage(platform, what) {
-  const names = { rg: "ripgrep (rg)", poppler: "Poppler (pdftoppm, pdfinfo)", node: "Node.js 22 or newer", curl: "curl", browser: "A Chromium-based browser", obsidian: "The Obsidian app" };
+  const names = { rg: "ripgrep (rg)", poppler: "Poppler (pdftoppm, pdfinfo)", node: "Node.js 22.4 or newer", curl: "curl", browser: "A Chromium-based browser", obsidian: "The Obsidian app" };
   const hint = HINTS[what]?.[normPlatform(platform)] ?? "";
   const lead = what === "browser" || what === "obsidian" ? `${names[what]} wasn't found` : `${names[what] ?? what} isn't installed`;
   return hint ? `${lead}: ${hint}` : lead;
@@ -328,14 +332,16 @@ export function missingMessage(platform, what) {
 // err: { error: kind | message } from the renderer's JSON, or a thrown message.
 export function renderProblem(platform, err) {
   const text = String(typeof err === "string" ? err : err?.error ?? err?.message ?? "");
-  const kind = text.match(/^(needs-node-22|no-node|no-browser|no-obsidian|libs-not-ready|timeout|busy)\b/)?.[1]
+  const kind = text.match(/^(needs-node-22|no-node|no-browser-setting|no-obsidian-setting|no-browser|no-obsidian|libs-not-ready|timeout|busy)\b/)?.[1]
     ?? (/WebSocket is not defined|needs-node/i.test(text) ? "needs-node-22"
       : /ENOENT.*(asar|Obsidian)|obsidian\.asar/i.test(text) ? "no-obsidian"
       : /No Chrome|no browser|Chrome didn't start|Chrome exited/i.test(text) ? "no-browser"
       : /spawn node|node: not found|node.*ENOENT/i.test(text) ? "no-node" : null);
   switch (kind) {
-    case "needs-node-22": return `Diagrams and math need Node.js 22 or newer. ${missingMessage(platform, "node")}`;
+    case "needs-node-22": return `Diagrams and math need Node.js 22.4 or newer. ${missingMessage(platform, "node")}`;
     case "no-node": return missingMessage(platform, "node") + ". Diagrams and math are shown as source until then.";
+    case "no-browser-setting": return `The browser named in settings.json ("browser") wasn't found, and neither was any other. ${missingMessage(platform, "browser")}`;
+    case "no-obsidian-setting": return `The Obsidian file named in settings.json ("asar") wasn't found, and neither was an installed app. ${missingMessage(platform, "obsidian")}`;
     case "no-browser": return `Diagrams and math need a browser to draw them. ${missingMessage(platform, "browser")}`;
     case "no-obsidian": return `Diagrams and math use Obsidian's own Mermaid and MathJax, read from the installed app. ${missingMessage(platform, "obsidian")}`;
     case "libs-not-ready": return "Mermaid and MathJax did not load in time. Try again in a moment.";
@@ -370,10 +376,27 @@ export function browserCandidates(platform) {
     case "windows": return ["%ProgramFiles%", "%ProgramFiles(x86)%", "%LOCALAPPDATA%"].flatMap((root) => [
       `${root}/Microsoft/Edge/Application/msedge.exe`, `${root}/Google/Chrome/Application/chrome.exe`, `${root}/BraveSoftware/Brave-Browser/Application/brave.exe`,
       `${root}/Chromium/Application/chrome.exe`]);
-    default: return [];
+    default: return ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/opt/google/chrome/chrome",
+      "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/lib/chromium/chromium", "/usr/bin/brave-browser", "/opt/brave.com/brave/brave",
+      "/usr/bin/microsoft-edge", "/usr/bin/microsoft-edge-stable", "/opt/microsoft/msedge/msedge", "/usr/local/bin/chromium", "/snap/bin/chromium"];
   }
 }
 // Names looked up on PATH (all OS).
 export const browserNames = (platform) => (normPlatform(platform) === "windows"
   ? ["chrome", "msedge", "brave", "chromium"]
   : ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge", "microsoft-edge-stable", "brave-browser"]);
+
+// ---- finding a browser through the person's shell ----------------------------------------
+// The mod cannot read environment variables or test paths outside the home folder, but exec can ask the
+// person's shell, which has the PATH their terminal has (the same lookup findTool uses as its last resort).
+// One call for all names; names come from browserNames(), never from a note.
+
+// → [cmd, args]: "where" on Windows, the login shell's `command -v` elsewhere.
+export function browserLookupCommand(platform, names) {
+  const list = names.filter((n) => /^[\w.-]+$/.test(n));
+  return normPlatform(platform) === "windows"
+    ? ["where", list]
+    : ["sh", ["-c", `exec "\${SHELL:-sh}" -lc 'command -v ${list.join(" ")}'`]];
+}
+// The absolute paths in a lookup's output, in order, no duplicates (aliases and messages are dropped).
+export const pathsFromLookup = (stdout) => [...new Set(String(stdout ?? "").split(/\r?\n/).map((s) => s.trim()).filter((s) => /^([A-Za-z]:[\\/]|\/)/.test(s)))];

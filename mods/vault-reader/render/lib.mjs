@@ -41,18 +41,20 @@ export function expandCandidate(pattern, { home, env = {}, readdirSync = () => [
 
 const firstThat = (list, exists) => list.find((p) => exists(p)) ?? null;
 
-// Obsidian's obsidian.asar: HERDR_VAULT_ASAR, then the candidates. → path | null
-export function findAsar({ env = {}, home, candidates = [], exists, readdirSync, pathMod = path }) {
-  const list = [];
+// Obsidian's obsidian.asar: the path from data/vault/settings.json ("asar", `preferred`), HERDR_VAULT_ASAR,
+// then the candidates. → path | null
+export function findAsar({ env = {}, home, candidates = [], preferred = [], exists, readdirSync, pathMod = path }) {
+  const list = [...preferred];
   if (env.HERDR_VAULT_ASAR) list.push(env.HERDR_VAULT_ASAR);
   for (const c of candidates) list.push(...expandCandidate(c, { home, env, readdirSync, pathMod }));
   return firstThat(list, exists);
 }
 
-// A Chromium-family browser: HERDR_VAULT_BROWSER, CHROME_PATH, the install folders, then names
-// on PATH. → path | null
-export function findBrowser({ env = {}, home, candidates = [], names = [], exists, readdirSync, pathMod = path, win = false }) {
-  const list = [];
+// A Chromium-family browser, first match wins: the path from data/vault/settings.json ("browser",
+// `preferred`), HERDR_VAULT_BROWSER, CHROME_PATH, the install folders, names on PATH, and last what the
+// mod found through the person's shell (`fallback`). → path | null
+export function findBrowser({ env = {}, home, candidates = [], names = [], preferred = [], fallback = [], exists, readdirSync, pathMod = path, win = false }) {
+  const list = [...preferred];
   for (const v of [env.HERDR_VAULT_BROWSER, env.CHROME_PATH]) if (v) list.push(v);
   for (const c of candidates) list.push(...expandCandidate(c, { home, env, readdirSync, pathMod }));
   const found = firstThat(list, exists);
@@ -62,7 +64,7 @@ export function findBrowser({ env = {}, home, candidates = [], names = [], exist
     const p = pathMod.join(d, win && !n.endsWith(".exe") ? n + ".exe" : n);
     if (exists(p)) return p;
   }
-  return null;
+  return firstThat(fallback, exists);
 }
 
 // A request path → a file under `root`, or null if it would leave it (also for malformed %).
