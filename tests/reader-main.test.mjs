@@ -16,13 +16,16 @@ const { default: Reader } = await import("../mods/vault-reader/main.js");
 const FIXTURES = path.join(ROOT, "tests", "fixtures");
 
 function fakeCx() {
-  const tasks = [];
+  const tasks = [], timers = [];
   const cx = {
-    tasks, notified: 0,
+    tasks, timers, notified: 0,
     focus_handle: () => ({ focus() {} }),
-    timer: { after: () => ({ cancel() {} }), every: () => ({ cancel() {} }) },
+    timer: { after: (ms, fn) => { const t = { ms, fn, live: true, cancel() { t.live = false; } }; timers.push(t); return t; }, every: () => ({ cancel() {} }) },
     spawn: (fn) => { const p = Promise.resolve(fn(cx)); tasks.push(p); return p; },
     notify() { cx.notified++; },
+    pendingTimers: () => timers.filter((t) => t.live).length,
+    // run every pending one-shot timer, then what it started
+    async fire() { for (const t of timers.splice(0)) if (t.live) { t.live = false; t.fn(cx); } for (let i = 0; i < 5; i++) await Promise.all(tasks.splice(0)); },
   };
   return cx;
 }
@@ -121,17 +124,69 @@ test("close() stops the watcher and cancels the poll timer", async () => {
 
 test("a changed file outside the note's files does not reload; a changed dependency does", async () => {
   const { r, cx } = await open(VAULT, "Feature tour.md");
+  cx.timers.length = 0;
   const gen = r.gen;
   await r.changed(r.vault, [path.join(r.vault, ".obsidian", "workspace.json")], cx);
   assert.equal(r.gen, gen, "dot folders are ignored");
   const dep = [...r.deps][0];
   await r.changed(r.vault, [dep], cx);
   assert.equal(r.gen, gen + 1, "the shown note changed: reload");
-  // a deleted file leaves the file list
+  // a deleted file leaves the file list (the walk waits out RELIST_MIN_MS since the last one, then runs once)
   r.fileSet.add("ghost.md");
   r.files.push("ghost.md");
   await r.changed(r.vault, [path.join(r.vault, "ghost.md")], cx);
+  assert.equal(r.fileSet.has("ghost.md"), true, "inside the window the walk is deferred");
+  await cx.fire();
   assert.equal(r.fileSet.has("ghost.md"), false, "deleted notes stop resolving");
+});
+
+// ---- the vault is not walked again for every event (R2-CR-12, CR-2-12) ---------------------------------------
+
+// A vault folder with a counting readdir: walks = calls on the vault root.
+async function watched() {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "herdr-walk-vault-"));
+  fs.mkdirSync(path.join(vault, "sub", "deeper"), { recursive: true });
+  fs.writeFileSync(path.join(vault, "a.md"), "# A\n[[b]]");
+  fs.writeFileSync(path.join(vault, "sub", "b.md"), "# B");
+  fs.writeFileSync(path.join(vault, "sub", "deeper", "c.md"), "# C");
+  const { r, cx } = await open(vault, "a.md");
+  cx.timers.length = 0; // the focus and prune timers of init are not what is under test
+  return { vault, r, cx };
+}
+const countWalks = (r) => { const orig = r.relist.bind(r); r.walks = 0; r.relist = async () => { r.walks++; return orig(); }; };
+
+test("change events for folders that hold files never walk the vault again", async () => {
+  const { vault, r, cx } = await watched();
+  countWalks(r);
+  assert.deepEqual([...r.dirSet].sort(), ["sub", "sub/deeper"]);
+  for (let i = 0; i < 50; i++) await r.changed(vault, [path.join(vault, "sub"), path.join(vault, "sub", "deeper")], cx);
+  assert.equal(r.walks, 0, "folder paths are not new files");
+});
+
+test("fifty events for new notes in a burst make at most one walk now and one later", async () => {
+  const { vault, r, cx } = await watched();
+  countWalks(r);
+  for (let i = 0; i < 50; i++) await r.changed(vault, [path.join(vault, `new-${i}.md`)], cx);
+  assert.ok(r.walks <= 1, `walks: ${r.walks}`);
+  assert.equal(cx.pendingTimers(), 1, "the rest is one timer");
+  await cx.fire();
+  assert.equal(r.walks, 1);
+  assert.equal(cx.pendingTimers(), 0);
+  // quiet for a second: the next event walks at once
+  r.lastRelist = Date.now() - 5_000;
+  await r.changed(vault, [path.join(vault, "another.md")], cx);
+  assert.equal(r.walks, 2);
+});
+
+test("a note added while the walk waited makes the open note draw again so its link resolves", async () => {
+  const { vault, r, cx } = await watched();
+  fs.writeFileSync(path.join(vault, "late.md"), "# Late");
+  const gen = r.gen;
+  await r.changed(vault, [path.join(vault, "late.md")], cx);
+  assert.equal(r.gen, gen, "deferred");
+  await cx.fire();
+  assert.ok(r.fileSet.has("late.md"));
+  assert.equal(r.gen, gen + 1, "reloaded after the walk");
 });
 
 test("when the watch is refused the reader polls and says so (CR-1-9)", async () => {

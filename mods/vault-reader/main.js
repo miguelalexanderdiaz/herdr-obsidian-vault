@@ -36,6 +36,7 @@ const MENU_W = 300;
 const PDF_PAGES = 30; // pages drawn for an opened PDF; Preview has the rest
 // Bump when the renderer's output changes, so cached pictures are drawn again.
 const RENDER_VERSION = 3;
+const RELIST_MIN_MS = 1000; // the vault is walked again at most this often while it changes
 
 const CALLOUT_ALIAS = { summary: "abstract", tldr: "abstract", hint: "tip", important: "tip", check: "success", done: "success",
   help: "question", faq: "question", caution: "warning", attention: "warning", fail: "failure", missing: "failure", error: "danger", cite: "quote" };
@@ -127,6 +128,7 @@ export default class Reader extends View {
     this.closed = true;
     this.watcher?.stop();
     this.pollTask?.cancel();
+    this.relistTimer?.cancel();
     if (!this.kept && shared("vault.open")?.token === this.token) setShared("vault.open", null);
     // A kept pane that goes leaves no stale entry for the space tree (same keys and shape).
     if (this.kept && this.pane) {
@@ -177,7 +179,31 @@ export default class Reader extends View {
   async relist() {
     this.files = await listVault(this.vault, fs.readdir);
     this.fileSet = new Set(this.files);
+    // Every folder that holds a file: change events for a folder path (Windows reports the parent of a saved
+    // file; watchers coalesce directories) are not new or deleted files and must not start another walk.
+    this.dirSet = new Set();
+    for (const f of this.files) for (let i = f.indexOf("/"); i > 0; i = f.indexOf("/", i + 1)) this.dirSet.add(f.slice(0, i));
     this.resolve = makeResolver(this.files);
+    this.lastRelist = Date.now();
+  }
+
+  // A walk of the whole vault (up to 30,000 files) at most once per RELIST_MIN_MS: the first request runs at
+  // once, the ones that follow inside the window become a single walk when it ends.
+  relistSoon(cx) {
+    const wait = RELIST_MIN_MS - (Date.now() - (this.lastRelist ?? 0));
+    if (wait <= 0) return this.relist();
+    if (!this.relistTimer) {
+      this.relistTimer = cx.timer.after(wait, (cx) => cx.spawn(async (cx) => {
+        this.relistTimer = null;
+        if (this.closed) return;
+        const before = this.fileSet;
+        await this.relist().catch(() => {});
+        // Links may resolve differently now (a note was added or removed while the walk waited): draw again.
+        if (this.fileSet.size !== before.size || [...this.fileSet].some((f) => !before.has(f))) this.load(cx);
+        cx.notify();
+      }));
+    }
+    return Promise.resolve();
   }
 
   abs(rel) { return `${this.vault}/${rel}`; }
@@ -323,9 +349,11 @@ export default class Reader extends View {
       else if (!isHidden(rel)) rels.push(rel);
     }
     if (!all && !rels.length) return;
-    let relist = all || rels.some((r) => !this.fileSet.has(r));
+    const known = (r) => this.fileSet.has(r) || this.dirSet?.has(r);
+    let relist = all || rels.some((r) => !known(r));
+    // A known file or folder that is gone.
     if (!relist) for (const r of rels.slice(0, 50)) if (!(await fs.exists(this.abs(r)).catch(() => true))) { relist = true; break; }
-    if (relist) await this.relist();
+    if (relist) await this.relistSoon(cx);
     if (all || rels.some((r) => this.deps?.has(this.abs(r)))) this.load(cx);
     else if (relist) cx.notify();
   }

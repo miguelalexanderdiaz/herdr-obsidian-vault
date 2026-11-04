@@ -24,6 +24,7 @@ import { MOD, MOD_DIR, READER } from "./mod-name.js";
 const ICON = `${MOD_DIR}/icons`;
 const MENU_W = 300;
 const PER_FOLDER = 2000;
+export const ROWS_MAX = 3000; // rows drawn in all open folders together: every render builds an element per row
 
 const tilde = (p) => tildeOf(p, home());
 
@@ -386,6 +387,7 @@ export default class Vault extends View {
 
   tree(t) {
     const rows = this.rows("", 0, [], t);
+    if (rows.over) rows.push(div().h(24).pl(27).text_size(12).text_color(t.dim).child(`Only the first ${ROWS_MAX} rows are drawn (close a folder, or search)`));
     return v_flex().id("vault-tree").flex_1().min_h(0).overflow_y_scrollbar().p(6)
       .when(Boolean(this.hint), (el) => el.child(div().px(8).pb(4).text_size(11).text_color(t.dim).child(this.hint)))
       .children(rows)
@@ -397,6 +399,7 @@ export default class Vault extends View {
     const open = shared("vault.open");
     const showing = open && open.vault === this.root ? open.file : null;
     for (const entry of this.entries.get(prefix) ?? []) {
+      if (out.length >= ROWS_MAX) { out.over = true; return out; }
       const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
       const expanded = this.folders.has(rel);
       const k = entry.dir ? null : kind(entry.name);
