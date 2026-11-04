@@ -583,7 +583,7 @@ if (exists(claimsFile)) {
       const candidates = [path.join(vault, n), path.join(ROOT, n)];
       if (!candidates.some(exists)) fail("docs/verify.html", `names "${n}", which is not in examples/sample-vault`);
     }
-    const steps = (html.match(/<table id="verify-table">[\s\S]*?<\/table>/) || [""])[0].match(/<tr><th scope="row">\d+\./g) || [];
+    const steps = (html.match(/<table id="verify-table"[^>]*>[\s\S]*?<\/table>/) || [""])[0].match(/<tr><th scope="row">\d+\./g) || [];
     const claimed = (html.match(/\b(Fifteen|Fourteen|Sixteen|Twelve|Ten) short steps\b/) || [])[1];
     const words = { Ten: 10, Twelve: 12, Fourteen: 14, Fifteen: 15, Sixteen: 16 };
     if (claimed && words[claimed] !== steps.length) fail("docs/verify.html", `says ${claimed} steps but has ${steps.length}`);
