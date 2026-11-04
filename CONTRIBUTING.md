@@ -133,7 +133,8 @@ Write plainly: short sentences, what happens and what to do. State the real supp
 
 - Small commits with a clear subject and a body that says why.
 - Keep the public contract stable (mod names `vault` and `vault-reader`, shared keys `vault.list`, `vault.current`, `vault.open`, `vault.panes`, `vault.outside`, commands `vault.add` and `vault.import`, the tab name `obsidian`, the path `mods/vault/icons/book-open.svg`). See [Configuration](docs/configuration.html#contract).
-- Add a line under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md).
+- The pull request title becomes the commit on `main` (pull requests are squash-merged) and the line in the changelog, so write it as a [Conventional Commit](https://github.com/conventional-commits/conventionalcommits.org): `feat: ...` for something new, `fix: ...` for a bug fix, `docs: ...` for documentation (all three are listed in the changelog); `ci:`, `test:`, `refactor:`, `build:`, `chore:` or `style:` for the rest, which the changelog leaves out. An optional scope goes in parentheses (`fix(privacy): ...`) and a `!` before the colon marks a breaking change. The `conventional title` check enforces it.
+- Do not edit `CHANGELOG.md` by hand: after each merge, [release-please](https://github.com/googleapis/release-please) (`.github/workflows/release.yml`) updates one release pull request with the next version and its changelog lines. Merging that pull request tags `vX.Y.Z` and publishes the GitHub release.
 - A pull request should say what changed, which of the checks above you ran, and on which operating system.
 
 ## Publishing

@@ -362,7 +362,7 @@ Small, logical commits with a clear subject and a body that says why. Commit onl
 
 ## Documentation upkeep
 
-Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), `docs/verify.html` (the check steps), this file and `CHANGELOG.md`. Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
+Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), `docs/verify.html` (the check steps), and this file (`CHANGELOG.md` is written by release-please from the pull request title, so make that a Conventional Commit: see CONTRIBUTING.md). Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
 
 The script compares the requirements tables, the keys table, the two `llms.txt` copies, a freshly built `docs/llms-full.txt`, the one support-level sentence, and the messages quoted in the troubleshooting page, which must be string literals in the code (a quote only found in a comment fails; a short one must be a whole literal). `scripts/doc-claims.json` ties each number, name and phrase in the docs to the constant or string that backs it. When you rename or change one in the code, change the doc and the claim row together; `node scripts/check-docs.mjs` names the row that broke.
 

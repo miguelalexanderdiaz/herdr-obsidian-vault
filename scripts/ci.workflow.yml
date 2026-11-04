@@ -9,6 +9,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch: # the release workflow starts it on its release pull request
 
 permissions:
   contents: read
