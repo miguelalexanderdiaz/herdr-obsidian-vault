@@ -34,6 +34,26 @@ A CI workflow template is in `scripts/ci.workflow.yml`. It has not run yet becau
 
 Both ways need the Herdr desktop app. Read [what the mods read, run and download](#privacy) first.
 
+### One command
+
+macOS and Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/<owner>/herdr-obsidian-vault/main/install/install.sh | sh
+```
+
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/<owner>/herdr-obsidian-vault/main/install/install.ps1 | iex
+```
+
+It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies `mods/vault` and `mods/vault-reader` into your Herdr home, adds `ctrl-shift-m` to `keys.json` (asking before it replaces a key you use) and runs `herdr-app check`. The portrait layout's installer adds the Vault panel when it finds these mods. Anything it replaces is backed up first under `community/herdr-obsidian-vault/` in the Herdr home;
+running it again updates in place. From a clone: `install/install.sh` (or `.\install\install.ps1`).
+No questions: `sh -s -- --yes` (Windows: `$env:HERDR_YES = 1` first). Another Herdr home: `--home
+<folder>` or `HERDR_APP_HOME`. Merging `keys.json` uses Node, or on macOS the system's own JavaScript;
+without either it prints the keys to add by hand.
+
 ### With a Herdr agent
 
 Paste this to an agent running in Herdr, with the repository address filled in:
@@ -150,7 +170,14 @@ The [troubleshooting page](docs/troubleshooting.html) has every message with its
 
 ## Uninstall
 
-Remove the block from your layout and the keys you merged, delete `mods/vault` and `mods/vault-reader` from your Herdr home, and optionally delete `data/vault` there. Your vaults are never touched.
+```sh
+curl -fsSL https://raw.githubusercontent.com/<owner>/herdr-obsidian-vault/main/install/install.sh | sh -s -- --uninstall
+```
+
+(Windows: `$env:HERDR_UNINSTALL = 1` before the `irm ... | iex` line.) It removes what it installed
+and the keys it added (not ones you changed since), backing them up first. It leaves `data/vault`, the cache and settings, in place.
+
+By hand: Remove the block from your layout and the keys you merged, delete `mods/vault` and `mods/vault-reader` from your Herdr home, and optionally delete `data/vault` there. Your vaults are never touched.
 
 ## Repository map
 

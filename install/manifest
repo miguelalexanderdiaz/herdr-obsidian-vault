@@ -1,0 +1,17 @@
+# What install/install.sh and install/install.ps1 install from this repository, one instruction per
+# line: the word, then its values (a mod name has no spaces). The words are described in
+# install/manifest of herdr-portrait-layout, which uses all of them:
+#   mods  mod folders copied from mods/ (an older copy is backed up, then replaced)
+#   keys  the keys.json merged into yours (asks before replacing a key you use)
+#   say   what the person reads before anything is written
+name     Obsidian vault
+mods     vault vault-reader
+keys     keys.json
+say      Network: a remote picture in a note (![](https://...)) is downloaded with curl when the note
+say        opens (http and https only, at most 20 MB); the switch is in the reader's bar. The diagram
+say        renderer talks to a headless browser on 127.0.0.1 only.
+say      Runs programs: rg (search), node 22.4+ with a headless Chromium browser (diagrams, maths,
+say        drawings), Poppler (PDF pages), curl, the system opener (never a program), stat or powershell.
+say      Reads outside its folders: Obsidian's vault list and your vaults (inside the home folder only),
+say        and Obsidian's own install (its Mermaid and MathJax copies).
+say      Writes: data/vault/ in the Herdr home (picture cache, library copies, the browser profile).

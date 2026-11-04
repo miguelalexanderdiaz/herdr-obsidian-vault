@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows [Keep a
 
 ### Added
 
+- One-line install: `install/install.sh` (macOS, Linux; `curl ... | sh`) and `install/install.ps1` (Windows; `irm ... | iex`). They say what the mods reach and ask first, copy the mods in (backing up what they replace), merge `keys.json` asking before replacing a key, run `herdr-app check`, and remove what they added with `--uninstall`. Tested on all three systems in CI (`tests/install.test.mjs`).
+
 - Linux and Windows support in the code paths: Obsidian's vault list for macOS, Linux (including Flatpak and Snap) and Windows; tool lookup on PATH and in per-OS folders for `rg`, `pdftoppm`, `pdfinfo`, `curl`, Node.js, a Chromium-family browser and Obsidian's `obsidian.asar`; the system file opener on each OS (`open`, `xdg-open`, `rundll32 url.dll,FileProtocolHandler`; not `cmd /c start`, which would read an `&` in a web address as a second command). All operating-system literals live in one `platform.js` per mod.
 - A plain message that names the missing piece and the install hint for the current system, in place of raw renderer output, for ripgrep, Node.js, the browser, the Obsidian app, Poppler and curl.
 - Environment variables `HERDR_VAULT_BROWSER`, `CHROME_PATH` and `HERDR_VAULT_ASAR` to point at programs in unusual places.
