@@ -33,10 +33,10 @@ Role: documentation. Branch: `feat/round-1-portable-release--documentation`. Fil
 
 ## Checks run
 
-Run in a scratch clone with the three branches merged (code-review `4ebc106`, herdr-completeness `35d4046`, this branch):
+Run in a scratch clone with the three branches merged (code-review `caf689d`, herdr-completeness `35d4046`, this branch):
 
 - `node scripts/check-docs.mjs`: ok (10 pages, 9 text files). On this branch alone it reports only links to files the other roles own (`LICENSE`, `NOTICE`, `RECIPE.md`, `scripts/check-repo.mjs`, `scripts/privacy-scan.mjs`, `tests/`), which exist after the merge.
-- `npm test`: 148 pass, 0 fail.
+- `npm test`: 154 pass, 0 fail.
 - `node scripts/privacy-scan.mjs`: 0 errors, 0 warnings (docs included).
 - `node scripts/check-repo.mjs`: 0 errors, 3 warnings (RECIPE.md does not name `qlmanage` and `sips`; see handoffs).
 - Headless Chrome screenshots of the static site at 390 px and 1100 px, light and dark: layout, tables (scroll inside a bordered region), SVG figure and nav read correctly. (Static files only; the Herdr app was not driven.)
