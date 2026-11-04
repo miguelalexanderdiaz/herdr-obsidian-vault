@@ -5,26 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Page not found - Herdr Obsidian Vault</title>
 <meta name="description" content="This page does not exist on the Herdr Obsidian Vault documentation site.">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark">
 <link rel="icon" href="data:,">
 <!-- GitHub Pages serves this file for a missing page at any depth, so it must not depend on relative paths: its CSS is inline and its links start at the site root of a project site. -->
 <style>
-:root { color-scheme: light dark; --bg: #ffffff; --fg: #1b1f24; --muted: #4a5360; --link: #0a58a8; --border: #c9d0d9; --surface: #f4f5f7; --accent: #0a58a8; --accent-fg: #ffffff; }
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #14171c; --fg: #e6e9ee; --muted: #a9b2bf; --link: #7db8ff; --border: #38404b; --surface: #1c2027; --accent: #7db8ff; --accent-fg: #0d1117; }
-}
+@font-face { font-family: "Fraunces"; src: url("/herdr-obsidian-vault/assets/fonts/fraunces-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Source Serif 4"; src: url("/herdr-obsidian-vault/assets/fonts/source-serif-4-latin-wght-normal.woff2") format("woff2"); font-weight: 200 900; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("/herdr-obsidian-vault/assets/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+:root { color-scheme: dark; --bg: #181616; --fg: #c5c9c5; --muted: #a6a69c; --link: #b6927b; --border: #393836; --surface: #282727; --accent: #b6927b; --accent-fg: #181616; }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 1rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-.skip { position: absolute; left: 16px; top: -100px; background: var(--accent); color: var(--accent-fg); padding: .5rem .75rem; border-radius: 6px; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 1.0625rem/1.68 "Source Serif 4", "Iowan Old Style", Georgia, serif; -webkit-font-smoothing: antialiased; }
+.skip { position: absolute; left: 16px; top: -100px; background: var(--accent); color: var(--accent-fg); padding: .5rem .75rem; font: 600 .8125rem/1.4 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; text-decoration: none; }
 .skip:focus { top: 8px; }
-a { color: var(--link); text-underline-offset: 2px; }
-a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
-.site-header { border-bottom: 1px solid var(--border); background: var(--surface); }
-.wrap { max-width: 56rem; margin: 0 auto; padding: 0 16px; }
-.brand { display: block; padding: 14px 0; font-weight: 700; color: var(--fg); text-decoration: none; }
-main { padding: 24px 0 48px; }
-h1 { font-size: 2rem; line-height: 1.2; margin: .2em 0 .4em; }
-.site-footer { border-top: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: .9rem; padding: 16px 0 28px; }
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.site-header { border-bottom: 1px solid var(--border); background: var(--bg); }
+.wrap { max-width: 50rem; margin: 0 auto; padding: 0 16px; }
+.brand { display: inline-block; padding: 22px 0 18px; font: 600 1.375rem/1.2 "Fraunces", Georgia, serif; letter-spacing: -0.01em; color: var(--fg); text-decoration: none; }
+main { padding: 40px 0 64px; }
+h1 { font: 500 clamp(2rem, 1.5rem + 2vw, 2.75rem)/1.12 "Fraunces", Georgia, serif; letter-spacing: -0.01em; margin: .1em 0 .45em; }
+.site-footer { border-top: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: .875rem; padding: 20px 0 32px; }
 .site-footer p { margin: .3em 0; }
 </style>
 </head>

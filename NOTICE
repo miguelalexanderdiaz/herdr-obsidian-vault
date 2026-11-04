@@ -59,6 +59,22 @@ Third-party material included in this repository
    the Obsidian application's own theme (colour values only; no code, text or
    artwork was copied).
 
+5. Fonts of the documentation site (SIL Open Font License, Version 1.1)
+   Files: docs/assets/fonts/*.woff2 (Latin subsets, variable weight, from the
+   Fontsource packages @fontsource-variable/fraunces 5.3.0,
+   @fontsource-variable/source-serif-4 5.3.1 and
+   @fontsource-variable/jetbrains-mono 5.3.0; not modified further)
+   - Fraunces: Copyright 2020 The Fraunces Project Authors
+     (https://github.com/undercasetype/Fraunces)
+     License text: docs/assets/fonts/OFL-Fraunces.txt
+   - Source Serif 4: Copyright 2014 - 2023 Adobe, with Reserved Font Name
+     'Source' (https://github.com/adobe-fonts/source-serif)
+     License text: docs/assets/fonts/OFL-SourceSerif4.txt
+   - JetBrains Mono: Copyright 2020 The JetBrains Mono Project Authors
+     (https://github.com/JetBrains/JetBrainsMono)
+     License text: docs/assets/fonts/OFL-JetBrainsMono.txt
+   The fonts are served with the site only; they are not part of the mods.
+
 Material that is NOT included and is read at run time
 -----------------------------------------------------
 The diagrams and maths in a note are drawn by Mermaid and MathJax. This
