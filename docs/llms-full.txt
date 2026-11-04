@@ -664,7 +664,7 @@ Web images | curl | Fake-OS tests (the curl download is new) | Fake-OS tests; wi
 
 Opening other files and links | The system opener | Used by the author | Fake-OS tests; a missing opener does nothing | Fake-OS tests; a missing opener does nothing
 
-Nothing is marked as used for Linux or Windows because nobody has watched the mods run there. Check your install is how that evidence arrives.
+The end-to-end render test (tests/render-e2e.test.mjs) starts the real render script with a stand-in Obsidian bundle and a real browser, and skips with a stated reason where there is no browser. It has run on macOS only. Nothing is marked as used for Linux or Windows because nobody has watched the mods run there. Check your install is how that evidence arrives.
 
 ## Where Obsidian keeps its vault list
 

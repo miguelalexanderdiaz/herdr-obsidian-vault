@@ -14,6 +14,10 @@ All notable changes to this project are written here. The format follows [Keep a
 - Tests: `npm test` (Node 22+, no dependencies, no Chrome, Obsidian, ripgrep or Poppler needed); a CI template for Linux, macOS and Windows exists but has not run yet.
 - Release material: `LICENSE` (Apache-2.0), `NOTICE`, `RECIPE.md`, `keys.json` (Ctrl+Shift+M opens the panel as a popup, with a 420 by 640 overlay added to `mods/vault/mod.json`), `scripts/ci.workflow.yml` (the CI template, not run yet; the author copies it to `.github/workflows/ci.yml`), `scripts/check-repo.mjs`, `scripts/privacy-scan.mjs`, `scripts/PUBLISH.md`.
 - Documentation: `README.md`, a GitHub Pages site in `docs/`, `AGENTS.md`, `llms.txt`, `CONTRIBUTING.md`, and `scripts/check-docs.mjs` to keep them honest.
+- Settings keys `browser` and `asar` (absolute paths, in `data/vault/settings.json`) to name a browser or Obsidian's `obsidian.asar` without environment variables, which do not reach a Herdr started from Finder or a launcher. Chrome, Chromium, Brave and Edge are also looked for in the usual Linux folders and, as a last resort, through the login shell. The order is on the requirements page.
+- Messages for two cases that used to show a misleading text: a note, canvas or drawing over 1 MiB (`This note is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.`) and Add vault on a folder outside the home folder (`Vault outside your home folder`). The panel stops drawing after 3000 rows with `Only the first 3000 rows are drawn (close a folder, or search)`.
+- Documentation: one honest support-level sentence and a per-feature, per-system table; a "Check your install" page with fifteen steps on the sample vault and a "Platform report" issue form for Linux and Windows results; a labelled schematic of the layout; "Limits you may hit"; the Herdr facts behind each editing rule with their sources; `docs/llms-full.txt` for agents; the contract now lists `mods/vault/icons/book-open.svg`.
+- Checks: `scripts/check-recipe.mjs` (RECIPE.md against the code), `scripts/install-sim.mjs` (each mod copied alone into a temp Herdr home), `scripts/typecheck.mjs` (local only), strict test stubs and a scan for globals that Herdr's runtime lacks, an end-to-end render test with a stand-in Obsidian bundle and a canary server, a claims table for the docs (`scripts/doc-claims.json`), seeded-fault tests for `check-docs`, and `--release` on `check-docs` and `check-repo` as the publish gate.
 
 ### Changed
 
@@ -26,6 +30,13 @@ All notable changes to this project are written here. The format follows [Keep a
 - "Open in Preview" reads "Open in the default app" on Linux and Windows.
 - Search no longer loses results to `.gitignore` files in a vault that is also a git repository, ignores a person's ripgrep config, tolerates ripgrep exit code 2 when it still printed results, and parses paths that contain `:12:`.
 - The development scripts `test-parse.mjs` and `make-fixture.mjs` moved from `mods/vault-reader/render/` to `tests/tools/`, so a published mod folder holds only mod files.
+- Node.js 22.4 or newer is needed for diagrams, math and drawings (before: 22), because the render script uses the built-in `WebSocket`.
+- The tree is in natural, case-insensitive order (`Note 2` before `Note 10`, `apple` before `Zebra`), without `Intl`, which Herdr's runtime does not have.
+- PDFs inside a note or a canvas show page 1 through Poppler wherever it is installed; Quick Look is only the macOS fallback.
+- A note's pictures are fetched four at a time, an image over 40 MB is refused from its file size before it is read, and the reader walks the vault at most once a second while files change. Cache entries that are still being used are kept past the 30 day prune.
+- The popup of the panel has an explicit `kind`, `at` and `offset` in `mods/vault/mod.json`, taken from Herdr's picker mods and official examples; it has not been checked on a small window.
+- `obsidian.png` and `vault.svg` are kept for older copies of the portrait layout; its current layout does not use them.
+- Docs say what is not verified: Linux and Windows have not been seen in the live Herdr app, and the CI workflow is a template that has not run.
 
 ### Fixed
 
@@ -36,12 +47,18 @@ All notable changes to this project are written here. The format follows [Keep a
 - Parser bugs: a block id containing `(`, the closing line of a fenced block, inline math in lists, quoted commas in YAML lists, and a shared regular-expression state.
 - The live-refresh watcher no longer doubles up after switching vaults, and falls back to a timer (with a visible hint) when Linux refuses to watch a very large tree.
 - The renderer finds a vault root on Windows without looping forever, no longer starts through a login shell there, uses a temporary browser profile per run (two readers drawing at once no longer collide), extracts Obsidian's libraries under a lock, and draws at most 6 pictures per browser start so a cold start fits Herdr's 30 second limit.
+- SVG images now show: the code used `TextDecoder`, which Herdr's runtime does not have. Failures of that kind are no longer cached.
+- Search keeps the text hits of notes with Windows (CRLF) line endings and understands the paths that ripgrep prints on Windows.
+- A link to a file whose name has an unbalanced `)`, and a note that starts with a byte order mark, are read correctly.
+- The headless browser's profile folder is removed at the end of every run, including runs that were killed.
+- The CI template ran `node --test tests/`, which fails; it runs `npm test` and a check proves that every command in it exists.
 
 ### Security
 
 - Only `http`, `https` and `mailto` links are opened from notes and canvas cards. `file:`, `obsidian:`, `javascript:` and every other scheme, which could hand a local path or another application a value taken from note content, are dropped.
 - Files that start programs (`.exe`, `.bat`, `.sh`, `.app`, `.ps1`, `.jar` and similar) are never opened from a note, a canvas or the tree.
 - Every argument that comes from a note (a web address) is passed to `curl` as one argument after `--`, only for `http` and `https` addresses; no shell string is built.
+- The render page can no longer reach the network: a diagram label with an `<img>` that pointed at a web address used to make the headless browser fetch it even with Web images off. The page has a content-security policy and the browser resolves no name but `127.0.0.1` and uses no proxy; a canary test proves that such a label makes no request.
 
 ## [0.1.0] - Initial import
 

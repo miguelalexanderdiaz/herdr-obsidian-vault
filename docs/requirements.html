@@ -67,7 +67,7 @@
 <tr><th scope="row">Web images</th><td><code>curl</code></td><td>Fake-OS tests (the <code>curl</code> download is new)</td><td>Fake-OS tests; without <code>curl</code> a named message</td><td>Fake-OS tests; without <code>curl</code> a named message</td></tr>
 <tr><th scope="row">Opening other files and links</th><td>The system opener</td><td>Used by the author</td><td>Fake-OS tests; a missing opener does nothing</td><td>Fake-OS tests; a missing opener does nothing</td></tr>
 </tbody></table></div>
-<p>Nothing is marked as used for Linux or Windows because nobody has watched the mods run there. <a href="verify.html">Check your install</a> is how that evidence arrives.</p>
+<p>The end-to-end render test (<code>tests/render-e2e.test.mjs</code>) starts the real render script with a stand-in Obsidian bundle and a real browser, and skips with a stated reason where there is no browser. It has run on macOS only. Nothing is marked as used for Linux or Windows because nobody has watched the mods run there. <a href="verify.html">Check your install</a> is how that evidence arrives.</p>
 
 <h2 id="vault-list">Where Obsidian keeps its vault list</h2>
 <p>On first run, and when you choose <em>Import from Obsidian</em>, the panel reads Obsidian&rsquo;s own list of vaults, so you do not have to add them again. The first file in the order below that holds at least one vault is used. If none is found, the empty panel says <em>Obsidian&rsquo;s vault list wasn&rsquo;t found</em> and names the places it looked.</p>
