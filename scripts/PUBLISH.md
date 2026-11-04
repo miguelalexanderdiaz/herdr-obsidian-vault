@@ -17,9 +17,8 @@ so the list it prints is this list). `rg "publish:"` lists the sentences in the 
 3. **Take `preview.png`** at the repo root. Follow `scripts/PREVIEW.md` (sample vault only, never a real one), then
    copy it to `docs/assets/preview.png` and open the `<!-- publish: preview -->` blocks (`rg "publish: preview"`:
    RECIPE.md, README.md, docs/index.html) by deleting the comment's first and last lines.
-4. **Replace the `<owner>` placeholder** that README, CHANGELOG, CONTRIBUTING, AGENTS.md, `llms.txt` and `docs/` use
-   for the GitHub owner (agents may not write usernames), then run `node scripts/build-llms-full.mjs` (it rebuilds
-   `docs/llms-full.txt`, which holds copies of README and AGENTS.md) and `node scripts/check-docs.mjs --release`.
+4. **Replace the `<owner>` placeholder.** Done 2026-11-04: the repository is public, so every published file names
+   the owner, `miguelalexanderdiaz`, in its URLs, and `node scripts/check-repo.mjs` now fails on any `<owner>` left.
    **Confirm the copyright name** in `LICENSE` and `NOTICE` (currently the git author name) and that you want
    that name public. It is the only place a real name appears.
 5. **Check Obsidian's trademark text** (https://obsidian.md/brand) once more and that `NOTICE` still says
@@ -59,5 +58,5 @@ so the list it prints is this list). `rg "publish:"` lists the sentences in the 
     `RECIPE.md`, `preview.png`, `keys.json` and both mod folders; moving the files does not change any path the
     mods use (they look for `mods/<name>/` inside the Herdr home, not in this repo).
 12. **Create the issue label `platform-report`** (Issues, Labels). The form in `.github/ISSUE_TEMPLATE/platform-report.yml`
-    applies it, and `docs/verify.html` asks testers on Linux and Windows to file one.
+    applies it; the form holds the checklist that testers on Linux and Windows follow.
 13. **Look at the herdr.dev page.** After publishing, a second pair of eyes on description, preview and RECIPE text.

@@ -24,7 +24,7 @@ const decode = (s) => s.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (all, e) => {
   return ENTITIES[e.toLowerCase()] ?? all;
 });
 
-const PAGES = ["index", "install", "usage", "requirements", "configuration", "privacy", "troubleshooting", "verify", "how-it-works", "for-agents"];
+const PAGES = ["index", "install", "usage", "requirements", "configuration", "privacy", "troubleshooting", "for-agents"];
 
 function htmlToText(html) {
   const main = (html.match(/<main[\s>][\s\S]*<\/main>/i) || [html])[0];

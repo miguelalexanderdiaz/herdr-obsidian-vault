@@ -27,7 +27,7 @@ Documentation for people and agents: [docs site](docs/index.html) (GitHub Pages 
 
 macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.
 
-The mods look for every external program in the places used by macOS, Linux and Windows, and say in the panel which one is missing. Reports from Linux and Windows are welcome: [docs/verify.html](docs/verify.html) is a short checklist on the sample vault with a report template.
+The mods look for every external program in the places used by macOS, Linux and Windows, and say in the panel which one is missing. Reports from Linux and Windows are welcome: the [Platform report](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/new?template=platform-report.yml) issue form has a short checklist on the sample vault.
 
 <!-- publish: ci. Install the workflow (scripts/PUBLISH.md), wait for a green run, then replace this sentence with the systems that ran. -->
 A CI workflow template is in `scripts/ci.workflow.yml`. It has not run yet because the author still has to install it, so no system is claimed to be checked by it.
@@ -73,16 +73,16 @@ Details are on the [usage page](docs/usage.html). Notes over 1 MiB cannot be ope
 Only Herdr is required. Each program below adds a feature; without it you get a plain message, not a failure. Programs are found on PATH and then in the usual install folders of each system. Vaults must be inside your home folder.
 
 <!-- requirements:start -->
-| Program | Used for | Without it | macOS | Linux | Windows |
-| --- | --- | --- | --- | --- | --- |
-| Herdr desktop app | Runs both mods. | Nothing works. | Install Herdr. | Install Herdr. | Install Herdr. |
-| ripgrep (`rg`) | The search box in the Vault panel. | Search shows `ripgrep (rg) isn't installed:` and the install hint for your system. Browsing and reading still work. | `brew install ripgrep` | install ripgrep with your package manager (for example: `apt install ripgrep`) | `winget install BurntSushi.ripgrep.MSVC` |
-| Node.js 22.4 or newer (`node`) | Drawing math, Mermaid diagrams and Excalidraw drawings (the render script). | One line above the note names what is missing; the source of each diagram, formula or drawing stays visible. | `brew install node` | install Node.js 22.4 or newer (nodejs.org, or your package manager) | `winget install OpenJS.NodeJS` |
-| A Chromium-family browser (Chrome, Chromium, Edge or Brave) | Runs headless to take a picture of each diagram, formula and drawing. | Same: one line above the note, `A Chromium-based browser wasn't found`, and the source stays visible. | Chrome, Chromium, Brave or Edge in `/Applications` (or `~/Applications`) | Chrome, Chromium, Brave or Edge in `/usr/bin`, `/opt` or `/snap/bin`, or on PATH (Flatpak browsers are not looked for) | Edge, Chrome or Brave in Program Files or Local AppData (Edge is built into Windows) |
-| Obsidian desktop app | Supplies its own Mermaid and MathJax, read at run time from `obsidian.asar`. | Same: one line above the note, `The Obsidian app wasn't found`, and the source stays visible. Notes, canvases and images still open. | Obsidian in `/Applications` (or `~/Applications`) | Obsidian from `/opt`, `/usr/lib`, `/usr/share`, Snap or Flatpak (an AppImage cannot be found: name its file in `settings.json`) | Obsidian in `%LOCALAPPDATA%` or Program Files |
-| Poppler (`pdftoppm`, `pdfinfo`) | Every page of a PDF (the first 30). | macOS draws page 1 through Quick Look. Linux and Windows show `Poppler (pdftoppm, pdfinfo) isn't installed:` with the hint, and the PDF opens in your default app. | `brew install poppler` | install poppler-utils with your package manager (for example: `apt install poppler-utils`) | `scoop install poppler` |
-| curl | Downloading web images that a note shows with `![](https://...)`. | Those images show `curl isn't installed:` with the hint. Turn web images off on purpose with the Web images button. | Ships with macOS | install curl with your package manager (for example: `apt install curl`) | Ships with Windows 10 and newer |
-| System file opener | Opening files the reader cannot show, web links, and PDFs in your viewer. | The click does nothing. | `open` (built in) | `xdg-open` (package `xdg-utils`) | `rundll32 url.dll,FileProtocolHandler` (built in) |
+| Program | Adds | Install |
+| --- | --- | --- |
+| Herdr desktop app | Runs both mods (required). | herdr.dev |
+| ripgrep (`rg`) | Search in the panel. | macOS `brew install ripgrep`, Linux `apt install ripgrep`, Windows `winget install BurntSushi.ripgrep.MSVC` |
+| Node.js 22.4 or newer | Math, Mermaid and Excalidraw, with the next two. | macOS `brew install node`, Linux nodejs.org or your package manager, Windows `winget install OpenJS.NodeJS` |
+| Chrome, Chromium, Edge or Brave | Draws those pictures, headless. | Any one; Edge is built into Windows. |
+| Obsidian desktop app | Its own Mermaid and MathJax. | Its installer; an AppImage needs the `asar` setting. |
+| Poppler | Every PDF page (the first 30); without it macOS shows page 1. | macOS `brew install poppler`, Linux `apt install poppler-utils`, Windows `scoop install poppler` |
+| curl | Web images in notes. | Built into macOS and Windows 10 or newer; Linux `apt install curl` |
+| System file opener | Opens other files, links and PDFs in your viewer. | Built in (`open`, `rundll32 url.dll,FileProtocolHandler`); Linux `xdg-open` from `xdg-utils` |
 <!-- requirements:end -->
 
 To install the optional programs in one go (the same commands as the table; a missing one is only a feature lost):
@@ -100,7 +100,7 @@ winget install BurntSushi.ripgrep.MSVC OpenJS.NodeJS
 scoop install poppler
 ```
 
-A browser or Obsidian in an unusual place: add `"browser"` and `"asar"` (absolute paths) to `data/vault/settings.json` in the Herdr home, no restart needed. The environment variables `HERDR_VAULT_BROWSER` (or `CHROME_PATH`) and `HERDR_VAULT_ASAR` also work, but only if Herdr itself was started with them. The search order and where Obsidian keeps its vault list on each system are on the [requirements page](docs/requirements.html).
+A browser or Obsidian in an unusual place: add `"browser"` and `"asar"` (absolute paths) to `data/vault/settings.json` in the Herdr home, no restart needed. The environment variables `HERDR_VAULT_BROWSER` (or `CHROME_PATH`) and `HERDR_VAULT_ASAR` also work, but only if Herdr itself was started with them. The search order and where Obsidian keeps its vault list on each system are on the [configuration page](docs/configuration.html#lookup).
 
 ## Privacy
 

@@ -27,8 +27,9 @@ let base;
 before(() => {
   base = fs.mkdtempSync(path.join(os.tmpdir(), "check-docs-base-"));
   // `scripts` is copied whole: the agent docs name several of its files and check-docs checks that they exist.
-  // The claims table also points at one test file (the canary), so that goes along.
-  const keep = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "RECIPE.md", "LICENSE", "NOTICE", "llms.txt", "keys.json", "package.json", "docs", "mods", "examples", "scripts", "tests/render-e2e.test.mjs"];
+  // The claims table also points at one test file (the canary), so that goes along, and the platform checklist lives
+  // in the issue form.
+  const keep = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "RECIPE.md", "LICENSE", "NOTICE", "llms.txt", "keys.json", "package.json", "docs", "mods", "examples", "scripts", "tests/render-e2e.test.mjs", ".github/ISSUE_TEMPLATE"];
   for (const k of keep) {
     const from = path.join(repo, k);
     if (!fs.existsSync(from)) continue;
@@ -140,17 +141,19 @@ test("a stale docs/llms-full.txt fails", () => {
   expectFail(r, "llms-full.txt");
 });
 
-test("a verify step that names a file the sample vault does not have fails", () => {
-  const r = seeded((root) => {
-    edit(root, "docs/verify.html", (s) => s.replace(/<code class="sv">Board\.canvas<\/code>/, '<code class="sv">Gone.canvas</code>'));
-    rebuildFull(root);
-  });
+test("a platform checklist step that names a file the sample vault does not have fails", () => {
+  const r = seeded((root) => edit(root, ".github/ISSUE_TEMPLATE/platform-report.yml", (s) => s.replace("`Board.canvas`", "`Gone.canvas`")));
   expectFail(r, "Gone.canvas");
+});
+
+test("a platform checklist whose steps are numbered wrong fails", () => {
+  const r = seeded((root) => edit(root, ".github/ISSUE_TEMPLATE/platform-report.yml", (s) => s.replace("        3. **", "        4. **")));
+  expectFail(r, "numbered 1, 2, 3");
 });
 
 test("a link to a missing anchor fails", () => {
   const r = seeded((root) => {
-    edit(root, "docs/index.html", (s) => s.replace('href="requirements.html#matrix"', 'href="requirements.html#no-such-anchor"'));
+    edit(root, "docs/index.html", (s) => s.replace('href="requirements.html#support"', 'href="requirements.html#no-such-anchor"'));
     rebuildFull(root);
   });
   expectFail(r, "anchor not found");
@@ -196,7 +199,7 @@ test("--release lists every open publish-time item and fails; the plain run does
     assert.equal(run(root).status, 0);
     const r = run(root, "--release");
     assert.equal(r.status, 1);
-    for (const needle of ["open mark: preview", "open mark: ci", "<owner> placeholder", "still has to install"]) {
+    for (const needle of ["open mark: preview", "open mark: ci", "still has to install"]) {
       assert.ok(r.stderr.includes(needle), `release output lacks "${needle}":\n${r.stderr}`);
     }
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
@@ -211,7 +214,7 @@ test("--release passes once the marks and placeholders are resolved", () => {
       if (!/\.(md|html|txt)$/.test(f)) continue;
       const p = path.join(root, f);
       let s = fs.readFileSync(p, "utf8");
-      s = s.replace(/<!--\s*publish:[\s\S]*?-->/g, "").replaceAll("<owner>", "someone").replaceAll("&lt;owner&gt;", "someone")
+      s = s.replace(/<!--\s*publish:[\s\S]*?-->/g, "")
         .replace(/not published yet/gi, "published").replace(/still has to install/gi, "has installed");
       fs.writeFileSync(p, s);
     }

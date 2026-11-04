@@ -15,22 +15,21 @@ Facts an agent needs:
 
 ## Docs
 
-- [AGENTS.md](https://github.com/<owner>/herdr-obsidian-vault/blob/main/AGENTS.md): install, adapt, test and edit safely
-- [README](https://github.com/<owner>/herdr-obsidian-vault/blob/main/README.md): what it is, install, requirements, privacy
-- [RECIPE.md](https://github.com/<owner>/herdr-obsidian-vault/blob/main/RECIPE.md): the brief to rebuild the mods
-- [Install](https://<owner>.github.io/herdr-obsidian-vault/install.html): the one-line installer, agent prompt, manual copy, options
-- [Usage](https://<owner>.github.io/herdr-obsidian-vault/usage.html): showing the panel, search, reader, keys, what is drawn
-- [Requirements](https://<owner>.github.io/herdr-obsidian-vault/requirements.html): per-OS table and what happens without each program
-- [Configuration](https://<owner>.github.io/herdr-obsidian-vault/configuration.html): settings, keys, public contract, limits
-- [Privacy](https://<owner>.github.io/herdr-obsidian-vault/privacy.html): what is read, run, downloaded and written
-- [Troubleshooting](https://<owner>.github.io/herdr-obsidian-vault/troubleshooting.html): every message and its fix
-- [Check your install](https://<owner>.github.io/herdr-obsidian-vault/verify.html): a checklist on the sample vault and a report template
-- [How it works](https://<owner>.github.io/herdr-obsidian-vault/how-it-works.html): files, data flow, caching, rendering
+- [AGENTS.md](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/blob/main/AGENTS.md): install, adapt, test and edit safely
+- [README](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/blob/main/README.md): what it is, install, requirements, privacy
+- [RECIPE.md](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/blob/main/RECIPE.md): the brief to rebuild the mods
+- [Install](https://miguelalexanderdiaz.github.io/herdr-obsidian-vault/install.html): the one-line installer, agent prompt, manual copy, options
+- [Usage](https://miguelalexanderdiaz.github.io/herdr-obsidian-vault/usage.html): showing the panel, search, reader, keys, what is drawn
+- [Requirements](https://miguelalexanderdiaz.github.io/herdr-obsidian-vault/requirements.html): what each program adds and how to install it
+- [Configuration](https://miguelalexanderdiaz.github.io/herdr-obsidian-vault/configuration.html): settings, how programs and vaults are found, keys, public contract, limits
+- [Privacy](https://miguelalexanderdiaz.github.io/herdr-obsidian-vault/privacy.html): what is read, run, downloaded and written
+- [Troubleshooting](https://miguelalexanderdiaz.github.io/herdr-obsidian-vault/troubleshooting.html): every message and its fix
 
 ## Optional
 
-- [Full text for agents](https://<owner>.github.io/herdr-obsidian-vault/llms-full.txt): README, AGENTS.md and every site page as one plain text file
-- [Changelog](https://github.com/<owner>/herdr-obsidian-vault/blob/main/CHANGELOG.md)
-- [Contributing](https://github.com/<owner>/herdr-obsidian-vault/blob/main/CONTRIBUTING.md)
-- [Notices and third-party credits](https://github.com/<owner>/herdr-obsidian-vault/blob/main/NOTICE)
-- [Sample vault](https://github.com/<owner>/herdr-obsidian-vault/tree/main/examples/sample-vault): a test vault with one file per feature
+- [Full text for agents](https://miguelalexanderdiaz.github.io/herdr-obsidian-vault/llms-full.txt): README, AGENTS.md and every site page as one plain text file
+- [Changelog](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/blob/main/CHANGELOG.md)
+- [Contributing](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/blob/main/CONTRIBUTING.md)
+- [Notices and third-party credits](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/blob/main/NOTICE)
+- [Platform report](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/new?template=platform-report.yml): the checklist on the sample vault, as an issue form
+- [Sample vault](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/tree/main/examples/sample-vault): a test vault with one file per feature

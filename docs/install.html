@@ -24,8 +24,6 @@
 <li><a href="configuration.html">Configuration</a></li>
 <li><a href="privacy.html">Privacy</a></li>
 <li><a href="troubleshooting.html">Troubleshooting</a></li>
-<li><a href="verify.html">Check your install</a></li>
-<li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
 </nav>
@@ -47,10 +45,9 @@
 
 <details class="fold" id="agent">
 <summary>With an agent</summary>
-<!-- publish: owner. Replace <owner> with the GitHub owner of the published repository in the prompt below. -->
 <!-- publish: herdr.dev. Once the repository is listed on herdr.dev, add that site's own install form next to this prompt. -->
-<p>Paste this into an agent running in Herdr, with the repository address filled in:</p>
-<div class="cell"><pre id="agent-prompt" tabindex="0"><code>Install the Herdr mods from https://github.com/&lt;owner&gt;/herdr-obsidian-vault .
+<p>Paste this into an agent running in Herdr:</p>
+<div class="cell"><pre id="agent-prompt" tabindex="0"><code>Install the Herdr mods from https://github.com/miguelalexanderdiaz/herdr-obsidian-vault .
 It has two mods, mods/vault and mods/vault-reader, and a keys.json.
 Read every file first, tell me what they run and fetch, copy both
 folders into my mods folder without overwriting anything, merge
@@ -87,8 +84,8 @@ herdr-app check "$HERDR_HOME/mods/vault-reader"</code></pre></li>
 <li><strong>From a clone:</strong> <code>install/install.sh</code> or <code>.\install\install.ps1</code>.</li>
 <li><strong>Backups:</strong> under <code>community/herdr-obsidian-vault/</code> in the Herdr home.</li>
 <li><strong>Keys:</strong> it asks before it replaces a key you use. Merging needs Node, or on macOS the system&rsquo;s own JavaScript; without either it prints the key to add by hand.</li>
-<li><strong>Name clashes:</strong> the installer replaces a <code>vault</code> or <code>vault-reader</code> folder that is already there, after a backup. Both names are needed as they are, because the panel opens the reader by name. By hand, never overwrite another mod of the same name: rename the new one (<a href="how-it-works.html#rename">If a mod name is taken</a>).</li>
-<li><strong>Checks:</strong> it runs <code>herdr-app check</code> on each mod and says which one failed. To check what you see, follow <a href="verify.html">Check your install</a> on the sample vault.</li>
+<li><strong>Name clashes:</strong> the installer replaces a <code>vault</code> or <code>vault-reader</code> folder that is already there, after a backup. Both names are needed as they are, because the panel opens the reader by name. By hand, never overwrite another mod of the same name: rename the new one (<a href="configuration.html#rename">If a mod name is taken</a>).</li>
+<li><strong>Checks:</strong> it runs <code>herdr-app check</code> on each mod and says which one failed.</li>
 <li><strong>Requirements:</strong> only Herdr; each optional program adds a feature (<a href="requirements.html">Requirements</a>).</li>
 </ul>
 </details>

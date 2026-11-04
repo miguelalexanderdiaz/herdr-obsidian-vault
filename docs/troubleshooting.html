@@ -23,8 +23,6 @@
 <li><a href="configuration.html">Configuration</a></li>
 <li><a href="privacy.html">Privacy</a></li>
 <li><a href="troubleshooting.html" aria-current="page">Troubleshooting</a></li>
-<li><a href="verify.html">Check your install</a></li>
-<li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
 </nav>
@@ -67,7 +65,7 @@
 <h2 id="panel">Panel</h2>
 
 <h3 id="no-vaults">The panel says <code class="msg">No vault yet</code></h3>
-<p>Obsidian has not been run on this machine, or its list is somewhere the mod does not look. If the panel also says <code class="msg">Obsidian's vault list wasn't found</code>, it names the places it looked (<a href="requirements.html#vault-list">file per system</a>). Click <strong>Add vault</strong> and pick the folder that holds <code>.obsidian</code>.</p>
+<p>Obsidian has not been run on this machine, or its list is somewhere the mod does not look. If the panel also says <code class="msg">Obsidian's vault list wasn't found</code>, it names the places it looked (<a href="configuration.html#vault-list">file per system</a>). Click <strong>Add vault</strong> and pick the folder that holds <code>.obsidian</code>.</p>
 
 <h3 id="not-vault">Notification <code class="msg">Not an Obsidian vault</code></h3>
 <p>The folder you picked has no <code>.obsidian</code> inside. Pick the vault&rsquo;s own folder. A new vault needs to be opened in Obsidian once so it creates that folder.</p>
@@ -104,7 +102,7 @@
 <p>Also seen as <code class="msg">Node.js 22.4 or newer isn't installed</code>, followed by <code>Diagrams and math are shown as source until then.</code> Install Node.js 22.4 or newer (<code>node --version</code> tells you what you have). The render script uses the built-in <code>WebSocket</code>, and this project checks for 22.4 or newer before it starts the script.</p>
 
 <h3 id="needs-browser"><code class="msg">Diagrams and math need a browser to draw them</code></h3>
-<p>Followed by <code class="msg">A Chromium-based browser wasn't found</code> and an install hint. Install Chrome, Chromium, Brave or Edge, or name the one you have: add <code>"browser"</code> (an absolute path) to <code>data/vault/settings.json</code>, or set <code>HERDR_VAULT_BROWSER</code> (or <code>CHROME_PATH</code>) in the environment Herdr was started with. If you named a browser in the settings file and it does not exist, the line says <code class="msg">The browser named in settings.json ("browser") wasn't found, and neither was any other.</code> before the hint. The places that are searched, in order, are on the <a href="requirements.html#order">requirements page</a>.</p>
+<p>Followed by <code class="msg">A Chromium-based browser wasn't found</code> and an install hint. Install Chrome, Chromium, Brave or Edge, or name the one you have: add <code>"browser"</code> (an absolute path) to <code>data/vault/settings.json</code>, or set <code>HERDR_VAULT_BROWSER</code> (or <code>CHROME_PATH</code>) in the environment Herdr was started with. If you named a browser in the settings file and it does not exist, the line says <code class="msg">The browser named in settings.json ("browser") wasn't found, and neither was any other.</code> before the hint. The places that are searched, in order, are on the <a href="configuration.html#order">configuration page</a>.</p>
 
 <h3 id="needs-obsidian"><code class="msg">Diagrams and math use Obsidian's own Mermaid and MathJax, read from the installed app</code></h3>
 <p>Followed by <code class="msg">The Obsidian app wasn't found</code>. Install the Obsidian app, or name its <code>obsidian.asar</code>: add <code>"asar"</code> (an absolute path) to <code>data/vault/settings.json</code>, or set <code>HERDR_VAULT_ASAR</code> in the environment Herdr was started with. An AppImage cannot be found by itself, so name its file. If you named a file in the settings and it does not exist, the line says <code class="msg">The Obsidian file named in settings.json ("asar") wasn't found, and neither was an installed app.</code> Obsidian is needed only for this; notes, canvases and images open without it.</p>
@@ -153,8 +151,8 @@
 <p>Only <code>http</code>, <code>https</code> and <code>mailto</code> links are opened, and other schemes are dropped without a message. Other files open with the system opener (<code>open</code>, <code>xdg-open</code>, <code>rundll32</code>); a missing opener fails silently, so check that it exists.</p>
 
 <h2 id="report">Still stuck</h2>
-<p>Run the short <a href="verify.html">install check</a> on the sample vault first; it tells you which step fails. Then open an issue in the repository (the &ldquo;Platform report&rdquo; form has the same fields) with: your operating system, <code>node --version</code>, the output of <code>herdr-app check</code> on both mods, and the exact text of the message. Do not paste note content or paths that name you.</p>
-<div class="pager"><a href="privacy.html" rel="prev">&larr; Privacy</a><a href="verify.html" rel="next">Check your install &rarr;</a></div>
+<p>Open an issue with the <a href="https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/new?template=platform-report.yml">Platform report</a> form; its short checklist on the sample vault tells you which step fails. It asks for your operating system, <code>node --version</code>, the result of <code>herdr-app check</code> on both mods, and the exact text of the message. Do not paste note content or paths that name you.</p>
+<div class="pager"><a href="privacy.html" rel="prev">&larr; Privacy</a><a href="for-agents.html" rel="next">For agents &rarr;</a></div>
 </div>
 </main>
 <footer class="site-footer">

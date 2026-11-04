@@ -220,8 +220,7 @@ figcaption { color: var(--muted); font-size: 14px; margin-top: 8px; }
   table.stack tr, table.stack th, table.stack td { display: block; }
   table.stack th { background: none; padding-bottom: 0; border-bottom: 0; font-size: 1rem; }
   table.stack td { border-bottom: 0; padding-top: 4px; padding-bottom: 4px; }
-  table.stack td:nth-of-type(1)::before { content: "Do: "; font-weight: 700; }
-  table.stack td:nth-of-type(2)::before { content: "Expect: "; font-weight: 700; }
+  table.stack td[data-label]::before { content: attr(data-label) ": "; font-weight: 700; }
   table.stack tr { border-bottom: 1px solid var(--border); padding: 6px 0; }
   table.stack tr:last-child { border-bottom: 0; }
   main { padding-top: 32px; }

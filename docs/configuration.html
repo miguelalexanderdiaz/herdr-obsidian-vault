@@ -23,8 +23,6 @@
 <li><a href="configuration.html" aria-current="page">Configuration</a></li>
 <li><a href="privacy.html">Privacy</a></li>
 <li><a href="troubleshooting.html">Troubleshooting</a></li>
-<li><a href="verify.html">Check your install</a></li>
-<li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
 </nav>
@@ -43,7 +41,11 @@
 <tr><th scope="row"><code>browser</code></th><td><code>data/vault/settings.json</code>, edited by hand</td><td>not set</td><td>Absolute path of the Chromium-family browser to use for diagrams, math and drawings. Tried before everything else. A relative path or a value that is not text is ignored without a message. Read again at every render run.</td></tr>
 <tr><th scope="row"><code>asar</code></th><td><code>data/vault/settings.json</code>, edited by hand</td><td>not set</td><td>Absolute path of Obsidian&rsquo;s <code>obsidian.asar</code>. Tried before everything else; the same rules as <code>browser</code>.</td></tr>
 </tbody></table></div>
-<p>The order in which the browser and the <code>obsidian.asar</code> are looked for is on the <a href="requirements.html#order">requirements page</a>.</p>
+<p>Create or edit the file by hand; keys you do not set keep their defaults, and the <em>Web images</em> button keeps the others. Use absolute paths, on Windows with forward slashes (<code>"C:/Tools/Chrome/chrome.exe"</code>) or doubled backslashes. No restart is needed.</p>
+<pre><code>{
+  "browser": "/opt/example/chromium/chrome",
+  "asar": "/opt/Example/resources/obsidian.asar"
+}</code></pre>
 
 <h2 id="env">Environment variables</h2>
 <div class="table-wrap" role="region" aria-label="Environment variables" tabindex="0"><table>
@@ -53,7 +55,40 @@
 <tr><th scope="row"><code>HERDR_VAULT_BROWSER</code>, <code>CHROME_PATH</code></th><td>Full path of the browser program for the render script. Tried after the <code>browser</code> setting and before the usual install folders and the names on PATH.</td></tr>
 <tr><th scope="row"><code>HERDR_VAULT_ASAR</code></th><td>Full path of Obsidian&rsquo;s <code>obsidian.asar</code>, tried after the <code>asar</code> setting and before the usual install folders.</td></tr>
 </tbody></table></div>
-<p>The render script reads these, not the mod, so they only count if Herdr itself was started with them (a variable set in a shell profile does not reach a Herdr started from Finder or a launcher). The <a href="requirements.html#env-vars">requirements page</a> says how; the settings file above avoids the problem.</p>
+<p>The render script reads these, not the mod, so they only count if Herdr itself was started with them (a variable set in a shell profile does not reach a Herdr started from Finder or a launcher). The settings file above avoids the problem.</p>
+
+<h2 id="lookup">How programs and vaults are found</h2>
+<p>For ripgrep, Node.js, Poppler and curl the mods try the name on your PATH, then the usual install folders (Homebrew, Snap, Linuxbrew, Nix, Volta, Scoop, WinGet, Chocolatey, Program Files), for Node also nvm, fnm and asdf, and last your login shell (<code>command -v</code>, or <code>where</code> on Windows). A program that was missing is looked for again after 30 seconds, so installing one while Herdr runs works.</p>
+<details class="fold" id="order">
+<summary>Where the browser and Obsidian are looked for</summary>
+<p>The browser, first match wins:</p>
+<ol>
+<li>the <code>browser</code> setting;</li>
+<li><code>HERDR_VAULT_BROWSER</code>, then <code>CHROME_PATH</code>;</li>
+<li>the install folders: on macOS Chrome, Chromium, Brave and Edge in <code>/Applications</code> and <code>~/Applications</code>; on Windows Edge, Chrome, Brave and Chromium under Program Files, Program Files (x86) and Local AppData; on Linux the usual Chrome, Chromium, Brave and Edge paths under <code>/usr/bin</code>, <code>/opt</code>, <code>/usr/lib</code>, <code>/usr/local/bin</code> and <code>/snap/bin</code> (Flatpak browsers are left out on purpose);</li>
+<li>the browser names on the PATH of the render script;</li>
+<li>last, your login shell or <code>where</code>, once per session.</li>
+</ol>
+<p>Obsidian&rsquo;s <code>obsidian.asar</code>: the <code>asar</code> setting, then <code>HERDR_VAULT_ASAR</code>, then the install folders (macOS <code>/Applications</code> and <code>~/Applications</code>; Linux <code>/opt</code>, <code>/usr/lib</code>, <code>/usr/share</code>, Snap and Flatpak; Windows <code>%LOCALAPPDATA%</code> and Program Files). An AppImage cannot be found: name it with <code>asar</code>.</p>
+</details>
+<details class="fold" id="env-vars">
+<summary>Starting Herdr with a variable</summary>
+<ul>
+<li>Start Herdr from a terminal where the variable is set (<code>herdr-app</code>), or</li>
+<li>macOS: <code>launchctl setenv NAME value</code>; Windows: a user environment variable (System Properties, or <code>setx</code>); Linux: the desktop entry or the systemd user environment. Then restart Herdr.</li>
+</ul>
+<p>These steps follow from how Herdr starts and have not been tested here. Prefer the settings file.</p>
+</details>
+<details class="fold" id="vault-list">
+<summary>Where Obsidian keeps its vault list</summary>
+<p>On first run and on <em>Import from Obsidian</em> the panel reads the first of these that holds a vault. If none does, it says <em>Obsidian&rsquo;s vault list wasn&rsquo;t found</em> and names the places it looked.</p>
+<ul>
+<li>macOS: <code>~/Library/Application Support/obsidian/obsidian.json</code></li>
+<li>Linux: <code>~/.config/obsidian/obsidian.json</code>; Flatpak <code>~/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json</code>; Snap <code>~/snap/obsidian/current/.config/obsidian/obsidian.json</code></li>
+<li>Windows: <code>~/AppData/Roaming/obsidian/obsidian.json</code> (<code>%APPDATA%\obsidian</code>)</li>
+</ul>
+<p>A vault outside your home folder is listed as not readable.</p>
+</details>
 
 <h2 id="keys">Keys</h2>
 <p>The repository ships a <code>keys.json</code> with one optional binding: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> opens (and closes) the Vault panel as a popup. Merge it into your own <code>keys.json</code>; Herdr does not read it from the mod folder. If the key is already yours for something else, keep yours and open the panel with the app command <code>mod.open</code> from the command palette instead. The reader and search keys listed on the <a href="usage.html">usage page</a> are built in and cannot be remapped.</p>
@@ -78,6 +113,8 @@
 <tr><th scope="row"><code>vault.import</code></th><td>mod command</td><td>Sent to <code>vault</code> by the <em>Import from Obsidian</em> menu item to read Obsidian&rsquo;s vault list again. Additive.</td></tr>
 <tr><th scope="row"><code>obsidian</code></th><td>tab name</td><td>Kept notes go in a tab with this name. Matched without regard to case.</td></tr>
 </tbody></table></div>
+
+<p id="rename">If a mod name is taken: by hand, never overwrite another mod. Rename the new folder and the name in its <code>mod-name.js</code> (<code>MOD</code>, and <code>READER</code> in the panel), and the <code>mod</code> name in your layout and keys. <code>AGENTS.md</code> in the repository lists each step.</p>
 
 <h2 id="limits">Limits in the code</h2>
 <p>These are constants at the top of the source files. Change them by editing the mod; Herdr reloads on save.</p>
