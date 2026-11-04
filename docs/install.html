@@ -53,7 +53,7 @@ cp -R mods/vault mods/vault-reader ~/.config/herdr-app/mods/
 
 # Windows PowerShell (replace the target with your Herdr home)
 Copy-Item -Recurse mods\vault, mods\vault-reader "$HERDR_HOME\mods"</code></pre></li>
-<li>Merge the keys from <code>keys.json</code> in the repository into your own <code>keys.json</code> (add the sections and keys; keep any key you already use). The keys are optional; see <a href="configuration.html#keys">Configuration</a>.</li>
+<li>Merge the key from <code>keys.json</code> in the repository into your own <code>keys.json</code> (add its section and key; keep any key you already use). It is optional; see <a href="configuration.html#keys">Configuration</a>.</li>
 <li>Check both mods:
 <pre><code>herdr-app check ~/.config/herdr-app/mods/vault
 herdr-app check ~/.config/herdr-app/mods/vault-reader</code></pre>
@@ -67,7 +67,7 @@ Both must pass. Herdr reloads mods as soon as their files change, so there is no
 <pre><code>{ "id": "vault", "type": "block", "content": { "mod": "vault" } }</code></pre>
 For the <em>herdr-portrait-layout</em> layout, append that object to the children of the node whose id is <code>panel-body</code>. Its bar then shows a Vault button by itself.</li>
 <li><strong>Split a pane.</strong> Run the Herdr app command <code>pane.split</code> with a direction and <code>mod</code> set to <code>vault</code> (<code>herdr-app commands</code> lists its arguments).</li>
-<li><strong>As a popup.</strong> The repository&rsquo;s <code>keys.json</code> binds <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> to <code>mod.open:vault</code>, which opens the panel as a 420 by 640 popup and, pressed again, closes it. Merge that key (see <a href="configuration.html#keys">Configuration</a>) and no layout change is needed.</li>
+<li><strong>As a popup.</strong> The repository&rsquo;s <code>keys.json</code> binds <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> to <code>mod.open:vault</code>, which opens the panel as a 420 by 640 popup and, pressed again, closes it. Merge that key (see <a href="configuration.html#keys">Configuration</a>) and no layout change is needed.</li>
 </ul>
 
 <h2 id="first">First run</h2>

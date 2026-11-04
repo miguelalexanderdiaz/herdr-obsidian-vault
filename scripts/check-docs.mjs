@@ -21,7 +21,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const argRoot = process.argv.indexOf("--root");
@@ -83,6 +83,8 @@ function checkLink(from, target) {
   if (pathPart) {
     const clean = decodeURIComponent(pathPart.split("?")[0]);
     file = clean.startsWith("/") ? path.join(ROOT, clean) : path.resolve(path.dirname(from), clean);
+    // preview.png is the one file the author adds at publish time (scripts/PREVIEW.md).
+    if (!exists(file) && path.basename(file) === "preview.png") return null;
     if (!exists(file)) return `link target not found: ${target}`;
     if (fs.statSync(file).isDirectory()) {
       const index = ["index.html", "README.md"].map((n) => path.join(file, n)).find(exists);
@@ -320,10 +322,20 @@ const reqPage = exists(path.join(DOCS, "requirements.html")) ? read(path.join(DO
   if (exists(modsDir)) walk(modsDir);
   const code = sources.join("\n");
   const flat = (s) => s.replace(/\\(['"`])/g, "$1");
+  // Some messages are built from parts ("<name> isn't installed: <hint>"): ask the pure module.
+  const built = [];
+  try {
+    const mod = await import(pathToFileURL(path.join(modsDir, "vault-reader", "platform.js")).href);
+    for (const what of ["rg", "poppler", "node", "curl", "browser", "obsidian"]) {
+      for (const os of ["macos", "linux", "windows"]) built.push(mod.missingMessage(os, what));
+    }
+  } catch { /* no platform.js yet: only literal messages can match */ }
   const trouble = exists(path.join(DOCS, "troubleshooting.html")) ? read(path.join(DOCS, "troubleshooting.html")) : "";
   for (const m of trouble.matchAll(/<code class="msg">([\s\S]*?)<\/code>/g)) {
     const msg = text(m[1]);
-    if (!flat(code).includes(msg) && !code.includes(msg)) fail("docs/troubleshooting.html", `message not found in mods/: "${msg}"`);
+    if (!flat(code).includes(msg) && !code.includes(msg) && !built.some((b) => b.includes(msg))) {
+      fail("docs/troubleshooting.html", `message not found in mods/: "${msg}"`);
+    }
   }
 }
 

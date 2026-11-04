@@ -19,7 +19,7 @@ node --version   # v22 or newer
 | Path | Holds |
 | --- | --- |
 | `mods/vault`, `mods/vault-reader` | the mods; every file here may be copied to a person's Herdr home |
-| `tests/` | `node --test` tests, `tests/fixtures/` for edge-case files, `tests/tools/` for helper scripts |
+| `tests/` | `*.test.mjs` tests for `npm test`, `tests/fixtures/` for edge-case files, `tests/tools/` for helper scripts |
 | `examples/sample-vault/` | the test vault; keep it generic and small |
 | `scripts/` | repository checks and the publish checklists |
 | `docs/` | the Pages site; plain HTML and CSS, no scripts, nothing loaded from other sites |
@@ -32,7 +32,7 @@ Mod folders must stay self-contained: do not import from one mod into the other,
 Run all of them before you open a pull request:
 
 ```sh
-node --test tests/
+npm test
 node scripts/check-repo.mjs
 node scripts/privacy-scan.mjs
 node scripts/check-docs.mjs
@@ -45,7 +45,8 @@ The CI workflow template (`scripts/ci.workflow.yml`, installed by the owner as `
 
 ## Testing rules
 
-- Tests must not need Chrome, Obsidian, ripgrep, Poppler or the network. Pure modules (`parse.js`, `doc.js`, `canvas.js`, `platform.js`, the search snippet, the vault-list parser) take what they need as arguments; tests give them a fake `exec` and a fake platform for darwin, linux and win32.
+- `npm test` runs `node --test` over `tests/**/*.test.mjs` (a quoted glob; `node --test tests/` fails because a bare folder is read as a module). Put new tests in that pattern.
+- Tests must not need Chrome, Obsidian, ripgrep, Poppler or the network. Pure modules (`parse.js`, `doc.js`, `canvas.js`, `platform.js`, `search-core.js`, `assets-core.js`, `obsidian-config.js`, `watch.js`) take what they need as arguments; tests give them a fake `exec` and a fake platform for darwin, linux and win32.
 - To add a case for a bug, put the smallest failing input in `tests/fixtures/` and write the test first.
 - To exercise a feature by hand, use `examples/sample-vault`. Add a file there only when a feature has no example at all, and keep it generic.
 - Do not drive somebody's running Herdr window to test (no `herdr-app do`, `shot` or `status` against a live screen).

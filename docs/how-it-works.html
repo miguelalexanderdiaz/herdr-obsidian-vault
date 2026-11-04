@@ -69,11 +69,13 @@
 <thead><tr><th scope="col">File</th><th scope="col">Job</th></tr></thead>
 <tbody>
 <tr><th scope="row"><code>mods/vault/main.js</code></th><td>The panel: vault list, tree, search box, picker menu, add vault.</td></tr>
-<tr><th scope="row"><code>mods/vault/search.js</code></th><td>Search with ripgrep, and the pure snippet function.</td></tr>
+<tr><th scope="row"><code>mods/vault/search.js</code>, <code>search-core.js</code></th><td>Search with ripgrep: the Herdr glue, and the pure logic (arguments, parsing, ranking, snippet) that Node tests.</td></tr>
+<tr><th scope="row"><code>obsidian-config.js</code>, <code>tree.js</code>, <code>watch.js</code></th><td>Pure helpers of the panel: Obsidian&rsquo;s vault list, the tree rules, the restartable folder watcher with its timer fallback.</td></tr>
 <tr><th scope="row"><code>mods/vault-reader/main.js</code></th><td>The reader window: loading, drawing blocks, links, Keep menu, keys.</td></tr>
+<tr><th scope="row"><code>platform.js</code>, <code>mod-name.js</code> (both mods)</th><td>Everything that differs between operating systems (tool lookup, openers, install hints, stamps, image sizes) and the mod folder name. Pure; each mod holds its own copy because a mod folder is self-contained.</td></tr>
 <tr><th scope="row"><code>parse.js</code>, <code>doc.js</code>, <code>canvas.js</code></th><td>Pure functions: note text to blocks; a file to a document, two embed levels deep; canvas JSON to cards and an edge picture. They do not import Herdr, so Node can test them.</td></tr>
-<tr><th scope="row"><code>assets.js</code></th><td>Everything that becomes a picture: images, PDF pages, web images, rendered jobs; the cache.</td></tr>
-<tr><th scope="row"><code>render/render.mjs</code>, <code>page.js</code>, <code>excalidraw.js</code></th><td>The render script and the page it loads in the headless browser. Plain Node and browser code, not Herdr mod code.</td></tr>
+<tr><th scope="row"><code>assets.js</code>, <code>assets-core.js</code></th><td>Everything that becomes a picture: images, PDF pages, web images, rendered jobs; the cache. The core holds the logic without Herdr imports.</td></tr>
+<tr><th scope="row"><code>render/render.mjs</code>, <code>lib.mjs</code>, <code>page.js</code>, <code>excalidraw.js</code></th><td>The render script and the page it loads in the headless browser. Plain Node and browser code, not Herdr mod code.</td></tr>
 </tbody></table></div>
 
 <h2 id="flow">From a click to a picture</h2>
@@ -82,13 +84,13 @@
 <li>The reader lists the vault once (to resolve wikilinks), reads the note, and <code>parse.js</code> turns it into blocks. Plain text blocks go straight to Herdr&rsquo;s markdown view.</li>
 <li>The reader collects what needs a picture: images, PDFs, math, Mermaid, drawings, canvas edges. Each one gets a cache key made from its source, file stamp (modification time and size), your theme colours and the render version.</li>
 <li>Cached pictures show at once. Missing ones are made: images are copied into the cache (Herdr only loads pictures from its own folder) and measured; PDF pages come from Poppler; math, Mermaid and drawings are batched to the render script.</li>
-<li>The render script serves one page on <code>127.0.0.1</code>, starts the headless browser, draws each job with Obsidian&rsquo;s copies of Mermaid and MathJax or the project&rsquo;s own drawing renderer, takes a screenshot of each result and writes a PNG plus a size file.</li>
-<li>Pictures appear as they are ready. A failure becomes a short message in place of that block and never replaces the document.</li>
+<li>The render script serves one page on <code>127.0.0.1</code>, starts the headless browser with its own temporary profile, draws each job with Obsidian&rsquo;s copies of Mermaid and MathJax or the project&rsquo;s own drawing renderer, takes a screenshot of each result and writes a PNG plus a size file.</li>
+<li>Pictures appear as they are ready. A failure becomes a short message in place of that block, and a missing program becomes one line above the note; neither replaces the document, and neither is cached.</li>
 <li>A folder watcher redraws the note when it, or a file it depends on, changes.</li>
 </ol>
 
 <h2 id="rename">If a mod name is taken</h2>
-<p>Herdr&rsquo;s install rule is to never overwrite a mod, so if you already have a mod called <code>vault</code>, rename the new one. Rename the folder, every <code>mods/&lt;name&gt;/</code> path inside the mod, and the overlay name the panel uses to open the reader. The shared keys keep their names unless you also want to separate the two copies. <code>AGENTS.md</code> in the repository lists each place to change.</p>
+<p>Herdr&rsquo;s install rule is to never overwrite a mod, so if you already have a mod called <code>vault</code>, rename the new one. The folder name is spelled in one place per mod, <code>mod-name.js</code> (<code>MOD</code>, and <code>READER</code> in the panel); change it and the folder name together, and the <code>mod</code> name in your layout and keys. The shared keys keep their names unless you also want to separate the two copies. <code>AGENTS.md</code> in the repository lists each step.</p>
 <div class="pager"><a href="troubleshooting.html" rel="prev">&larr; Troubleshooting</a><a href="for-agents.html" rel="next">For agents &rarr;</a></div>
 </div>
 </main>
