@@ -160,9 +160,12 @@ test("--release lists every open publish-time item and fails; the plain run does
   const root = copy();
   try {
     assert.equal(run(root).status, 0);
+    // The CI marks were resolved when CI was installed (2026-11-04); a leftover "still has to install" is
+    // seeded here so the rule that catches one stays tested.
+    fs.appendFileSync(path.join(root, "CONTRIBUTING.md"), "\nThe author still has to install the workflow.\n");
     const r = run(root, "--release");
     assert.equal(r.status, 1);
-    for (const needle of ["open mark: preview", "open mark: ci", "<owner> placeholder", "still has to install"]) {
+    for (const needle of ["open mark: preview", "<owner> placeholder", "still has to install"]) {
       assert.ok(r.stderr.includes(needle), `release output lacks "${needle}":\n${r.stderr}`);
     }
   } finally { fs.rmSync(root, { recursive: true, force: true }); }

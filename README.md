@@ -39,8 +39,7 @@ macOS is the only OS the author uses; Linux and Windows code paths are implement
 
 The mods look for every external program in the places used by macOS, Linux and Windows, and say in the panel which one is missing. Reports from Linux and Windows are welcome: [docs/verify.html](docs/verify.html) is a short checklist on the sample vault with a report template.
 
-<!-- publish: ci. Install the workflow (scripts/PUBLISH.md), wait for a green run, then replace this sentence with the systems that ran. -->
-A CI workflow template is in `scripts/ci.workflow.yml`. It has not run yet because the author still has to install it, so no system is claimed to be checked by it.
+Since 2026-11-04 the CI workflow (`.github/workflows/ci.yml`) runs the unit tests and the repository, recipe, install, privacy and docs checks on Linux, macOS and Windows, on every push and pull request. It does not start the Herdr app: the live app is still only used on macOS.
 
 ## Install
 

@@ -42,7 +42,7 @@
 <li><code>RECIPE.md</code>: the brief to rebuild the mods from nothing (behaviour and intent only).</li>
 <li><a href="privacy.html">Privacy</a>: the list of what to tell the person before adding the mods.</li>
 </ul>
-<p>Say plainly what is not verified: Linux and Windows have not been seen running in the live Herdr app (see the support level on the <a href="requirements.html#matrix">requirements page</a>), and the CI workflow is a template that has not run. <code>AGENTS.md</code> has the list and the Herdr facts behind each rule.</p>
+<p>Say plainly what is not verified: Linux and Windows have not been seen running in the live Herdr app (see the support level on the <a href="requirements.html#matrix">requirements page</a>), and CI runs the unit tests and the checks on Linux, macOS and Windows, not the live app. <code>AGENTS.md</code> has the list and the Herdr facts behind each rule.</p>
 <p>Three rules matter most. Never write inside a mod folder while it runs, because Herdr reloads a mod when any file in it changes. Never drive someone&rsquo;s live Herdr window while testing; use <code>herdr-app check</code> on the mod folder and <code>npm test</code>. Keep personal data out of every file.</p>
 <div class="pager"><a href="how-it-works.html" rel="prev">&larr; How it works</a><span></span></div>
 </div>

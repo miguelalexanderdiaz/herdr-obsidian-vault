@@ -97,7 +97,7 @@ State these plainly; do not write "works on Linux" or "works on Windows" anywher
 
 - Linux and Windows have never been seen running in the live Herdr app. The code paths are covered by tests with a fake operating system. The one-sentence support level is in `README.md`, and the per-feature table is on `docs/requirements.html`.
 - The Windows Herdr home folder is the documented default `.config/herdr-app` under the user folder. Nobody has checked it on Windows.
-- The CI workflow in `scripts/ci.workflow.yml` is a template that has not run: the unattended runs had no token scope to install it. No page may say that CI ran.
+- The CI workflow (`.github/workflows/ci.yml`, a copy of `scripts/ci.workflow.yml`) runs the unit tests and the checks on Linux, macOS and Windows on every push and pull request, since 2026-11-04. It never starts Herdr, so a green run says nothing about the live app on Linux or Windows; no page may say it does.
 - `herdr-app check` loads a mod once and checks its first description. It does not run later states, layout or async work.
 - The popup's placement (`kind`, `at` and `offset` in the `overlay` of `mods/vault/mod.json`) was taken from Herdr's picker mods and official examples and has not been checked on a small window; the popup is 640 pixels tall.
 
@@ -119,7 +119,7 @@ herdr-app check /absolute/path/to/mods/vault             # Herdr loads the mod o
 herdr-app check /absolute/path/to/mods/vault-reader
 ```
 
-The CI template (`scripts/ci.workflow.yml`, not run yet) lists the first seven and the privacy and checker self-tests; `typecheck` and `herdr-app check` are local only. `node scripts/check-repo.mjs --release` and `node scripts/check-docs.mjs --release` are the publish gate: they fail by design until the author's steps in `scripts/PUBLISH.md` are done, so do not try to make them pass.
+The CI workflow (`.github/workflows/ci.yml`, from `scripts/ci.workflow.yml`) runs the first seven and the privacy and checker self-tests; `typecheck` and `herdr-app check` are local only. `node scripts/check-repo.mjs --release` and `node scripts/check-docs.mjs --release` are the publish gate: they fail by design until the author's steps in `scripts/PUBLISH.md` are done, so do not try to make them pass.
 
 Strict stubs: the test stand-ins for gpui-kit elements allow only method names that exist in `gpui-kit.d.ts` (read from the Herdr home when present, else from `tests/stubs/gpui-methods.json`; regenerate it with `node tests/tools/gen-gpui-methods.mjs`), and the `fs/promises` stand-in only the surface Herdr declares. A misspelt method or a `TextDecoder` in mod code fails a test. To find out whether Herdr itself has some global or method, use the throw-away probe mod procedure in `CONTRIBUTING.md`, not a live window.
 

@@ -10,7 +10,7 @@ Facts an agent needs:
 - Tell the person before installing: the mods read the vault folder and Obsidian's vault list, run rg, node, a headless browser, pdftoppm, pdfinfo, curl and the system opener, download web images shown by notes (switch: the Web images button, or remoteImages in data/vault/settings.json), and write only under data/vault.
 - Stable contract: mod names vault and vault-reader; shared keys vault.list, vault.current, vault.open, vault.panes (and vault.outside, added beside them); commands vault.add, vault.import; tab name obsidian. The mod folder name is spelled once per mod, in mod-name.js.
 - Tests: npm test (Node 22.4+, no dependencies; not `node --test tests/`), node scripts/check-repo.mjs, node scripts/check-recipe.mjs, node scripts/install-sim.mjs, node scripts/privacy-scan.mjs, node scripts/check-docs.mjs, herdr-app check on each mod folder. Do not drive a live Herdr window.
-- Not verified: Linux and Windows have not been seen running in the live Herdr app, and the CI workflow (scripts/ci.workflow.yml) is a template that has not run. Say so; never write that it works there. Herdr's runtime has no TextDecoder, TextEncoder, structuredClone or Intl, and localeCompare ignores its options.
+- Not verified: Linux and Windows have not been seen running in the live Herdr app, and CI (.github/workflows/ci.yml) runs the unit tests and the checks on Linux, macOS and Windows, not the app. Say so; never write that the app works there. Herdr's runtime has no TextDecoder, TextEncoder, structuredClone or Intl, and localeCompare ignores its options.
 - No personal data in files or commits. Not affiliated with Obsidian; the Obsidian logo is not distributed.
 
 ## Docs

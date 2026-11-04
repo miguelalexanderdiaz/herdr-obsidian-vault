@@ -56,8 +56,7 @@
 <h2 id="support">Support level</h2>
 <p>macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.</p>
 <p>The code looks for every external program in the places that each operating system uses, and says in the panel which one is missing. The <a href="requirements.html#matrix">support table</a> lists each feature per system. To report what you see on Linux or Windows, follow <a href="verify.html">Check your install</a>.</p>
-<!-- publish: ci. Install the workflow (scripts/PUBLISH.md), wait for a green run, then replace this sentence with the systems that ran. -->
-<p>A CI workflow template is in the repository (<code>scripts/ci.workflow.yml</code>). It has not run yet because the author still has to install it, so no system is claimed to be checked by it.</p>
+<p>Since 2026-11-04 the CI workflow (<code>.github/workflows/ci.yml</code>) runs the unit tests and the repository, recipe, install, privacy and docs checks on Linux, macOS and Windows, on every push and pull request. It does not start the Herdr app: the live app is still only used on macOS.</p>
 
 <h2 id="start">Where to go next</h2>
 <ul class="cards">

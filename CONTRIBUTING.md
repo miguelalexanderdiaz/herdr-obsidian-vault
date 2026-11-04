@@ -61,8 +61,7 @@ herdr-app check /absolute/path/to/mods/vault-reader
 git status --short   # clean: nothing generated is left behind
 ```
 
-<!-- publish: ci. Install the workflow (scripts/PUBLISH.md), wait for a green run, then replace this sentence with the systems that ran. -->
-A CI workflow template (`scripts/ci.workflow.yml`) is meant to run the "yes" rows on Linux, macOS and Windows. It has not run yet because the author still has to install it as `.github/workflows/ci.yml` (`node scripts/install-ci.mjs`), so do not rely on it: run the checks yourself. The release gate fails by design until the author's steps in `scripts/PUBLISH.md` are done. `herdr-app check` can leave `gpui-kit.d.ts` and `jsconfig.json` in a mod folder; they are git-ignored, do not commit them.
+The CI workflow (`.github/workflows/ci.yml`, a copy of the template `scripts/ci.workflow.yml`) runs the "yes" rows on Linux, macOS and Windows on every push and pull request, since 2026-11-04. Run them yourself as well before you push; CI does not start the Herdr app. The release gate fails by design until the author's steps in `scripts/PUBLISH.md` are done. `herdr-app check` can leave `gpui-kit.d.ts` and `jsconfig.json` in a mod folder; they are git-ignored, do not commit them.
 
 ## Testing rules
 
