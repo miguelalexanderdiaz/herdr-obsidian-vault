@@ -102,9 +102,9 @@ Only Herdr is required. Each program below adds a feature; without it you get a 
 | --- | --- | --- | --- | --- | --- |
 | Herdr desktop app | Runs both mods. | Nothing works. | Install Herdr. | Install Herdr. | Install Herdr. |
 | ripgrep (`rg`) | The search box in the Vault panel. | Search shows `ripgrep (rg) isn't installed:` and the install hint for your system. Browsing and reading still work. | `brew install ripgrep` | install ripgrep with your package manager (for example: `apt install ripgrep`) | `winget install BurntSushi.ripgrep.MSVC` |
-| Node.js 22 or newer (`node`) | Drawing math, Mermaid diagrams and Excalidraw drawings (the render script). | One line above the note names what is missing; the source of each diagram, formula or drawing stays visible. | `brew install node` | install Node.js 22 or newer (nodejs.org, or your package manager) | `winget install OpenJS.NodeJS` |
-| A Chromium-family browser (Chrome, Chromium, Edge or Brave) | Runs headless to take a picture of each diagram, formula and drawing. | Same: one line above the note, `A Chromium-based browser wasn't found`, and the source stays visible. | Chrome, Chromium, Brave or Edge in `/Applications` (or `~/Applications`) | `google-chrome`, `chromium`, `brave-browser` or `microsoft-edge` on PATH | Edge, Chrome or Brave in Program Files or Local AppData (Edge is built into Windows) |
-| Obsidian desktop app | Supplies its own Mermaid and MathJax, read at run time from `obsidian.asar`. | Same: one line above the note, `The Obsidian app wasn't found`, and the source stays visible. Notes, canvases and images still open. | Obsidian in `/Applications` (or `~/Applications`) | Obsidian from `/opt`, `/usr/lib`, `/usr/share`, Snap or Flatpak | Obsidian in `%LOCALAPPDATA%` or Program Files |
+| Node.js 22.4 or newer (`node`) | Drawing math, Mermaid diagrams and Excalidraw drawings (the render script). | One line above the note names what is missing; the source of each diagram, formula or drawing stays visible. | `brew install node` | install Node.js 22.4 or newer (nodejs.org, or your package manager) | `winget install OpenJS.NodeJS` |
+| A Chromium-family browser (Chrome, Chromium, Edge or Brave) | Runs headless to take a picture of each diagram, formula and drawing. | Same: one line above the note, `A Chromium-based browser wasn't found`, and the source stays visible. | Chrome, Chromium, Brave or Edge in `/Applications` (or `~/Applications`) | Chrome, Chromium, Brave or Edge in `/usr/bin`, `/opt` or `/snap/bin`, or on PATH (Flatpak browsers are not looked for) | Edge, Chrome or Brave in Program Files or Local AppData (Edge is built into Windows) |
+| Obsidian desktop app | Supplies its own Mermaid and MathJax, read at run time from `obsidian.asar`. | Same: one line above the note, `The Obsidian app wasn't found`, and the source stays visible. Notes, canvases and images still open. | Obsidian in `/Applications` (or `~/Applications`) | Obsidian from `/opt`, `/usr/lib`, `/usr/share`, Snap or Flatpak (an AppImage cannot be found: name its file in `settings.json`) | Obsidian in `%LOCALAPPDATA%` or Program Files |
 | Poppler (`pdftoppm`, `pdfinfo`) | Every page of a PDF (the first 30). | macOS draws page 1 through Quick Look. Linux and Windows show `Poppler (pdftoppm, pdfinfo) isn't installed:` with the hint, and the PDF opens in your default app. | `brew install poppler` | install poppler-utils with your package manager (for example: `apt install poppler-utils`) | `scoop install poppler` |
 | curl | Downloading web images that a note shows with `![](https://...)`. | Those images show `curl isn't installed:` with the hint. Turn web images off on purpose with the Web images button. | Ships with macOS | install curl with your package manager (for example: `apt install curl`) | Ships with Windows 10 and newer |
 | System file opener | Opening files the reader cannot show, web links, and PDFs in your viewer. | The click does nothing. | `open` (built in) | `xdg-open` (package `xdg-utils`) | `rundll32 url.dll,FileProtocolHandler` (built in) |
@@ -124,7 +124,7 @@ winget install BurntSushi.ripgrep.MSVC OpenJS.NodeJS
 scoop install poppler
 ```
 
-Environment variables `HERDR_VAULT_BROWSER` (or `CHROME_PATH`) and `HERDR_VAULT_ASAR` point the mods at a browser and at Obsidian's `obsidian.asar` installed in an unusual place. Where Obsidian keeps its vault list on each system is on the [requirements page](docs/requirements.html).
+A browser or Obsidian in an unusual place: add `"browser"` and `"asar"` (absolute paths) to `data/vault/settings.json` in the Herdr home, no restart needed. The environment variables `HERDR_VAULT_BROWSER` (or `CHROME_PATH`) and `HERDR_VAULT_ASAR` also work, but only if Herdr itself was started with them. The search order and where Obsidian keeps its vault list on each system are on the [requirements page](docs/requirements.html).
 
 ## Privacy
 
@@ -613,7 +613,7 @@ Only Herdr is required. Everything else is optional and adds a feature. When a p
 
 macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.
 
-These programs are not bundled. For ripgrep, Node.js, Poppler and curl the mods try the bare name on your PATH, then the usual install folders of your operating system (Homebrew, Snap, Linuxbrew, Nix, Volta, Scoop, WinGet, Chocolatey, Program Files), then, for Node, the folders of nvm, fnm and asdf, and last your login shell (command -v) on macOS and Linux or where on Windows. The browser and Obsidian are found by the render script in its own way, described under Pointing the mods at a program. A program that was missing is looked for again after 30 seconds, so installing it while Herdr runs works. The only thing the mods ever download is a web image that a note shows (see privacy).
+These programs are not bundled. For ripgrep, Node.js, Poppler and curl the mods try the bare name on your PATH, then the usual install folders of your operating system (Homebrew, Snap, Linuxbrew, Nix, Volta, Scoop, WinGet, Chocolatey, Program Files), then, for Node, the folders of nvm, fnm and asdf, and last your login shell (command -v) on macOS and Linux or where on Windows. The browser and Obsidian have their own search order, described under Pointing the mods at a program. A program that was missing is looked for again after 30 seconds, so installing it while Herdr runs works. The only thing the mods ever download is a web image that a note shows (see privacy).
 
 Program | Used for | Without it | macOS | Linux | Windows
 
@@ -621,11 +621,11 @@ Herdr desktop app | Runs both mods. | Nothing works. | Install Herdr. | Install 
 
 ripgrep (rg) | The search box in the Vault panel. | Search shows ripgrep (rg) isn't installed: and the install hint for your system. Browsing and reading still work. | brew install ripgrep | install ripgrep with your package manager (for example: apt install ripgrep) | winget install BurntSushi.ripgrep.MSVC
 
-Node.js 22 or newer (node) | Drawing math, Mermaid diagrams and Excalidraw drawings (the render script). | One line above the note names what is missing; the source of each diagram, formula or drawing stays visible. | brew install node | install Node.js 22 or newer (nodejs.org, or your package manager) | winget install OpenJS.NodeJS
+Node.js 22.4 or newer (node) | Drawing math, Mermaid diagrams and Excalidraw drawings (the render script). | One line above the note names what is missing; the source of each diagram, formula or drawing stays visible. | brew install node | install Node.js 22.4 or newer (nodejs.org, or your package manager) | winget install OpenJS.NodeJS
 
-A Chromium-family browser (Chrome, Chromium, Edge or Brave) | Runs headless to take a picture of each diagram, formula and drawing. | Same: one line above the note, A Chromium-based browser wasn't found, and the source stays visible. | Chrome, Chromium, Brave or Edge in /Applications (or ~/Applications) | google-chrome, chromium, brave-browser or microsoft-edge on PATH | Edge, Chrome or Brave in Program Files or Local AppData (Edge is built into Windows)
+A Chromium-family browser (Chrome, Chromium, Edge or Brave) | Runs headless to take a picture of each diagram, formula and drawing. | Same: one line above the note, A Chromium-based browser wasn't found, and the source stays visible. | Chrome, Chromium, Brave or Edge in /Applications (or ~/Applications) | Chrome, Chromium, Brave or Edge in /usr/bin, /opt or /snap/bin, or on PATH (Flatpak browsers are not looked for) | Edge, Chrome or Brave in Program Files or Local AppData (Edge is built into Windows)
 
-Obsidian desktop app | Supplies its own Mermaid and MathJax, read at run time from obsidian.asar. | Same: one line above the note, The Obsidian app wasn't found, and the source stays visible. Notes, canvases and images still open. | Obsidian in /Applications (or ~/Applications) | Obsidian from /opt, /usr/lib, /usr/share, Snap or Flatpak | Obsidian in %LOCALAPPDATA% or Program Files
+Obsidian desktop app | Supplies its own Mermaid and MathJax, read at run time from obsidian.asar. | Same: one line above the note, The Obsidian app wasn't found, and the source stays visible. Notes, canvases and images still open. | Obsidian in /Applications (or ~/Applications) | Obsidian from /opt, /usr/lib, /usr/share, Snap or Flatpak (an AppImage cannot be found: name its file in settings.json) | Obsidian in %LOCALAPPDATA% or Program Files
 
 Poppler (pdftoppm, pdfinfo) | Every page of a PDF (the first 30). | macOS draws page 1 through Quick Look. Linux and Windows show Poppler (pdftoppm, pdfinfo) isn't installed: with the hint, and the PDF opens in your default app. | brew install poppler | install poppler-utils with your package manager (for example: apt install poppler-utils) | scoop install poppler
 
@@ -673,13 +673,48 @@ Vaults must live inside your home folder. Herdr mods can only read files under t
 
 ## Pointing the mods at a program
 
-If the browser or Obsidian is installed somewhere unusual, set one of these environment variables before starting Herdr. They are read by the render script, first in the search order.
+If the browser or Obsidian is installed somewhere unusual, name it. The easiest way is the settings file, because it needs no restart and reaches Herdr however it was started.
 
-- HERDR_VAULT_BROWSER, then CHROME_PATH: the full path of the browser program.
+### The settings file
 
-- HERDR_VAULT_ASAR: the full path of Obsidian’s obsidian.asar.
+Create or edit data/vault/settings.json in your Herdr home and add one or both keys. Both must be absolute paths; a value of the wrong type, or a relative path, is ignored without a message. The file is read again at every render run.
 
-For the other programs, put their folder on the PATH that your login shell sets, or install them in one of the usual places.
+```
+{
+  "browser": "/opt/example/chromium/chrome",
+  "asar": "/opt/Example/resources/obsidian.asar"
+}
+```
+
+On Windows write the path with forward slashes or doubled backslashes, for example "C:/Tools/Chrome/chrome.exe". The Web images button writes the same file (key remoteImages) and keeps the other keys.
+
+### Search order
+
+For the browser, the first one that exists wins:
+
+- the browser key in data/vault/settings.json;
+
+- the environment variable HERDR_VAULT_BROWSER, then CHROME_PATH;
+
+- the install folders of your system: on macOS Chrome, Chromium, Brave and Edge in /Applications and ~/Applications; on Windows Edge, Chrome, Brave and Chromium under Program Files, Program Files (x86) and Local AppData; on Linux /usr/bin/google-chrome (and -stable), /opt/google/chrome/chrome, /usr/bin/chromium (and chromium-browser), /usr/lib/chromium/chromium, /usr/bin/brave-browser, /opt/brave.com/brave/brave, /usr/bin/microsoft-edge (and -stable), /opt/microsoft/msedge/msedge, /usr/local/bin/chromium and /snap/bin/chromium. Flatpak browsers are left out on purpose;
+
+- the browser names on the PATH of the render script’s own process;
+
+- last, your login shell (command -v) on macOS and Linux, or where on Windows, asked once per session and only when everything above failed. A miss is remembered for 30 seconds.
+
+For Obsidian’s obsidian.asar: the asar key, then the environment variable HERDR_VAULT_ASAR, then the install folders in the table above. There is no PATH or shell lookup for it.
+
+### Environment variables
+
+HERDR_VAULT_BROWSER, CHROME_PATH and HERDR_VAULT_ASAR are read by the render script, not by the mod, so they only count if Herdr itself was started with them. A variable exported in your shell profile does not reach a Herdr started from Finder or a desktop launcher; Herdr’s own notes say that such a launch loads the login shell’s PATH and little else. To use one:
+
+- start Herdr from a terminal where the variable is set (herdr-app), or
+
+- macOS: run launchctl setenv NAME value, then restart Herdr; Windows: set a user environment variable (System Properties, or setx), then restart Herdr; Linux: set it in the desktop entry or the systemd user environment, then restart Herdr.
+
+The per-system steps follow from how Herdr starts and have not been tested here. Prefer the settings file.
+
+For the other programs (ripgrep, Node.js, Poppler, curl), put their folder on the PATH that your login shell sets, or install them in one of the usual places.
 
 ← UsageConfiguration →
 
@@ -697,15 +732,23 @@ Setting | Where | Default | Does
 
 remoteImages | data/vault/settings.json in the Herdr home; the Web images: on/off button in the reader bar (shown when the note has web pictures) | true | When false, notes that show a web image (![](https://…)) do not download it and the picture says Images from the web are turned off. Obsidian shows web images by default, so the default matches.
 
+browser | data/vault/settings.json, edited by hand | not set | Absolute path of the Chromium-family browser to use for diagrams, math and drawings. Tried before everything else. A relative path or a value that is not text is ignored without a message. Read again at every render run.
+
+asar | data/vault/settings.json, edited by hand | not set | Absolute path of Obsidian’s obsidian.asar. Tried before everything else; the same rules as browser.
+
+The order in which the browser and the obsidian.asar are looked for is on the requirements page.
+
 ## Environment variables
 
 Variable | Meaning
 
 HERDR_APP_HOME | Chooses the Herdr home folder (Herdr’s own variable; the mods write under data/vault of whichever home is in use).
 
-HERDR_VAULT_BROWSER, CHROME_PATH | Full path of the browser program for the render script. Tried in this order, before the usual install folders and the names on PATH.
+HERDR_VAULT_BROWSER, CHROME_PATH | Full path of the browser program for the render script. Tried after the browser setting and before the usual install folders and the names on PATH.
 
-HERDR_VAULT_ASAR | Full path of Obsidian’s obsidian.asar, tried before the usual install folders.
+HERDR_VAULT_ASAR | Full path of Obsidian’s obsidian.asar, tried after the asar setting and before the usual install folders.
+
+The render script reads these, not the mod, so they only count if Herdr itself was started with them (a variable set in a shell profile does not reach a Herdr started from Finder or a launcher). The requirements page says how; the settings file above avoids the problem.
 
 ## Keys
 
@@ -879,6 +922,8 @@ The install hint after a message depends on your system. The requirements table 
 
 - Notification Not an Obsidian vault
 
+- Notification Vault outside your home folder
+
 - This vault's folder is gone
 
 - Outside your home folder: Herdr can't read it
@@ -891,7 +936,7 @@ The install hint after a message depends on your system. The requirements table 
 
 - is a program, not a document.
 
-- Diagrams and math need Node.js 22 or newer
+- Diagrams and math need Node.js 22.4 or newer
 
 - Diagrams and math need a browser to draw them
 
@@ -904,6 +949,8 @@ The install hint after a message depends on your system. The requirements table 
 - Poppler (pdftoppm, pdfinfo) isn't installed
 
 - isn't in the vault or No file … in the vault
+
+- is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.
 
 - No heading or block
 
@@ -926,6 +973,10 @@ Obsidian has not been run on this machine, or its list is somewhere the mod does
 ### Notification Not an Obsidian vault
 
 The folder you picked has no .obsidian inside. Pick the vault’s own folder. A new vault needs to be opened in Obsidian once so it creates that folder.
+
+### Notification Vault outside your home folder
+
+The body reads Herdr mods can only read inside your home folder, then the vault name and can't be added. A link to it from inside your home folder may work. You tried Add vault on a folder outside your home folder. It is not added to the list; it is shown dimmed as Outside your home folder. A symbolic link or a copy inside your home folder may work; that is untested. A vault that is already in the list but lies outside the home folder shows This vault is outside your home folder, which Herdr mods can't read in place of its tree.
 
 ### This vault's folder is gone
 
@@ -957,17 +1008,17 @@ A notice titled Not opened. The panel and the reader never launch files that sta
 
 Problems that depend on your machine appear once as a line above the note. The note and the source of each diagram or formula stay visible. They are never cached, so fixing the cause is enough.
 
-### Diagrams and math need Node.js 22 or newer
+### Diagrams and math need Node.js 22.4 or newer
 
-Also seen as Node.js 22 or newer isn't installed, followed by Diagrams and math are shown as source until then. Install Node.js 22 or newer (node --version tells you what you have). The render script uses the built-in WebSocket, which older versions lack.
+Also seen as Node.js 22.4 or newer isn't installed, followed by Diagrams and math are shown as source until then. Install Node.js 22.4 or newer (node --version tells you what you have). The render script uses the built-in WebSocket, and this project checks for 22.4 or newer before it starts the script.
 
 ### Diagrams and math need a browser to draw them
 
-Followed by A Chromium-based browser wasn't found and an install hint. Install Chrome, Chromium, Brave or Edge, or set HERDR_VAULT_BROWSER (or CHROME_PATH) to its full path.
+Followed by A Chromium-based browser wasn't found and an install hint. Install Chrome, Chromium, Brave or Edge, or name the one you have: add "browser" (an absolute path) to data/vault/settings.json, or set HERDR_VAULT_BROWSER (or CHROME_PATH) in the environment Herdr was started with. If you named a browser in the settings file and it does not exist, the line says The browser named in settings.json ("browser") wasn't found, and neither was any other. before the hint. The places that are searched, in order, are on the requirements page.
 
 ### Diagrams and math use Obsidian's own Mermaid and MathJax, read from the installed app
 
-Followed by The Obsidian app wasn't found. Install the Obsidian app, or set HERDR_VAULT_ASAR to the full path of its obsidian.asar. Obsidian is needed only for this; notes, canvases and images open without it.
+Followed by The Obsidian app wasn't found. Install the Obsidian app, or name its obsidian.asar: add "asar" (an absolute path) to data/vault/settings.json, or set HERDR_VAULT_ASAR in the environment Herdr was started with. An AppImage cannot be found by itself, so name its file. If you named a file in the settings and it does not exist, the line says The Obsidian file named in settings.json ("asar") wasn't found, and neither was an installed app. Obsidian is needed only for this; notes, canvases and images open without it.
 
 ### Drawing took too long and was stopped
 
@@ -983,7 +1034,11 @@ All pages of a PDF need Poppler. On Linux and Windows the message ends with Unti
 
 ### isn't in the vault or No file … in the vault
 
-The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed). This file is no longer in the vault means the open note itself was deleted or moved, or is larger than 1 MiB: Herdr lets a mod read a text file of up to 1 MiB, and a larger note or canvas cannot be opened in the reader. Open it in your editor instead.
+The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed). This file is no longer in the vault means the open note itself was deleted or moved.
+
+### is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.
+
+The whole message names the kind: This note, This canvas or This drawing is larger than 1 MiB, so the reader can't open it. Open it in Obsidian. Herdr lets a mod read a text file of up to 1 MiB, so a larger one cannot be shown. Open it in Obsidian or an editor, or split it. What Herdr’s readTextFile does beyond 1 MiB is not documented (it may return nothing or reject); the reader treats a file that exists but gave nothing, or an error naming the limit, as too large. That has not been checked in the live app.
 
 ### No heading or block
 

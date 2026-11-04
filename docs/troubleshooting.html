@@ -41,19 +41,21 @@
 <ul class="jump">
 <li><a href="#no-vaults">The panel says No vault yet</a></li>
 <li><a href="#not-vault">Notification Not an Obsidian vault</a></li>
+<li><a href="#outside-add">Notification Vault outside your home folder</a></li>
 <li><a href="#folder-gone">This vault's folder is gone</a></li>
 <li><a href="#outside-home">Outside your home folder: Herdr can't read it</a></li>
 <li><a href="#rg-missing">ripgrep (rg) isn't installed</a></li>
 <li><a href="#stale-tree">Live updates are off for this folder</a></li>
 <li><a href="#more">more not listed (search finds them)</a></li>
 <li><a href="#program">is a program, not a document.</a></li>
-<li><a href="#needs-node">Diagrams and math need Node.js 22 or newer</a></li>
+<li><a href="#needs-node">Diagrams and math need Node.js 22.4 or newer</a></li>
 <li><a href="#needs-browser">Diagrams and math need a browser to draw them</a></li>
 <li><a href="#needs-obsidian">Diagrams and math use Obsidian's own Mermaid and MathJax, read from the installed app</a></li>
 <li><a href="#render-slow">Drawing took too long and was stopped</a></li>
 <li><a href="#render-other">Couldn't draw this</a></li>
 <li><a href="#pdf-first">Poppler (pdftoppm, pdfinfo) isn't installed</a></li>
 <li><a href="#missing-target">isn't in the vault or No file &hellip; in the vault</a></li>
+<li><a href="#too-large">is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.</a></li>
 <li><a href="#anchor">No heading or block</a></li>
 <li><a href="#canvas-empty">This canvas is empty</a></li>
 <li><a href="#deep">Embedded too deep to show here</a></li>
@@ -69,6 +71,9 @@
 
 <h3 id="not-vault">Notification <code class="msg">Not an Obsidian vault</code></h3>
 <p>The folder you picked has no <code>.obsidian</code> inside. Pick the vault&rsquo;s own folder. A new vault needs to be opened in Obsidian once so it creates that folder.</p>
+
+<h3 id="outside-add">Notification <code class="msg">Vault outside your home folder</code></h3>
+<p>The body reads <code class="msg">Herdr mods can only read inside your home folder</code>, then the vault name and <code class="msg">can't be added. A link to it from inside your home folder may work.</code> You tried <strong>Add vault</strong> on a folder outside your home folder. It is not added to the list; it is shown dimmed as <em>Outside your home folder</em>. A symbolic link or a copy inside your home folder may work; that is untested. A vault that is already in the list but lies outside the home folder shows <code class="msg">This vault is outside your home folder, which Herdr mods can't read</code> in place of its tree.</p>
 
 <h3 id="folder-gone"><code class="msg">This vault's folder is gone</code></h3>
 <p>The folder was moved or deleted, or sits on a drive that is not connected. Remove it from the picker (the <kbd>x</kbd>) and add it again.</p>
@@ -92,14 +97,14 @@
 <h2 id="reader">Reader</h2>
 <p>Problems that depend on your machine appear once as a line above the note. The note and the source of each diagram or formula stay visible. They are never cached, so fixing the cause is enough.</p>
 
-<h3 id="needs-node"><code class="msg">Diagrams and math need Node.js 22 or newer</code></h3>
-<p>Also seen as <code class="msg">Node.js 22 or newer isn't installed</code>, followed by <code>Diagrams and math are shown as source until then.</code> Install Node.js 22 or newer (<code>node --version</code> tells you what you have). The render script uses the built-in <code>WebSocket</code>, which older versions lack.</p>
+<h3 id="needs-node"><code class="msg">Diagrams and math need Node.js 22.4 or newer</code></h3>
+<p>Also seen as <code class="msg">Node.js 22.4 or newer isn't installed</code>, followed by <code>Diagrams and math are shown as source until then.</code> Install Node.js 22.4 or newer (<code>node --version</code> tells you what you have). The render script uses the built-in <code>WebSocket</code>, and this project checks for 22.4 or newer before it starts the script.</p>
 
 <h3 id="needs-browser"><code class="msg">Diagrams and math need a browser to draw them</code></h3>
-<p>Followed by <code class="msg">A Chromium-based browser wasn't found</code> and an install hint. Install Chrome, Chromium, Brave or Edge, or set <code>HERDR_VAULT_BROWSER</code> (or <code>CHROME_PATH</code>) to its full path.</p>
+<p>Followed by <code class="msg">A Chromium-based browser wasn't found</code> and an install hint. Install Chrome, Chromium, Brave or Edge, or name the one you have: add <code>"browser"</code> (an absolute path) to <code>data/vault/settings.json</code>, or set <code>HERDR_VAULT_BROWSER</code> (or <code>CHROME_PATH</code>) in the environment Herdr was started with. If you named a browser in the settings file and it does not exist, the line says <code class="msg">The browser named in settings.json ("browser") wasn't found, and neither was any other.</code> before the hint. The places that are searched, in order, are on the <a href="requirements.html#order">requirements page</a>.</p>
 
 <h3 id="needs-obsidian"><code class="msg">Diagrams and math use Obsidian's own Mermaid and MathJax, read from the installed app</code></h3>
-<p>Followed by <code class="msg">The Obsidian app wasn't found</code>. Install the Obsidian app, or set <code>HERDR_VAULT_ASAR</code> to the full path of its <code>obsidian.asar</code>. Obsidian is needed only for this; notes, canvases and images open without it.</p>
+<p>Followed by <code class="msg">The Obsidian app wasn't found</code>. Install the Obsidian app, or name its <code>obsidian.asar</code>: add <code>"asar"</code> (an absolute path) to <code>data/vault/settings.json</code>, or set <code>HERDR_VAULT_ASAR</code> in the environment Herdr was started with. An AppImage cannot be found by itself, so name its file. If you named a file in the settings and it does not exist, the line says <code class="msg">The Obsidian file named in settings.json ("asar") wasn't found, and neither was an installed app.</code> Obsidian is needed only for this; notes, canvases and images open without it.</p>
 
 <h3 id="render-slow"><code class="msg">Drawing took too long and was stopped</code></h3>
 <p>Open the note again to retry. Also possible: <code class="msg">Mermaid and MathJax did not load in time</code>; wait a moment and open the note again. The first run extracts the two libraries from Obsidian, which takes a few seconds.</p>
@@ -111,7 +116,10 @@
 <p>All pages of a PDF need Poppler. On Linux and Windows the message ends with <code class="msg">Until then PDFs open in your default app.</code>; on macOS page 1 is drawn by Quick Look with no message. A PDF with more than 30 pages shows the first 30 and a row <code class="msg">open all of it in</code> your viewer.</p>
 
 <h3 id="missing-target"><code class="msg">isn't in the vault</code> or <code class="msg">No file</code> &hellip; <code class="msg">in the vault</code></h3>
-<p>The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed). <code class="msg">This file is no longer in the vault</code> means the open note itself was deleted or moved, <em>or</em> is larger than 1 MiB: Herdr lets a mod read a text file of up to 1 MiB, and a larger note or canvas cannot be opened in the reader. Open it in your editor instead.</p>
+<p>The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed). <code class="msg">This file is no longer in the vault</code> means the open note itself was deleted or moved.</p>
+
+<h3 id="too-large"><code class="msg">is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.</code></h3>
+<p>The whole message names the kind: <em>This note</em>, <em>This canvas</em> or <em>This drawing is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.</em> Herdr lets a mod read a text file of up to 1 MiB, so a larger one cannot be shown. Open it in Obsidian or an editor, or split it. What Herdr&rsquo;s <code>readTextFile</code> does beyond 1 MiB is not documented (it may return nothing or reject); the reader treats a file that exists but gave nothing, or an error naming the limit, as too large. That has not been checked in the live app.</p>
 
 <h3 id="anchor"><code class="msg">No heading or block</code></h3>
 <p>The link asks for a heading or a block id (<code>^id</code>) that the note does not have. The reader shows the whole note instead.</p>

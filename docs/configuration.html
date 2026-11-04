@@ -40,16 +40,20 @@
 <thead><tr><th scope="col">Setting</th><th scope="col">Where</th><th scope="col">Default</th><th scope="col">Does</th></tr></thead>
 <tbody>
 <tr><th scope="row"><code>remoteImages</code></th><td><code>data/vault/settings.json</code> in the Herdr home; the <em>Web images: on/off</em> button in the reader bar (shown when the note has web pictures)</td><td><code>true</code></td><td>When <code>false</code>, notes that show a web image (<code>![](https://&hellip;)</code>) do not download it and the picture says <em>Images from the web are turned off</em>. Obsidian shows web images by default, so the default matches.</td></tr>
+<tr><th scope="row"><code>browser</code></th><td><code>data/vault/settings.json</code>, edited by hand</td><td>not set</td><td>Absolute path of the Chromium-family browser to use for diagrams, math and drawings. Tried before everything else. A relative path or a value that is not text is ignored without a message. Read again at every render run.</td></tr>
+<tr><th scope="row"><code>asar</code></th><td><code>data/vault/settings.json</code>, edited by hand</td><td>not set</td><td>Absolute path of Obsidian&rsquo;s <code>obsidian.asar</code>. Tried before everything else; the same rules as <code>browser</code>.</td></tr>
 </tbody></table></div>
+<p>The order in which the browser and the <code>obsidian.asar</code> are looked for is on the <a href="requirements.html#order">requirements page</a>.</p>
 
 <h2 id="env">Environment variables</h2>
 <div class="table-wrap" role="region" aria-label="Environment variables" tabindex="0"><table>
 <thead><tr><th scope="col">Variable</th><th scope="col">Meaning</th></tr></thead>
 <tbody>
 <tr><th scope="row"><code>HERDR_APP_HOME</code></th><td>Chooses the Herdr home folder (Herdr&rsquo;s own variable; the mods write under <code>data/vault</code> of whichever home is in use).</td></tr>
-<tr><th scope="row"><code>HERDR_VAULT_BROWSER</code>, <code>CHROME_PATH</code></th><td>Full path of the browser program for the render script. Tried in this order, before the usual install folders and the names on PATH.</td></tr>
-<tr><th scope="row"><code>HERDR_VAULT_ASAR</code></th><td>Full path of Obsidian&rsquo;s <code>obsidian.asar</code>, tried before the usual install folders.</td></tr>
+<tr><th scope="row"><code>HERDR_VAULT_BROWSER</code>, <code>CHROME_PATH</code></th><td>Full path of the browser program for the render script. Tried after the <code>browser</code> setting and before the usual install folders and the names on PATH.</td></tr>
+<tr><th scope="row"><code>HERDR_VAULT_ASAR</code></th><td>Full path of Obsidian&rsquo;s <code>obsidian.asar</code>, tried after the <code>asar</code> setting and before the usual install folders.</td></tr>
 </tbody></table></div>
+<p>The render script reads these, not the mod, so they only count if Herdr itself was started with them (a variable set in a shell profile does not reach a Herdr started from Finder or a launcher). The <a href="requirements.html#env-vars">requirements page</a> says how; the settings file above avoids the problem.</p>
 
 <h2 id="keys">Keys</h2>
 <p>The repository ships a <code>keys.json</code> with one optional binding: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> opens (and closes) the Vault panel as a popup. Merge it into your own <code>keys.json</code>; Herdr does not read it from the mod folder. If the key is already yours for something else, keep yours and open the panel with the app command <code>mod.open</code> from the command palette instead. The reader and search keys listed on the <a href="usage.html">usage page</a> are built in and cannot be remapped.</p>
