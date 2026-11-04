@@ -41,8 +41,17 @@ const sourceText = source.map((f) => readText(f)).join("\n");
 
 // ---- 1. Required files ----
 console.log("Files");
-for (const f of ["LICENSE", "NOTICE", "RECIPE.md", "keys.json", ".gitignore", ".gitattributes", ".github/workflows/ci.yml"]) {
+for (const f of ["LICENSE", "NOTICE", "RECIPE.md", "keys.json", ".gitignore", ".gitattributes", "scripts/ci.workflow.yml"]) {
   r.check(has(f), `${f} present`, `${f} is missing`);
+}
+// The workflow is installed by the author (pushing .github/workflows needs a token scope the unattended run lacked).
+if (has(".github/workflows/ci.yml")) {
+  const body = (f) => readText(f).replace(/^#[^\n]*\n/gm, "").trim();
+  r.check(body(".github/workflows/ci.yml") === body("scripts/ci.workflow.yml"), ".github/workflows/ci.yml matches scripts/ci.workflow.yml", ".github/workflows/ci.yml differs from scripts/ci.workflow.yml (the template is the source of truth)");
+} else if (RELEASE) {
+  r.error(".github/workflows/ci.yml is missing: copy scripts/ci.workflow.yml there (scripts/PUBLISH.md)");
+} else {
+  r.warn(".github/workflows/ci.yml is not installed yet: copy scripts/ci.workflow.yml there (scripts/PUBLISH.md)");
 }
 if (has("LICENSE")) {
   const t = readText("LICENSE");
