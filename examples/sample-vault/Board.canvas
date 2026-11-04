@@ -1,0 +1,16 @@
+{
+  "nodes": [
+    {"id":"g1","type":"group","x":-40,"y":-60,"width":760,"height":300,"label":"This stage","color":"4"},
+    {"id":"t1","type":"text","x":0,"y":0,"width":260,"height":140,"text":"## Vault list\nThe **whole file list** of a vault, on the right."},
+    {"id":"f1","type":"file","x":380,"y":0,"width":300,"height":200,"file":"Other note.md","color":"6"},
+    {"id":"l1","type":"link","x":0,"y":360,"width":300,"height":70,"url":"https://obsidian.md"},
+    {"id":"i1","type":"file","x":380,"y":340,"width":320,"height":180,"file":"attachments/photo.png"},
+    {"id":"t2","type":"text","x":-360,"y":40,"width":240,"height":110,"text":"Red card\n- with a list","color":"1"}
+  ],
+  "edges": [
+    {"id":"e1","fromNode":"t1","fromSide":"right","toNode":"f1","toSide":"left","label":"click"},
+    {"id":"e2","fromNode":"t1","toNode":"l1","color":"2"},
+    {"id":"e3","fromNode":"t2","toNode":"t1","toEnd":"arrow","fromEnd":"arrow"},
+    {"id":"e4","fromNode":"f1","fromSide":"bottom","toNode":"i1","toSide":"top"}
+  ]
+}

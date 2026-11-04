@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: transparent; }
+  body { font-family: "Helvetica Neue", Helvetica, sans-serif; -webkit-font-smoothing: antialiased; }
+  #stage { position: absolute; left: 0; top: 0; display: inline-block; width: max-content; }
+  #stage.math-inline { padding: 1px 1px; }
+  #stage.math-block { padding: 4px 2px; }
+  mjx-container { margin: 0 !important; }
+</style>
+<script>
+  // As Obsidian sets MathJax up (app.js), plus a flag when it's ready.
+  window.MathJax = {
+    tex: { inlineMath: [], displayMath: [], processEscapes: false, processEnvironments: false, processRefs: false },
+    startup: { typeset: false, ready() { MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => { window.mathReady = true; }); } },
+    options: { enableMenu: false, renderActions: { assistiveMml: [] } },
+  };
+</script>
+<script src="/lib/mathjax/tex-chtml-full.js"></script>
+<script src="/lib/mermaid.min.js"></script>
+<script src="/lzstring.js"></script>
+<script src="/excalidraw.js"></script>
+<script src="/page.js"></script>
+</head><body><div id="stage"></div></body></html>
