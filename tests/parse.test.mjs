@@ -164,3 +164,17 @@ test("safeUrl: only web links and mail (CR-1-7)", () => {
     assert.equal(safeUrl(bad), null, String(bad));
   }
 });
+
+test("a file name with an unbalanced ) survives as a link (CR-2-14)", () => {
+  const md = inline("see [[a)b]]", ctx(["a)b.md"]));
+  assert.match(md, /\]\(vault:a%29b\.md\)/);
+  assert.equal(parseLinkUrl("vault:a%29b%28c.md"), "a)b(c.md");
+  assert.equal(parseLinkUrl(linkUrl("a(b)c)")), "a(b)c)");
+});
+
+test("a note saved with a byte-order mark keeps its properties (CR-2-14)", () => {
+  const r = splitFrontmatter("\ufeff---\ntitle: x\n---\nbody");
+  assert.deepEqual(r.props, [["title", "x"]]);
+  assert.equal(r.body, "body");
+  assert.equal(splitFrontmatter("\ufeffjust text").body, "just text");
+});

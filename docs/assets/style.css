@@ -82,12 +82,26 @@ summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 12px; padding: 0; list-style: none; }
 .cards li { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface); margin: 0; }
 .cards a { font-weight: 700; }
+ul.jump { columns: 16rem; column-gap: 24px; padding-left: 1.2em; }
+ul.jump li { break-inside: avoid; }
 figure { margin: 1.2em 0; }
-figure svg { max-width: 100%; height: auto; }
+figure svg, figure img { max-width: 100%; height: auto; }
 figcaption { color: var(--muted); font-size: .9rem; }
 .pager { display: flex; justify-content: space-between; gap: 16px; margin-top: 2.5em; padding-top: 1em; border-top: 1px solid var(--border); }
 .site-footer { border-top: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: .9rem; padding: 16px 0 28px; }
 .site-footer p { margin: .3em 0; }
+@media (max-width: 600px) {
+  /* A table with one short label column and long cells reads better as stacked blocks on a phone. */
+  table.stack { min-width: 0; }
+  table.stack thead { position: absolute; left: -9999px; }
+  table.stack tr, table.stack th, table.stack td { display: block; }
+  table.stack th { background: none; padding-bottom: 0; border-bottom: 0; font-size: 1rem; }
+  table.stack td { border-bottom: 0; padding-top: 4px; padding-bottom: 4px; }
+  table.stack td:nth-of-type(1)::before { content: "Do: "; font-weight: 700; }
+  table.stack td:nth-of-type(2)::before { content: "Expect: "; font-weight: 700; }
+  table.stack tr { border-bottom: 1px solid var(--border); padding: 6px 0; }
+  table.stack tr:last-child { border-bottom: 0; }
+}
 @media (max-width: 480px) {
   h1 { font-size: 1.6rem; }
   h2 { font-size: 1.25rem; }

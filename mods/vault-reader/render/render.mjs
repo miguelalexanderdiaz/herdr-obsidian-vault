@@ -1,16 +1,19 @@
 // Renders a note's Mermaid diagrams, math and Excalidraw drawings to PNG, in a headless
 // Chromium-family browser, with Obsidian's own copies of Mermaid and MathJax (taken out of the
 // installed Obsidian app, so the output matches what Obsidian shows).
-// Nothing leaves the machine: the page is served from 127.0.0.1.
+// The page is served from 127.0.0.1 and may load nothing else: a content-security policy in page.html
+// (PAGE_CSP in lib.mjs), a browser that resolves no name but 127.0.0.1 and uses no proxy. A note's Mermaid
+// label with an <img src="http://..."> therefore fetches nothing (tests/render-e2e.test.mjs proves it).
 //
 //   node render.mjs <appHome> <jobs.json>
 //   jobs.json: { theme: {fg, bg, muted, accent, border, surface, dark, font, size},
-//                discover: { asar: [paths], browsers: [paths], names: [programs] },   (from ../platform.js)
+//                discover: { asar: [paths], browsers: [paths], names: [programs],   (from ../platform.js)
+//                            browserPath?, asarPath? (settings.json), browserFound?: [paths] (login shell) },
 //                jobs: [{ id, kind: "mermaid" | "math" | "excalidraw", src?, display?, file?, out }] }
 //   out: an absolute path without extension; writes <out>.png and <out>.json ({w, h}, logical px).
 // Prints [{ id, ok, w, h, error }] as JSON. A problem with the machine (no browser, no Obsidian,
-// Node older than 22) is one entry without id: [{ error: "no-browser" | "no-obsidian" | "needs-node-22" }]
-// and nothing is cached for it. Environment: HERDR_VAULT_ASAR, HERDR_VAULT_BROWSER, CHROME_PATH.
+// Node older than 22.4) is one entry without id: [{ error: "no-browser" | "no-obsidian" | "needs-node-22" }]
+// and nothing is cached for it. Environment: HERDR_VAULT_ASAR, HERDR_VAULT_BROWSER, CHROME_PATH (settings.json wins over them).
 
 import fs from "fs";
 import os from "os";
@@ -18,16 +21,16 @@ import path from "path";
 import http from "http";
 import { spawn, spawnSync } from "child_process";
 import { fileURLToPath } from "url";
-import { findAsar, findBrowser, findNear, safeJoin, profileName, DEADLINE_MS } from "./lib.mjs";
+import { findAsar, findBrowser, findNear, safeJoin, DEADLINE_MS } from "./lib.mjs";
+import { createBrowser, Known } from "./browser.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const started = Date.now();
 const results = [];
 const say = (list) => process.stdout.write(JSON.stringify(list));
 
-class Known extends Error {}
-
-if (typeof WebSocket !== "function" || Number(process.versions.node.split(".")[0]) < 22) {
+// WebSocket is global (unflagged) from Node 22.4; that, not the version number, is what is needed.
+if (typeof WebSocket !== "function") {
   say([{ error: "needs-node-22" }]);
   process.exit(0);
 }
@@ -123,17 +126,7 @@ function serve() {
 
 // ---- the browser --------------------------------------------------------------------------
 
-let proc = null, profile = null;
-
-function killBrowser() {
-  if (proc && proc.exitCode === null) {
-    try {
-      if (process.platform === "win32") spawnSync("taskkill", ["/pid", String(proc.pid), "/T", "/F"], { stdio: "ignore" });
-      else proc.kill("SIGKILL");
-    } catch { /* already gone */ }
-  }
-  if (profile) { try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* best effort */ } }
-}
+const browser = createBrowser({ spawn, spawnSync, fs, path, dataDir: DATA, pid: process.pid, platform: process.platform });
 
 // Profiles of runs that were killed before they could clean up.
 function sweepOldProfiles() {
@@ -144,27 +137,6 @@ function sweepOldProfiles() {
       if (Date.now() - fs.statSync(p).mtimeMs > 3_600_000) fs.rmSync(p, { recursive: true, force: true });
     }
   } catch { /* nothing to sweep */ }
-}
-
-function launch(bin) {
-  // One profile per run: two readers drawing at once must not share one.
-  profile = path.join(DATA, profileName(process.pid));
-  fs.mkdirSync(profile, { recursive: true });
-  proc = spawn(bin, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
-    "--disable-extensions", "--disable-background-networking", "--disable-sync", "--mute-audio",
-    `--user-data-dir=${profile}`, "--remote-debugging-port=0", "--hide-scrollbars", "about:blank"],
-    { stdio: ["ignore", "ignore", "pipe"], detached: false });
-  return new Promise((ok, fail) => {
-    let err = "";
-    const t = setTimeout(() => fail(new Known("no-browser")), 15000);
-    proc.on("error", () => { clearTimeout(t); fail(new Known("no-browser")); });
-    proc.stderr.on("data", (d) => {
-      err += d;
-      const m = err.match(/DevTools listening on (ws:\/\/\S+)/);
-      if (m) { clearTimeout(t); ok(m[1]); }
-    });
-    proc.on("exit", () => { clearTimeout(t); fail(new Known("no-browser")); });
-  });
 }
 
 function cdp(url) {
@@ -220,15 +192,18 @@ async function main() {
   const env = process.env;
   const exists = (p) => { try { return fs.statSync(p).isFile(); } catch { return false; } };
   const common = { env, home: os.homedir(), exists, readdirSync: fs.readdirSync };
-  const bin = findBrowser({ ...common, candidates: discover.browsers ?? [], names: discover.names ?? [], win: process.platform === "win32" });
-  if (!bin) throw new Known("no-browser");
-  const asar = findAsar({ ...common, candidates: discover.asar ?? [] });
-  if (!asar) throw new Known("no-obsidian");
+  // Order: settings.json (discover.browserPath / asarPath), environment, install folders, PATH, then what the
+  // mod found through the login shell (discover.browserFound).
+  const bin = findBrowser({ ...common, candidates: discover.browsers ?? [], names: discover.names ?? [], win: process.platform === "win32",
+    preferred: discover.browserPath ? [discover.browserPath] : [], fallback: discover.browserFound ?? [] });
+  if (!bin) throw new Known(discover.browserPath ? "no-browser-setting" : "no-browser");
+  const asar = findAsar({ ...common, candidates: discover.asar ?? [], preferred: discover.asarPath ? [discover.asarPath] : [] });
+  if (!asar) throw new Known(discover.asarPath ? "no-obsidian-setting" : "no-obsidian");
   await ensureLib(asar);
   const server = await serve();
-  const wsUrl = await launch(bin);
-  const b = await cdp(wsUrl);
+  let b = null;
   try {
+    b = await cdp(await browser.launch(bin));
     const { targetId } = await b.send("Target.createTarget", { url: "about:blank" });
     const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true });
     const s = (m, p) => b.send(m, p, sessionId);
@@ -275,19 +250,28 @@ async function main() {
       }
     }
   } finally {
-    try { b.close(); } catch { /* closed */ }
+    // Ask the browser to close, wait for it, kill what is left, remove the profile: in that order, so a
+    // helper process cannot recreate files in a profile that was just deleted (it did, on macOS).
+    await browser.stop(b ? () => b.send("Browser.close") : null);
+    try { b?.close(); } catch { /* closed */ }
     server.close();
   }
 }
 
 // Whatever happens (a signal, the exec limit, a crash), the browser goes and the results so far are printed.
-const finish = (code = 0) => { killBrowser(); say(results); process.exit(code); };
+let finished = false;
+const finish = (code = 0) => {
+  if (finished) return;
+  finished = true;
+  browser.stopNow();
+  say(results);
+  process.exit(code);
+};
 process.on("SIGTERM", () => finish(0));
 process.on("SIGINT", () => finish(0));
 setTimeout(() => finish(0), DEADLINE_MS + 3_500).unref();
 
 main().then(() => finish(0), (e) => {
-  killBrowser();
-  say([...results, { error: e instanceof Known ? e.message : String(e?.message ?? e) }]);
-  process.exit(0);
+  results.push({ error: e instanceof Known ? e.message : String(e?.message ?? e) });
+  finish(0);
 });

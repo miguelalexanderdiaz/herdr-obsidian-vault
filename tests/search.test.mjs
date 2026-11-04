@@ -96,3 +96,37 @@ test("search: blank query is empty without running anything", async () => {
   assert.deepEqual(await searchWith(d, "/v", "   "), []);
   assert.equal(d.exec.calls.length, 0);
 });
+
+// ---- CRLF notes and Windows rg paths (R2-CR-7, CR-2-4) ------------------------------------------------
+
+test("hits: a CRLF note keeps its text hit, without the carriage return (CR-2-4)", () => {
+  assert.deepEqual(parseHits("a.md\u000012:hello\r\nb.md\u00003:two\r\r\n"), [
+    { rel: "a.md", line: 12, text: "hello" },
+    { rel: "b.md", line: 3, text: "two" },
+  ]);
+  assert.deepEqual(parseHits("a.md\u00001:line with \u2028 separator\n").map((h) => h.text), ["line with \u2028 separator"]);
+});
+
+test("Windows rg paths: .\\a\\b.md becomes a/b.md only on Windows (CR-2-4)", () => {
+  assert.deepEqual(parseFiles(".\\sub\\note.md\u0000.\\top.md\u0000", true), ["sub/note.md", "top.md"]);
+  assert.deepEqual(parseHits(".\\sub\\note.md\u000012:x\r\n", true), [{ rel: "sub/note.md", line: 12, text: "x" }]);
+  // POSIX: a backslash is part of a file name and stays
+  assert.deepEqual(parseFiles("./we\\ird.md\u0000"), ["we\\ird.md"]);
+  assert.deepEqual(parseHits("./we\\ird.md\u00001:x\n").map((h) => h.rel), ["we\\ird.md"]);
+});
+
+test("search end to end on a CRLF fixture and a Windows-shaped rg output", async () => {
+  // Built here, not stored: .gitattributes normalises line ends in checked-in files, which would hide the bug.
+  const crlf = ["---", "title: CRLF note", "---", "", "This note was saved on Windows with CRLF line ends.", "The moonlight line is the one search must find.", "Last line."].join("\r\n");
+  // what rg prints for that file: "<path>\0<line>:<line text>\n", the \r kept inside the line text
+  const lines = crlf.split("\n");
+  const at = lines.findIndex((l) => l.includes("moonlight"));
+  const out = `.\\Notes\\crlf-note.md\u0000${at + 1}:${lines[at]}\n`;
+  const d = deps((cmd, args) => (args.includes("--files") ? { stdout: ".\\Notes\\crlf-note.md\u0000" } : { stdout: out }), { platform: "windows" });
+  const r = await searchWith(d, "C:\\v", "moonlight");
+  assert.equal(r.length, 1);
+  assert.equal(r[0].rel, "Notes/crlf-note.md");
+  assert.equal(r[0].line, at + 1);
+  assert.match(r[0].text, /moonlight/);
+  assert.ok(!r[0].text.includes("\r"));
+});

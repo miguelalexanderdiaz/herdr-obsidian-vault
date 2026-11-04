@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check your install - Herdr Obsidian Vault</title>
+<meta name="description" content="A short checklist on the sample vault to confirm that the Vault panel and reader work on your system, and a report to send back, especially from Linux and Windows.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to the content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html">Herdr Obsidian Vault</a>
+<nav aria-label="Documentation">
+<ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="usage.html">Usage</a></li>
+<li><a href="requirements.html">Requirements</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="verify.html" aria-current="page">Check your install</a></li>
+<li><a href="how-it-works.html">How it works</a></li>
+<li><a href="for-agents.html">For agents</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<main id="content">
+<div class="wrap">
+<h1>Check your install</h1>
+<p class="lede">Fifteen short steps on the sample vault tell you what works on your system and what says it cannot. They are also how Linux and Windows results get reported, because those systems have not been seen running in the live Herdr app.</p>
+<div class="note">Use the sample vault (<code>examples/sample-vault</code>), never your own notes. Do not paste note text, or paths that contain your name, into a report.</div>
+
+<h2 id="steps">The steps</h2>
+<div class="table-wrap" role="region" aria-label="Check steps" tabindex="0"><table id="verify-table" class="stack">
+<thead><tr><th scope="col">Step</th><th scope="col">Do</th><th scope="col">Expect</th></tr></thead>
+<tbody>
+<tr><th scope="row">1. Install</th><td>Copy both mods, then run <code>herdr-app check</code> on each (see <a href="install.html">Install</a>).</td><td>Both say they pass.</td></tr>
+<tr><th scope="row">2. Show the panel</th><td>Add the panel block to a layout, or merge <code>keys.json</code> and press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>.</td><td>The Vault panel appears. Without a vault it says <em>No vault yet</em>.</td></tr>
+<tr><th scope="row">3. Add the sample vault</th><td>Choose <strong>Add vault</strong> and pick the folder <code class="sv">examples/sample-vault</code> of this repository.</td><td>The picker shows <em>sample-vault</em>. A folder without <code>.obsidian</code> is refused with <em>Not an Obsidian vault</em>.</td></tr>
+<tr><th scope="row">4. Tree</th><td>Look at the top level, then open <code class="sv">projects</code>.</td><td>Folders first (<code class="sv">attachments</code>, <code class="sv">projects</code>), then <code class="sv">Board.canvas</code>, <code class="sv">Feature tour.md</code>, <code class="sv">Flow sketch.excalidraw.md</code> and <code class="sv">Other note.md</code> without their extensions. <code>.obsidian</code> is hidden. <code class="sv">projects/a</code> and <code class="sv">projects/b</code> are folders.</td></tr>
+<tr><th scope="row">5. Search</th><td>Type <code>nested example</code> in the search box, then <code>tour</code>.</td><td>The first finds <code class="sv">Feature tour.md</code> by a line of text. The second finds it by name, first in the list. Without ripgrep you see <em>ripgrep (rg) isn&rsquo;t installed</em> and the install command.</td></tr>
+<tr><th scope="row">6. Open a note</th><td>Click <code class="sv">Feature tour.md</code>.</td><td>A floating reader fills most of the window. A properties table shows <code>status</code>, <code>project</code>, <code>tags</code>, <code>aliases</code> and <code>created</code>.</td></tr>
+<tr><th scope="row">7. Callouts and tasks</th><td>Scroll to Callouts and Tasks.</td><td>Five callouts; <em>Folded warning</em> is closed and <em>Open tip, foldable</em> is open, and a click toggles them. Six tasks each show their own mark.</td></tr>
+<tr><th scope="row">8. Links and Back</th><td>Click <em>Other note</em> in the Links line, then press <kbd>Alt</kbd>+<kbd>Left</kbd> (or <kbd>Backspace</kbd>).</td><td><code class="sv">Other note.md</code> opens in the same reader. Back returns to the tour. <em>Missing note</em> is shown as unresolved.</td></tr>
+<tr><th scope="row">9. Math and Mermaid</th><td>Scroll to Math and Mermaid.</td><td>Two inline formulas and one block formula, then a flowchart and a sequence diagram, drawn as pictures. If something is missing, one line above the note names it (Node.js, a browser or the Obsidian app) and the source stays visible. The first run takes a few seconds.</td></tr>
+<tr><th scope="row">10. Embeds</th><td>Scroll to Embeds.</td><td>The section of <code class="sv">Other note.md</code>, the block, <code class="sv">attachments/photo.png</code> about 320 wide, the drawing <code class="sv">Flow sketch.excalidraw.md</code>, the first page of <code class="sv">attachments/spec.pdf</code>, and <code class="sv">Board.canvas</code>.</td></tr>
+<tr><th scope="row">11. A PDF</th><td>Click <code class="sv">attachments/manual.pdf</code> in the tree.</td><td>The pages one after another. Without Poppler: macOS shows page 1; Linux and Windows show the install hint and the button <em>Open in the default app</em>.</td></tr>
+<tr><th scope="row">12. A canvas and a drawing</th><td>Open <code class="sv">Board.canvas</code>, then <code class="sv">Flow sketch.excalidraw.md</code>.</td><td>The canvas shows a group called <em>This stage</em>, text, note, image and link cards with arrows. The drawing is drawn clean, not as text.</td></tr>
+<tr><th scope="row">13. Code and queries</th><td>Scroll to the end of the tour.</td><td>The Python block is shown as code. The Dataview block is shown with a <em>shown, not run</em> label.</td></tr>
+<tr><th scope="row">14. Keep and Esc</th><td>Press <strong>Keep</strong> and choose <em>New tab</em>. Then open any note from the panel and press <kbd>Esc</kbd>.</td><td>A tab named <code>obsidian</code> holds the kept note. Esc closes the floating reader.</td></tr>
+<tr><th scope="row">15. Web images (optional)</th><td>Add a line <code>![](https://example.com/x.png)</code> to a throw-away copy of the vault, never to your own.</td><td>The reader bar gets <em>Web images: on</em> and the picture downloads, or says why not. The sample vault itself has no web image, so this step is skipped there.</td></tr>
+</tbody></table></div>
+<p>A step that shows a plain message instead of the result is a pass when the message names the missing program and gives the install command for your system: that is the designed behaviour. A step that shows nothing, a blank reader or a raw error is a fail. The messages are listed on the <a href="troubleshooting.html">troubleshooting page</a>.</p>
+
+<h2 id="report">Report what you saw</h2>
+<p>Copy this into a new issue in the repository (there is a &ldquo;Platform report&rdquo; form with the same fields), or into a message to the maintainers. Fill in what you can.</p>
+<pre><code>Operating system and version:
+Herdr version (herdr-app --version):
+Programs found (yes/no and version):
+  rg:
+  node (node --version):
+  browser (Chrome, Chromium, Edge or Brave):
+  Obsidian app:
+  pdftoppm and pdfinfo:
+  curl:
+herdr-app check on vault and vault-reader (pass/fail):
+Steps 1 to 15 (pass / fail / message shown):
+  1:
+  2:
+Anything else you noticed (on Windows, the Home line that herdr-app --help prints):</code></pre>
+<p>If a step fails, add the exact text of the message. Do not add note content, screenshots of your own vault, or paths that name you.</p>
+<div class="pager"><a href="troubleshooting.html" rel="prev">&larr; Troubleshooting</a><a href="how-it-works.html" rel="next">How it works &rarr;</a></div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
+<p>This site loads nothing from other websites and runs no scripts.</p>
+</div>
+</footer>
+</body>
+</html>

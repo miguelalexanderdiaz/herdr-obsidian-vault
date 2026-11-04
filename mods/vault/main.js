@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 the herdr-obsidian-vault authors (holder named in LICENSE and NOTICE)
 // The Vault panel (right side, beside Files and Changes, or as a popup): an Obsidian vault's
 // whole file list. The vault selector on top switches vaults; + Add vault picks a folder
 // (it must hold a .obsidian folder). Clicking a note, canvas, drawing, image or PDF opens it
@@ -16,14 +18,18 @@ import { theme, props, shared, setShared, pickFolder, readTextFile, watchFolder,
 import * as fs from "fs/promises";
 import { searchVault, forgetFiles } from "./search.js";
 import { nameOf, normPath, tilde as tildeOf, openCommand, canOpen, obsidianConfigCandidates, missingMessage } from "./platform.js";
-import { readVaultList } from "./obsidian-config.js";
+import { readVaultList, insideHome } from "./obsidian-config.js";
 import { visibleChanges, folderEntries } from "./tree.js";
 import { Watcher, POLL_MS, LIVE_OFF } from "./watch.js";
 import { MOD, MOD_DIR, READER } from "./mod-name.js";
 
 const ICON = `${MOD_DIR}/icons`;
+// Vault paths are stored normalized, but one can reach the shared state with Windows
+// backslash separators, so every comparison goes through normPath.
+const samePath = (a, b) => a != null && b != null && normPath(a) === normPath(b);
 const MENU_W = 300;
 const PER_FOLDER = 2000;
+export const ROWS_MAX = 3000; // rows drawn in all open folders together: every render builds an element per row
 
 const tilde = (p) => tildeOf(p, home());
 
@@ -99,7 +105,7 @@ export default class Vault extends View {
     const res = await obsidianVaults();
     this.importInfo = res.found ? null : `Obsidian's vault list wasn't found (looked in ${res.looked.map(tilde).join(", ")}).`;
     const have = this.list();
-    const fresh = res.vaults.filter((v) => !have.some((h) => h.path === v.path));
+    const fresh = res.vaults.filter((v) => !have.some((h) => samePath(h.path, v.path)));
     const list = first ? res.vaults : [...have, ...fresh];
     setShared("vault.list", list);
     setShared("vault.outside", res.outside);
@@ -110,7 +116,7 @@ export default class Vault extends View {
   list() { return shared("vault.list") ?? []; }
   current() {
     const cur = shared("vault.current");
-    return this.list().find((v) => v.path === cur) ?? this.list()[0] ?? null;
+    return this.list().find((v) => samePath(v.path, cur)) ?? this.list()[0] ?? null;
   }
 
   // ---- the selected vault's files --------------------------------------------------
@@ -155,7 +161,10 @@ export default class Vault extends View {
         this.more = more;
         this.error = null;
       } catch (e) {
-        if (root === this.root) this.error = /ENOENT|No such/i.test(String(e)) ? "This vault's folder is gone" : String(e?.message ?? e);
+        if (root === this.root) {
+          this.error = !insideHome(root, home(), window().platform === "windows") ? "This vault is outside your home folder, which Herdr mods can't read"
+            : /ENOENT|No such/i.test(String(e)) ? "This vault's folder is gone" : String(e?.message ?? e);
+        }
       }
       cx.notify();
     });
@@ -301,20 +310,27 @@ export default class Vault extends View {
       const folder = await pickFolder({ prompt: "Add vault" });
       if (!folder) return;
       const path = normPath(folder);
+      // Beyond the home folder fs.exists says "no" (or fails), which used to read as "has no .obsidian folder".
+      if (!insideHome(path, home(), window().platform === "windows")) {
+        notify({ title: "Vault outside your home folder", body: `Herdr mods can only read inside your home folder, so ${nameOf(path)} can't be added. A link to it from inside your home folder may work.`, level: "warning" });
+        const out = shared("vault.outside") ?? [];
+        if (!out.some((o) => samePath(o.path, path))) setShared("vault.outside", [...out, { path, name: nameOf(path) }]);
+        return;
+      }
       if (!(await fs.exists(`${path}/.obsidian`).catch(() => false))) {
         notify({ title: "Not an Obsidian vault", body: `${tilde(path)} has no .obsidian folder. Pick the vault's own folder (open it in Obsidian once if it's new).`, level: "warning" });
         return;
       }
-      const list = this.list().filter((v) => v.path !== path);
+      const list = this.list().filter((v) => !samePath(v.path, path));
       setShared("vault.list", [...list, { path, name: nameOf(path) }]);
       setShared("vault.current", path);
     } finally { setShared("vault.adding", null); }
   }
 
   removeVault(path) {
-    const list = this.list().filter((v) => v.path !== path);
+    const list = this.list().filter((v) => !samePath(v.path, path));
     setShared("vault.list", list);
-    if (shared("vault.current") === path) setShared("vault.current", list[0]?.path ?? null);
+    if (samePath(shared("vault.current"), path)) setShared("vault.current", list[0]?.path ?? null);
   }
 
   // ---- drawing ------------------------------------------------------------------------
@@ -376,6 +392,7 @@ export default class Vault extends View {
 
   tree(t) {
     const rows = this.rows("", 0, [], t);
+    if (rows.over) rows.push(div().h(24).pl(27).text_size(12).text_color(t.dim).child(`Only the first ${ROWS_MAX} rows are drawn (close a folder, or search)`));
     return v_flex().id("vault-tree").flex_1().min_h(0).overflow_y_scrollbar().p(6)
       .when(Boolean(this.hint), (el) => el.child(div().px(8).pb(4).text_size(11).text_color(t.dim).child(this.hint)))
       .children(rows)
@@ -387,6 +404,7 @@ export default class Vault extends View {
     const open = shared("vault.open");
     const showing = open && open.vault === this.root ? open.file : null;
     for (const entry of this.entries.get(prefix) ?? []) {
+      if (out.length >= ROWS_MAX) { out.over = true; return out; }
       const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
       const expanded = this.folders.has(rel);
       const k = entry.dir ? null : kind(entry.name);
@@ -413,11 +431,11 @@ export default class Vault extends View {
   menu(p) {
     const t = theme();
     const cur = this.current()?.path;
-    const outside = (shared("vault.outside") ?? []).filter((v) => !this.list().some((h) => h.path === v.path));
+    const outside = (shared("vault.outside") ?? []).filter((v) => !this.list().some((h) => samePath(h.path, v.path)));
     const item = (v, i) => h_flex().id(`vm-${i}`).px(8).py(6).gap(8).items_center().rounded(6).cursor_pointer()
       .hover((el) => el.bg(t.hover))
       .on_click(() => { setShared("vault.current", v.path); closeOverlay(p.overlay); })
-      .child(v.path === cur ? svg(`${ICON}/check.svg`).size(13).flex_none().text_color(t.accent) : div().w(13).flex_none())
+      .child(samePath(v.path, cur) ? svg(`${ICON}/check.svg`).size(13).flex_none().text_color(t.accent) : div().w(13).flex_none())
       .child(v_flex().flex_1().min_w(0)
         .child(div().truncate().text_size(12.5).text_color(t.foreground).child(v.name))
         .child(div().overflow_hidden().whitespace_nowrap().text_ellipsis_start().text_size(11).text_color(t.dim).child(tilde(v.path))))

@@ -24,6 +24,8 @@ Third-party material included in this repository
 
 2. lz-string, decompressFromBase64 (MIT License)
    File: mods/vault-reader/render/lzstring.js (a port of the decompressor)
+   License text: mods/vault-reader/render/LICENSE-lz-string.txt (travels with
+   the mod folder; the text below is the same)
    Copyright (c) pieroxy
    Source: https://github.com/pieroxy/lz-string
    Used to read the compressed drawing data that the Excalidraw plugin stores
@@ -72,5 +74,7 @@ Programs started on the user's machine (not included)
 -----------------------------------------------------
 Depending on the operating system and the feature used, the mods start
 ripgrep, Node.js, a Chromium-family browser in headless mode, Poppler's
-pdftoppm and pdfinfo, and the system's file opener. None of them is bundled;
-each keeps its own license.
+pdftoppm and pdfinfo, curl, the system's file opener, and the system's own
+tools to read file stamps and to find a program (stat, PowerShell, where, sh;
+on macOS also qlmanage and sips). None of them is bundled; each keeps its own
+license.

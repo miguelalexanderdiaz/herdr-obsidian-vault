@@ -4,9 +4,9 @@
 
 import { exec, appHome, home, window } from "herdr";
 import * as fs from "fs/promises";
-import { createAssets, hash, themeKey, REL } from "./assets-core.js";
+import { createAssets, hash, themeKey, mapPool, FETCH_CONCURRENCY, REL } from "./assets-core.js";
 
-export { hash, themeKey, REL };
+export { hash, themeKey, mapPool, FETCH_CONCURRENCY, REL };
 
 // One instance per app folder and platform (constant while Herdr runs; tests change them).
 let assets = null, assetsKey = "";

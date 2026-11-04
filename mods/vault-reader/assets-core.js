@@ -8,18 +8,25 @@
 // installing the tool or coming back online fixes them without clearing anything.
 
 import {
-  normPlatform, openCommand, stampsOf, macImageSizeCommand, macThumbnailCommand, imageInfo, svgSize, looksLikeSvg, makeToolFinder,
-  missingMessage, renderProblem, nodeOk, obsidianAsarCandidates, browserCandidates, browserNames,
+  normPlatform, openCommand, stampsOf, macImageSizeCommand, macThumbnailCommand, imageInfo, svgSize, looksLikeSvg, utf8Text, makeToolFinder,
+  missingMessage, renderProblem, nodeOk, obsidianAsarCandidates, browserCandidates, browserNames, browserLookupCommand, pathsFromLookup,
 } from "./platform.js";
 import { MOD_DIR } from "./mod-name.js";
 
 export const REL = "data/vault/cache";
 export const BATCH = 6; // render jobs per node run: a cold Chrome start must fit the 30 s exec limit
 export const CACHE_MAX_AGE_DAYS = 30;
+export const TOUCH_AFTER_MS = 7 * 86_400_000; // a cache hit older than this is written again, so use keeps it from the prune
 export const CACHE_MAX_MB = 200;
 export const REMOTE_MAX_BYTES = 20_000_000;
 export const IMAGE_MAX_BYTES = 40_000_000;
+export const FETCH_CONCURRENCY = 4; // pictures fetched at the same time for one note (render jobs stay one at a time)
 export const REMOTE_RETRY_MS = 5 * 60_000; // a failed download is not tried again for this long (and never stored on disk)
+
+// A problem that is the file's own (not an image, a page that cannot be drawn): cached, so it is not
+// tried again until the file changes. Any other exception (a missing function, a full disk, a tool that
+// failed to start) is not cached: it is the machine's or ours, and the next load should try again.
+export class FileProblem extends Error {}
 
 // FNV-1a, twice with different seeds: a 64-bit key as hex.
 export function hash(s) {
@@ -32,6 +39,14 @@ export function hash(s) {
   return (a >>> 0).toString(16).padStart(8, "0") + (b >>> 0).toString(16).padStart(8, "0");
 }
 
+// fn(item, index) for every item, at most `limit` at a time; results are not collected (fn commits its own).
+// An exception in fn ends that worker only after it is thrown to the caller: fn is expected to catch.
+export async function mapPool(items, limit, fn) {
+  let next = 0;
+  const worker = async () => { while (next < items.length) { const i = next++; await fn(items[i], i); } };
+  await Promise.all(Array.from({ length: Math.min(Math.max(1, limit), items.length) }, worker));
+}
+
 // The theme part of a picture's key: a new theme draws new pictures.
 export function themeKey(t) {
   return [t.foreground, t.background, t.muted, t.accent, t.surface, t.raised, t.border].join(",");
@@ -40,10 +55,19 @@ export function themeKey(t) {
 // ---- settings: data/vault/settings.json ---------------------------------------------
 
 export const DEFAULT_SETTINGS = { remoteImages: true };
+// An absolute path in either style ("/x", "C:\\x", "C:/x", "\\\\server\\x"): the only kind a setting may name.
+const absolutePath = (v) => typeof v === "string" && v.length < 1024 && /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(v.trim()) && !/[\0\r\n]/.test(v);
+// Keys: remoteImages (boolean), browser and asar (absolute paths of a Chromium-family browser and of
+// Obsidian's obsidian.asar; they win over discovery and are the one override that reaches a Herdr started
+// from Finder or a launcher). Anything else, or a value of the wrong type, is ignored.
 export function parseSettings(text) {
   let data = {};
   try { data = JSON.parse(text ?? "{}") ?? {}; } catch { data = {}; }
-  return { remoteImages: typeof data.remoteImages === "boolean" ? data.remoteImages : DEFAULT_SETTINGS.remoteImages };
+  if (typeof data !== "object" || Array.isArray(data)) data = {};
+  const out = { remoteImages: typeof data.remoteImages === "boolean" ? data.remoteImages : DEFAULT_SETTINGS.remoteImages };
+  if (absolutePath(data.browser)) out.browser = data.browser.trim();
+  if (absolutePath(data.asar)) out.asar = data.asar.trim();
+  return out;
 }
 
 // ---- remote images -----------------------------------------------------------------
@@ -59,7 +83,7 @@ export function curlArgs(url, dest) {
 export function extFromBytes(bytes) {
   const info = imageInfo(bytes);
   if (info) return info.type;
-  const head = new TextDecoder().decode(bytes.slice(0, 2000));
+  const head = utf8Text(bytes, 2000);
   return looksLikeSvg(head) ? "svg" : null;
 }
 
@@ -118,15 +142,24 @@ export function createAssets(deps) {
     await fs.mkdir(abs(REL), { recursive: true }).catch(() => {});
     ready = true;
   };
+  // `at` (when the entry was written or last used) keeps a picture that is read every day from the 30-day
+  // prune: a use older than TOUCH_AFTER_MS rewrites the small json (whose mtime pruning looks at), once per
+  // entry per session. Callers never see `at`.
+  const touched = new Set();
   const meta = async (key) => {
-    try { return JSON.parse(await fs.readText(abs(`${REL}/${key}.json`))); } catch { return null; }
+    let parsed;
+    try { parsed = JSON.parse(await fs.readText(abs(`${REL}/${key}.json`))); } catch { return null; }
+    if (!parsed || typeof parsed !== "object") return null;
+    const { at, ...m } = parsed;
+    if (!(now() - at < TOUCH_AFTER_MS) && !touched.has(key)) { touched.add(key); await putMeta(key, m); }
+    return m;
   };
-  const putMeta = (key, value) => fs.writeFile(abs(`${REL}/${key}.json`), JSON.stringify(value)).catch(() => {});
+  const putMeta = (key, value) => fs.writeFile(abs(`${REL}/${key}.json`), JSON.stringify({ ...value, at: now() })).catch(() => {});
   const hit = (key, ext, m) => (m.error ? { error: m.error } : { path: `${REL}/${key}.${ext}`, w: m.w, h: m.h });
-  // Cache a failure only when the file itself is the problem, not the machine.
-  const fail = async (key, e, cache = true) => {
+  // Cache a failure only when the file itself is the problem (FileProblem), not the machine.
+  const fail = async (key, e) => {
     const error = String(e?.message ?? e);
-    if (cache) await putMeta(key, { error });
+    if (e instanceof FileProblem) await putMeta(key, { error });
     return { error };
   };
 
@@ -150,7 +183,7 @@ export function createAssets(deps) {
   // ---- vault images ----
   // Size from the file's own header; on macOS the system tool only for formats read here (AVIF, TIFF).
   async function sizeOf(bytes, ext, destPath) {
-    if (ext === "svg") return svgSize(new TextDecoder().decode(bytes.slice(0, 4000)));
+    if (ext === "svg") return svgSize(utf8Text(bytes, 4000));
     const info = imageInfo(bytes);
     if (info) return { w: info.w, h: info.h };
     if (platform === "macos" && destPath) {
@@ -160,7 +193,7 @@ export function createAssets(deps) {
       const h = Number((r?.stdout?.match(/pixelHeight:\s*(\d+)/) || [])[1]);
       if (w && h) return { w, h };
     }
-    throw new Error("Not an image this reader can show");
+    throw new FileProblem("Not an image this reader can show");
   }
 
   // A vault image (absolute path) → { path, w, h } | { error }, at its pixel size
@@ -169,12 +202,14 @@ export function createAssets(deps) {
   async function vaultImage(file, stamp) {
     await ensureDir();
     const ext = (file.match(/\.(\w+)$/) || [, "png"])[1].toLowerCase();
-    const key = hash(`img:${file}:${stamp}`);
+    const key = hash(`img2:${file}:${stamp}`);
     const m = await meta(key);
     if (m) return hit(key, ext, m);
     try {
+      // The stamp is "mtime:size": a huge file is refused before it is read into memory.
+      if (parseStamp(stamp).size > IMAGE_MAX_BYTES) throw new FileProblem("This image is too large to show here");
       const bytes = await fs.readFile(file);
-      if (bytes.length > IMAGE_MAX_BYTES) throw new Error("This image is too large to show here");
+      if (bytes.length > IMAGE_MAX_BYTES) throw new FileProblem("This image is too large to show here");
       const dest = abs(`${REL}/${key}.${ext}`);
       await fs.writeFile(dest, bytes);
       const { w, h } = await sizeOf(bytes, ext, dest);
@@ -188,26 +223,34 @@ export function createAssets(deps) {
   async function quickLook(file, key) {
     const tmp = abs(`${REL}/ql-${key}`);
     await fs.mkdir(tmp, { recursive: true });
-    const [cmd, args] = macThumbnailCommand(tmp, file);
-    const r = await exec(cmd, args);
-    const made = (await fs.readdir(tmp)).find((f) => f.endsWith(".png"));
-    if (!made) throw new Error(r.stderr?.trim() || "Quick Look made no preview");
-    const bytes = await fs.readFile(`${tmp}/${made}`);
-    await fs.writeFile(abs(`${REL}/${key}.png`), bytes);
-    await fs.unlink(`${tmp}/${made}`).catch(() => {});
-    await fs.rmdir(tmp).catch(() => {});
-    const { w, h } = await sizeOf(bytes, "png");
-    const shown = { w: Math.round(w / 2), h: Math.round(h / 2) };
-    await putMeta(key, shown);
-    return { path: `${REL}/${key}.png`, ...shown };
+    try {
+      const [cmd, args] = macThumbnailCommand(tmp, file);
+      const r = await exec(cmd, args);
+      const made = (await fs.readdir(tmp)).find((f) => f.endsWith(".png"));
+      if (!made) throw new FileProblem(r.stderr?.trim() || "Quick Look made no preview");
+      const bytes = await fs.readFile(`${tmp}/${made}`);
+      await fs.writeFile(abs(`${REL}/${key}.png`), bytes);
+      const { w, h } = await sizeOf(bytes, "png");
+      const shown = { w: Math.round(w / 2), h: Math.round(h / 2) };
+      await putMeta(key, shown);
+      return { path: `${REL}/${key}.png`, ...shown };
+    } finally {
+      // whatever happened, the temporary folder and what is in it go (it used to stay when Quick Look failed)
+      for (const f of await fs.readdir(tmp).catch(() => [])) await fs.unlink(`${tmp}/${f}`).catch(() => {});
+      await fs.rmdir(tmp).catch(() => {});
+    }
   }
 
+  // The first page of a PDF that sits inside a note or a canvas → { path, w, h } | { error, missing? }.
+  // Poppler's pdftoppm wherever it is installed (the same page-1 picture the opened-PDF view uses);
+  // macOS falls back to Quick Look only when Poppler is missing; elsewhere the install hint.
   async function pdfPage(file, stamp) {
+    if (await tool("pdftoppm")) return pdfPageAt(file, stamp, 1);
+    if (platform !== "macos") return { error: missingMessage(platform, "poppler") + ". Until then PDFs open in your default app.", missing: "poppler" };
     await ensureDir();
     const key = hash(`pdf2:${file}:${stamp}`);
     const m = await meta(key);
     if (m) return hit(key, "png", m);
-    if (platform !== "macos") return { error: missingMessage(platform, "poppler") + ". Until then PDFs open in your default app.", missing: "poppler" };
     try { return await quickLook(file, key); } catch (e) { return fail(key, e); }
   }
 
@@ -236,7 +279,7 @@ export function createAssets(deps) {
     if (!bin) return { error: missingMessage(platform, "poppler"), missing: "poppler" };
     try {
       const r = await exec(bin, ["-png", "-r", "144", "-f", String(n), "-l", String(n), "-singlefile", file, abs(`${REL}/${key}`)]);
-      if (r.code !== 0) throw new Error(r.stderr?.trim() || `Couldn't draw page ${n}`);
+      if (r.code !== 0) throw new FileProblem(r.stderr?.trim() || `Couldn't draw page ${n}`);
       const bytes = await fs.readFile(abs(`${REL}/${key}.png`));
       const { w, h } = await sizeOf(bytes, "png");
       const shown = { w: Math.round(w / 2), h: Math.round(h / 2) };
@@ -253,7 +296,7 @@ export function createAssets(deps) {
     await ensureDir();
     if (!(await loadSettings()).remoteImages) return { error: "Images from the web are turned off (“Web images” in the bar above turns them on)", off: true };
     if (!remoteUrlOk(url)) return { error: "Not a web address this reader will fetch" };
-    const key = hash(`url:${url}`);
+    const key = hash(`url2:${url}`);
     const m = await meta(key);
     if (m) {
       const ext = m.ext ?? "png";
@@ -274,7 +317,7 @@ export function createAssets(deps) {
       recentFailures.delete(url);
       const bytes = await fs.readFile(tmp);
       const ext = extFromBytes(bytes);
-      if (!ext) return fail(key, new Error("The address isn't a picture"));
+      if (!ext) return fail(key, new FileProblem("The address isn't a picture"));
       await fs.writeFile(abs(`${REL}/${key}.${ext}`), bytes);
       const { w, h } = await sizeOf(bytes, ext, abs(`${REL}/${key}.${ext}`));
       await putMeta(key, { w, h, ext });
@@ -334,22 +377,34 @@ export function createAssets(deps) {
       onBatch?.(out);
       return out;
     }
-    const discover = { asar: obsidianAsarCandidates(platform), browsers: browserCandidates(platform), names: browserNames(platform) };
-    for (let i = 0; i < todo.length; i += BATCH) {
-      const batch = todo.slice(i, i + BATCH);
-      const spec = { theme, discover, jobs: batch.map((j) => ({ id: j.key, kind: j.kind, src: j.src, display: j.display, file: j.file, out: abs(`${REL}/${j.key}`) })) };
+    // Read afresh: someone who just added "browser" to settings.json should not have to restart Herdr.
+    const { browser, asar } = parseSettings(await fs.readText(abs("data/vault/settings.json")).catch(() => null));
+    const discover = { asar: obsidianAsarCandidates(platform), browsers: browserCandidates(platform), names: browserNames(platform), browserPath: browser, asarPath: asar };
+    // Runs one batch: → { problem } (null when it went well). `found` are browsers the login shell knows.
+    const attempt = async (batch, found) => {
+      const spec = { theme, discover: { ...discover, browserFound: found }, jobs: batch.map((j) => ({ id: j.key, kind: j.kind, src: j.src, display: j.display, file: j.file, out: abs(`${REL}/${j.key}`) })) };
       const file = abs(`${REL}/jobs-${hash(`${batch[0].key}:${now()}:${++seq}`)}.json`);
       await fs.writeFile(file, JSON.stringify(spec));
-      let problem = null;
       try {
         const r = await exec(ready.bin, [abs(`${MOD_DIR}/render/render.mjs`), appHome, file]);
         let results = null;
         try { results = JSON.parse(r.stdout); } catch { /* not JSON: handled below */ }
         const global = Array.isArray(results) ? results.find((x) => x && !x.id && x.error) : null;
-        if (global) problem = renderProblem(platform, global);
-        else if (r.code !== 0 || !Array.isArray(results)) problem = renderProblem(platform, r.stderr || r.stdout || "the renderer stopped");
-      } catch (e) { problem = renderProblem(platform, e); }
-      await fs.unlink(file).catch(() => {});
+        if (global) return { problem: renderProblem(platform, global), kind: global.error };
+        if (r.code !== 0 || !Array.isArray(results)) return { problem: renderProblem(platform, r.stderr || r.stdout || "the renderer stopped") };
+        return { problem: null };
+      } catch (e) { return { problem: renderProblem(platform, e) }; }
+      finally { await fs.unlink(file).catch(() => {}); } // also when exec throws: no job file is left
+    };
+    for (let i = 0; i < todo.length; i += BATCH) {
+      const batch = todo.slice(i, i + BATCH);
+      const known = await shellBrowsers(false);
+      let { problem, kind } = await attempt(batch, known);
+      // Nothing found by the usual ways: ask the person's login shell once, and try again with its answer.
+      if (kind === "no-browser" || kind === "no-browser-setting") {
+        const found = await shellBrowsers(true);
+        if (found.length && found.join("\n") !== known.join("\n")) ({ problem } = await attempt(batch, found));
+      }
       for (const j of batch) {
         const m = await meta(j.key);
         out.set(j.key, m ? hit(j.key, "png", m) : { error: problem ?? "Not drawn", transient: true });
@@ -357,6 +412,18 @@ export function createAssets(deps) {
       onBatch?.(out);
     }
     return out;
+  }
+
+  // Browsers found by the person's shell (`command -v` / `where`), asked for only after the install folders
+  // and PATH failed (a login shell takes a moment to start); remembered for the session, a miss for 30 s.
+  let shellFound = null; // { list, at }
+  async function shellBrowsers(ask) {
+    if (shellFound && (shellFound.list.length || now() - shellFound.at < 30_000)) return shellFound.list;
+    if (!ask) return shellFound?.list ?? [];
+    const [cmd, args] = browserLookupCommand(platform, browserNames(platform));
+    const r = await exec(cmd, args).catch(() => null);
+    shellFound = { list: pathsFromLookup(r?.stdout), at: now() };
+    return shellFound.list;
   }
 
   // ---- cache size ----

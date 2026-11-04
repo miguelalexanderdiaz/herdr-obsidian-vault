@@ -106,11 +106,17 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 
 const RENDER = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "mods", "vault-reader", "render", "render.mjs");
+export function envWithout(env, lowerKey) {
+  const out = {};
+  for (const [k, v] of Object.entries(env)) if (k.toLowerCase() !== lowerKey) out[k] = v;
+  return out;
+}
 function runRender(spec, env) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "herdr-render-test-"));
   const file = path.join(dir, "jobs.json");
   fs.writeFileSync(file, JSON.stringify({ theme: {}, jobs: [], ...spec }));
-  const clean = { ...process.env, HERDR_VAULT_BROWSER: "", HERDR_VAULT_ASAR: "", CHROME_PATH: "", PATH: "" };
+  const clean = envWithout(process.env, "path"); // "Path" on Windows: drop the key in any letter case
+  Object.assign(clean, { HERDR_VAULT_BROWSER: "", HERDR_VAULT_ASAR: "", CHROME_PATH: "", PATH: "" });
   const r = spawnSync(process.execPath, [RENDER, dir, file], { env: { ...clean, ...env }, encoding: "utf8", timeout: 20000 });
   return { out: JSON.parse(r.stdout || "null"), code: r.status, stderr: r.stderr };
 }
@@ -124,4 +130,62 @@ test("render.mjs: no browser anywhere is a structured no-browser, exit 0, nothin
 test("render.mjs: a browser but no Obsidian app is a structured no-obsidian", () => {
   const r = runRender({ discover: { asar: ["/nonexistent/obsidian.asar"], browsers: [], names: [] } }, { HERDR_VAULT_BROWSER: process.execPath });
   assert.deepEqual(r.out, [{ error: "no-obsidian" }]);
+});
+
+test("envWithout drops PATH in any letter case, so a Windows Path cannot survive (CR-2-5)", () => {
+  const win = { Path: "C:\\Windows", PATH: "x", HOME: "h", pAtH: "y" };
+  assert.deepEqual(envWithout(win, "path"), { HOME: "h" });
+});
+
+// ---- the render page cannot fetch what a note names (R2-CR-6, CR-2-3) ------------------------------------
+
+import { PAGE_CSP, browserArgs } from "../mods/vault-reader/render/lib.mjs";
+
+test("page.html carries exactly PAGE_CSP, as its first meta after the charset, and names no outside source", () => {
+  const html = fs.readFileSync(path.join(path.dirname(RENDER), "page.html"), "utf8");
+  const metas = [...html.matchAll(/<meta\s+([^>]*)>/g)].map((m) => m[1]);
+  assert.match(metas[0], /charset/);
+  const csp = metas[1].match(/http-equiv="Content-Security-Policy"\s+content="([^"]*)"/);
+  assert.ok(csp, "second meta is the CSP");
+  assert.equal(csp[1], PAGE_CSP);
+  assert.doesNotMatch(html, /(?:src|href)=["']https?:/i, "no outside script, style or image source");
+  assert.match(PAGE_CSP, /default-src 'none'/);
+  assert.match(PAGE_CSP, /connect-src 'none'/);
+  for (const d of PAGE_CSP.split(";")) assert.doesNotMatch(d, /https?:|\*/, d);
+});
+
+test("the browser starts with a resolver that maps everything but loopback to nothing, and no proxy", () => {
+  const args = browserArgs("/data/vault/chrome-1-x-y");
+  assert.ok(args.includes("--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1"));
+  assert.ok(args.includes("--no-proxy-server"));
+  assert.ok(args.includes("--user-data-dir=/data/vault/chrome-1-x-y"), "a per-run profile");
+  assert.ok(args.includes("--remote-debugging-port=0") && args.includes("--headless=new"));
+});
+
+test("browser precedence: settings > environment > install folders > PATH > login shell (D7, CR-2-9)", () => {
+  const all = new Set(["/s/chrome", "/e/hv", "/e/cp", "/usr/bin/google-chrome", "/bin/chromium", "/shell/chromium"]);
+  const base = { home: "/h", candidates: ["/usr/bin/google-chrome"], names: ["chromium"], fallback: ["/shell/chromium"], pathMod: path.posix };
+  const env = { HERDR_VAULT_BROWSER: "/e/hv", CHROME_PATH: "/e/cp", PATH: "/bin" };
+  const find = (have, over = {}) => findBrowser({ ...base, env, exists: existsIn(have), ...over });
+  assert.equal(find(all, { preferred: ["/s/chrome"] }), "/s/chrome");
+  all.delete("/s/chrome");
+  assert.equal(find(all, { preferred: ["/s/chrome"] }), "/e/hv", "a settings path that is not there falls through");
+  all.delete("/e/hv"); assert.equal(find(all), "/e/cp");
+  all.delete("/e/cp"); assert.equal(find(all), "/usr/bin/google-chrome");
+  all.delete("/usr/bin/google-chrome"); assert.equal(find(all), "/bin/chromium");
+  all.delete("/bin/chromium"); assert.equal(find(all), "/shell/chromium");
+  all.delete("/shell/chromium"); assert.equal(find(all), null);
+  // asar: settings, then environment, then candidates
+  const asar = (have, over) => findAsar({ home: "/h", candidates: ["/opt/Obsidian/resources/obsidian.asar"], env: { HERDR_VAULT_ASAR: "/e/o.asar" }, exists: existsIn(have), pathMod: path.posix, ...over });
+  const a = new Set(["/s/o.asar", "/e/o.asar", "/opt/Obsidian/resources/obsidian.asar"]);
+  assert.equal(asar(a, { preferred: ["/s/o.asar"] }), "/s/o.asar");
+  assert.equal(asar(a), "/e/o.asar");
+  assert.equal(asar(new Set(["/opt/Obsidian/resources/obsidian.asar"])), "/opt/Obsidian/resources/obsidian.asar");
+});
+
+test("render.mjs reports a settings path that does not exist as its own kind (CR-2-9)", () => {
+  const r = runRender({ discover: { asar: [], browsers: [], names: [], browserPath: "/nonexistent/chrome" } }, {});
+  assert.deepEqual(r.out, [{ error: "no-browser-setting" }]);
+  const o = runRender({ discover: { asar: [], browsers: [], names: [], asarPath: "/nonexistent/o.asar" } }, { HERDR_VAULT_BROWSER: process.execPath });
+  assert.deepEqual(o.out, [{ error: "no-obsidian-setting" }]);
 });

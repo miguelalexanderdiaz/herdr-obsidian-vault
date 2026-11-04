@@ -6,6 +6,7 @@
 <title>Usage - Herdr Obsidian Vault</title>
 <meta name="description" content="How to use the Vault panel and the Vault reader: tree, search, opening notes, keys, and what is rendered.">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -22,6 +23,7 @@
 <li><a href="configuration.html">Configuration</a></li>
 <li><a href="privacy.html">Privacy</a></li>
 <li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="verify.html">Check your install</a></li>
 <li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
@@ -34,7 +36,7 @@
 <h2 id="panel">The Vault panel</h2>
 <ul>
 <li><strong>Vault picker</strong> (top, with a small gem icon): shows the current vault. Click it for a menu of all vaults with a check mark on the current one. The <kbd>x</kbd> on a row removes the vault from this list only; the folder stays on disk. <strong>Add vault&hellip;</strong> opens the system folder picker and refuses a folder without <code>.obsidian</code>. <strong>Import from Obsidian</strong> reads Obsidian&rsquo;s own list again and adds the vaults that are missing. A vault that Obsidian knows but that lies outside your home folder is shown dimmed with <em>Outside your home folder: Herdr can&rsquo;t read it</em>.</li>
-<li><strong>Tree</strong>: folders first, then files, in natural order (note 2 before note 10). Names starting with a dot are hidden. Notes, canvases and drawings are shown without their extension, as Obsidian does. A folder with more than 2000 entries lists the first 2000 and ends with a line <em>+N more not listed (search finds them)</em>. Open folders are remembered per vault. The tree refreshes by itself when files change on disk (on Linux, a very large tree is checked every 10 seconds instead, and the panel says so).</li>
+<li><strong>Tree</strong>: folders first, then files, in natural order (note 2 before note 10). Names starting with a dot are hidden. Notes, canvases and drawings are shown without their extension, as Obsidian does. A folder with more than 2000 entries lists the first 2000 and ends with a line <em>+N more not listed (search finds them)</em>. Across all open folders together at most 3000 rows are drawn; past that the last row reads <em>Only the first 3000 rows are drawn (close a folder, or search)</em>. Open folders are remembered per vault. The tree refreshes by itself when files change on disk (on Linux, a very large tree is checked every 10 seconds instead, and the panel says so).</li>
 <li><strong>Click a file</strong>: notes, canvases, drawings, images and PDFs open in the reader. Anything else opens in the application your system uses for that file type, except files that start programs (<code>.app</code>, <code>.exe</code>, <code>.bat</code>, <code>.sh</code>, <code>.ps1</code>, <code>.jar</code> and similar): those are never launched from the panel and a notice says so.</li>
 </ul>
 
@@ -89,8 +91,19 @@
 <tr><th scope="row">Excalidraw</th><td><code>.excalidraw.md</code> and <code>.excalidraw</code> files, drawn clean by a small renderer of this project. It is not Excalidraw itself.</td></tr>
 <tr><th scope="row">Dataview, Tasks, Bases</th><td>The query text is shown with a &ldquo;shown, not run&rdquo; label. Nothing is executed.</td></tr>
 </tbody></table></div>
-<p>Not supported: editing (the reader is read-only), other Obsidian plugins, and file types not listed above (those open in the system application).</p>
-<p>The sample vault note <code>Feature tour</code> contains one of each; open it to check an install.</p>
+<p>The sample vault note <code>Feature tour</code> contains one of each; open it to check an install, step by step with <a href="verify.html">Check your install</a>.</p>
+
+<h2 id="limits">Limits you may hit</h2>
+<ul>
+<li><strong>Big notes.</strong> Herdr lets a mod read a text file of up to 1 MiB. A note or canvas larger than that cannot be opened in the reader; the messages are on the <a href="troubleshooting.html#missing-target">troubleshooting page</a>.</li>
+<li><strong>Big folders.</strong> A folder lists its first 2000 entries; search finds the rest.</li>
+<li><strong>PDFs.</strong> An opened PDF shows its first 30 pages; a PDF inside a note or canvas shows page 1.</li>
+<li><strong>Pictures.</strong> Vault images over 40 MB are not shown; web images over 20 MB are not downloaded.</li>
+<li><strong>Live refresh on Linux.</strong> Herdr does not watch folders that git ignores, and refuses trees of more than 4096 folders that git does not ignore (see <a href="troubleshooting.html#stale-tree">troubleshooting</a>).</li>
+<li><strong>Excalidraw</strong> drawings are drawn by a small renderer of this project, not by Excalidraw. Dataview, Tasks, Bases and other plugins are never run.</li>
+<li><strong>Read-only.</strong> There is no editing, and file types not listed above open in the system application.</li>
+<li><strong>Vaults outside your home folder</strong> cannot be read, because Herdr mods may only read inside it.</li>
+</ul>
 <div class="pager"><a href="install.html" rel="prev">&larr; Install</a><a href="requirements.html" rel="next">Requirements &rarr;</a></div>
 </div>
 </main>

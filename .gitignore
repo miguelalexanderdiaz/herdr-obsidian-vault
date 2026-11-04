@@ -1,8 +1,10 @@
-# Files Herdr writes into mod folders (never commit)
-gpui-kit.d.ts
-herdr.d.ts
-*.d.ts
-jsconfig.json
+# Files Herdr writes into a mod folder when it checks or loads it (never commit)
+/mods/**/gpui-kit.d.ts
+/mods/**/herdr.d.ts
+/mods/**/jsconfig.json
+# Herdr leaves <name>.error next to a mod it could not load
+/mods/*.error
+/mods/**/*.error
 
 # Runtime data and caches (the mods write to <Herdr home>/data/vault, not here)
 /data/
@@ -14,11 +16,17 @@ Thumbs.db
 Desktop.ini
 *.log
 *.tmp
+*.orig
 .vscode/
 .idea/
+.claude/
+.env
+.env.*
 
 # Local, personal word list for scripts/privacy-scan.mjs (never commit)
 scripts/.privacy-words
 
 # Private notes
 /plans/**/*.private
+
+# Not ignored on purpose: examples/sample-vault/.obsidian (a vault needs its .obsidian folder to be one)

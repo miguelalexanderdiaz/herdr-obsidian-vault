@@ -18,6 +18,7 @@ export const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|bmp|avif|tiff?)$/i;
 // ---- front matter -----------------------------------------------------------
 
 export function splitFrontmatter(text) {
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1); // a byte-order mark (Windows editors) hides the opening ---
   const m = text.match(/^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/);
   if (!m) return { props: [], body: text };
   return { props: parseYaml(m[1]), body: text.slice(m[0].length) };
@@ -196,13 +197,14 @@ export function makeResolver(files) {
     if (!cands.length) return null;
     return [...cands].sort((a, b) =>
       Number(dirname(b) === fromDir) - Number(dirname(a) === fromDir) ||
-      a.split("/").length - b.split("/").length || a.length - b.length || a.localeCompare(b))[0];
+      a.split("/").length - b.split("/").length || a.length - b.length || (a < b ? -1 : a > b ? 1 : 0))[0];
   };
 }
 
 // ---- inline markdown --------------------------------------------------------
 
-export const linkUrl = (target) => "vault:" + encodeURIComponent(target);
+// encodeURIComponent leaves ( and ) alone, and an unbalanced ) would end the Markdown link early.
+export const linkUrl = (target) => "vault:" + encodeURIComponent(target).replace(/\(/g, "%28").replace(/\)/g, "%29");
 export function parseLinkUrl(url) {
   if (!url.startsWith("vault:")) return null;
   try { return decodeURIComponent(url.slice(6)); } catch { return url.slice(6); }

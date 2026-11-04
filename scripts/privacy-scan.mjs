@@ -25,32 +25,38 @@ const argValue = (flag) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 
-// Folders whose files quote bad patterns on purpose (the round plans and logs describe the rules).
-const SKIP_PREFIXES = ["plans/"];
+// plans/ (agent plans, audits, logs, board copies) is scanned too, because it is tracked and would be published with
+// the repo (PLAN D4). There the author-name rule and rule D3 are off (the logs discuss both), and a line that carries
+// the marker below is skipped, so a plan can quote a pattern. Write examples with a placeholder (`~`, `<home>`,
+// `/Users/x`) instead of a real path wherever possible.
+const PLANS = "plans/";
+const EXAMPLE_MARK = "privacy-scan: example";
 // The scanner and its tests mention patterns in regexes; they are built so they do not match themselves,
 // but keep them out of the word-list pass anyway.
 const SELF = new Set(["scripts/privacy-scan.mjs"]);
 
 const GENERIC = new Set(["user", "username", "you", "your", "yourname", "name", "me", "runner", "example", "foo", "bar", "x", "alice", "bob", "ubuntu", "someone", "shared", "home", "person"]);
+// A name that ends a sentence ("/home/x.") must not count the full stop as part of the name.
+const nameOf = (s) => s.replace(/[._-]+$/, "").toLowerCase();
 const mask = (s) => (s.length <= 3 ? "***" : `${s.slice(0, 2)}***${s.slice(-1)}`);
 
 const RULES = [
   {
     id: "mac-home",
     re: /\/Users\/([A-Za-z0-9._-]+)/g,
-    bad: (m) => !GENERIC.has(m[1].toLowerCase()),
+    bad: (m) => !GENERIC.has(nameOf(m[1])),
     msg: "macOS home path (write ~ or <home>)",
   },
   {
     id: "linux-home",
     re: /\/home\/([A-Za-z0-9._-]+)/g,
-    bad: (m) => !GENERIC.has(m[1].toLowerCase()),
+    bad: (m) => !GENERIC.has(nameOf(m[1])),
     msg: "Linux home path (write ~ or <home>)",
   },
   {
     id: "windows-home",
     re: /[A-Za-z]:[\\/]+Users[\\/]+([A-Za-z0-9._-]+)/g,
-    bad: (m) => !GENERIC.has(m[1].toLowerCase()) && !/^(public|default)$/i.test(m[1]),
+    bad: (m) => !GENERIC.has(nameOf(m[1])) && !/^(public|default)$/i.test(nameOf(m[1])),
     msg: "Windows home path (write ~ or <home>)",
   },
   {
@@ -108,10 +114,16 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 export function scanText(rel, text, { words = [], gitName = "", d3 = "off" } = {}) {
   const out = [];
   const lines = text.split(/\r?\n/);
+  const inPlans = rel.startsWith(PLANS);
+  if (inPlans) {
+    gitName = "";
+    d3 = "off";
+  }
   const nameAllowed = rel === "LICENSE" || rel === "NOTICE";
   const wordRes = words.map((w) => new RegExp(`(^|[^A-Za-z0-9])${escapeRe(w)}(?![A-Za-z0-9])`, "i"));
   const nameRe = gitName && !nameAllowed ? new RegExp(escapeRe(gitName), "i") : null;
   lines.forEach((line, i) => {
+    if (inPlans && line.includes(EXAMPLE_MARK)) return;
     for (const rule of RULES) {
       for (const m of line.matchAll(rule.re)) {
         if (rule.bad(m)) out.push({ line: i + 1, rule: rule.id, msg: rule.msg, sample: mask(m[0]) });
@@ -188,10 +200,16 @@ function selfTest() {
     rep.check(hits.length === 1, `flags ${rule}`, `did not flag ${rule}: ${text}`);
   }
   const good = [
-    `${U}x/file`, `${H}user/file`, "~/code/thing", "<home>/data", "noreply" + "@anthropic.com", "12345+bot" + "@users.noreply.github.com",
+    `${U}x/file`, `${H}user/file`, `see ${H}x.`, `${U}x, ${U}you.`, "~/code/thing", "<home>/data", "noreply" + "@anthropic.com", "12345+bot" + "@users.noreply.github.com",
     "settings.local.json", "name" + "@example.com", "see https://herdr.dev/mods",
   ];
   for (const text of good) rep.check(scanText("x.md", text).length === 0, `accepts: ${text.slice(0, 40)}`, `false positive: ${text}`);
+  // plans/: a real-looking path is flagged, the documented placeholders and the example marker are not
+  rep.check(scanText("plans/round-2/a.md", `see ${U}jane/notes`).length === 1, "flags a home path inside plans/", "plans/ must be scanned for home paths");
+  rep.check(scanText("plans/round-2/a.md", `see ${U}x/notes and ${H}user/x and <home>/y and ~/z`).length === 0, "plans/ accepts the documented placeholders", "plans/ placeholders flagged");
+  rep.check(scanText("plans/round-2/a.md", `quoted: ${U}jane/notes  <!-- privacy-scan: example -->`).length === 0, "plans/ accepts a line with the example marker", "example marker ignored");
+  rep.check(scanText("plans/round-2/a.md", "by Jane Doe", { gitName: "Jane Doe" }).length === 0, "the author-name rule is off in plans/", "author-name rule must be off in plans/");
+  rep.check(scanText("plans/round-2/a.md", "contact jane" + "@acme.io").length === 1, "flags an e-mail inside plans/", "plans/ must be scanned for e-mail addresses");
   const words = scanText("x.md", "my employer is Acme Corp", { words: ["Acme Corp"] });
   rep.check(words.length === 1 && words[0].rule === "personal-word", "flags a word from the private list", "private word list rule broken");
   rep.check(scanText("LICENSE", "Copyright 2026 Jane Doe", { gitName: "Jane Doe" }).length === 0, "author name allowed in LICENSE", "author name should be allowed in LICENSE");
@@ -210,7 +228,7 @@ function main() {
   const rep = new Report("privacy-scan");
   const { words, gitName } = personalWords();
   const d3 = d3Mode(root);
-  const files = repoFiles(root).filter((f) => !SKIP_PREFIXES.some((p) => f.startsWith(p)));
+  const files = repoFiles(root);
   let scanned = 0;
   let binaries = 0;
   for (const f of files) {

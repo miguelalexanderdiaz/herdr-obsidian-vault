@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 the herdr-obsidian-vault authors (holder named in LICENSE and NOTICE)
 // A read-only Obsidian note, rendered as Obsidian shows it: properties,
 // callouts, links, embeds, images, PDFs, tags, tasks, Mermaid, math,
 // Excalidraw and Canvas. Opened by the Vault panel (mods/vault) as a floating
@@ -21,9 +23,9 @@ import { v_flex, h_flex, TextView } from "gpui-base";
 import { props, theme, exec, readTextFile, watchFolder, closeOverlay, notify, run, shared, setShared, openOverlay, settings, spaces, panes, focused, nextCommand } from "herdr";
 import * as fs from "fs/promises";
 import { makeResolver, parseSize, parseLinkUrl, safeUrl } from "./parse.js";
-import { buildDoc, kindOf } from "./doc.js";
+import { buildDoc, kindOf, readNote } from "./doc.js";
 import { edgesSvg, canvasColor } from "./canvas.js";
-import { hash, themeKey, renderJobs, stamps, vaultImage, pdfPage, pdfInfo, pdfPageAt, remoteImage, svgFile, pruneCache, loadSettings, saveSettings, platform } from "./assets.js";
+import { hash, themeKey, mapPool, FETCH_CONCURRENCY, renderJobs, stamps, vaultImage, pdfPage, pdfInfo, pdfPageAt, remoteImage, svgFile, pruneCache, loadSettings, saveSettings, platform } from "./assets.js";
 import { openCommand, previewCommand, previewLabel, previewName, backHint, isBackKey, canOpen, relOf, normPath } from "./platform.js";
 import { listVault, isHidden } from "./vault-files.js";
 import { Watcher, POLL_MS, LIVE_OFF } from "./watch.js";
@@ -36,6 +38,8 @@ const MENU_W = 300;
 const PDF_PAGES = 30; // pages drawn for an opened PDF; Preview has the rest
 // Bump when the renderer's output changes, so cached pictures are drawn again.
 const RENDER_VERSION = 3;
+const STAMP_TTL_MS = 30_000; // a file's stamp is trusted this long when the watcher has not reported it
+const RELIST_MIN_MS = 1000; // the vault is walked again at most this often while it changes
 
 const CALLOUT_ALIAS = { summary: "abstract", tldr: "abstract", hint: "tip", important: "tip", check: "success", done: "success",
   help: "question", faq: "question", caution: "warning", attention: "warning", fail: "failure", missing: "failure", error: "danger", cite: "quote" };
@@ -127,6 +131,7 @@ export default class Reader extends View {
     this.closed = true;
     this.watcher?.stop();
     this.pollTask?.cancel();
+    this.relistTimer?.cancel();
     if (!this.kept && shared("vault.open")?.token === this.token) setShared("vault.open", null);
     // A kept pane that goes leaves no stale entry for the space tree (same keys and shape).
     if (this.kept && this.pane) {
@@ -177,14 +182,38 @@ export default class Reader extends View {
   async relist() {
     this.files = await listVault(this.vault, fs.readdir);
     this.fileSet = new Set(this.files);
+    // Every folder that holds a file: change events for a folder path (Windows reports the parent of a saved
+    // file; watchers coalesce directories) are not new or deleted files and must not start another walk.
+    this.dirSet = new Set();
+    for (const f of this.files) for (let i = f.indexOf("/"); i > 0; i = f.indexOf("/", i + 1)) this.dirSet.add(f.slice(0, i));
     this.resolve = makeResolver(this.files);
+    this.lastRelist = Date.now();
+  }
+
+  // A walk of the whole vault (up to 30,000 files) at most once per RELIST_MIN_MS: the first request runs at
+  // once, the ones that follow inside the window become a single walk when it ends.
+  relistSoon(cx) {
+    const wait = RELIST_MIN_MS - (Date.now() - (this.lastRelist ?? 0));
+    if (wait <= 0) return this.relist();
+    if (!this.relistTimer) {
+      this.relistTimer = cx.timer.after(wait, (cx) => cx.spawn(async (cx) => {
+        this.relistTimer = null;
+        if (this.closed) return;
+        const before = this.fileSet;
+        await this.relist().catch(() => {});
+        // Links may resolve differently now (a note was added or removed while the walk waited): draw again.
+        if (this.fileSet.size !== before.size || [...this.fileSet].some((f) => !before.has(f))) this.load(cx);
+        cx.notify();
+      }));
+    }
+    return Promise.resolve();
   }
 
   abs(rel) { return `${this.vault}/${rel}`; }
 
   build(file, anchor, depth) {
     return buildDoc(file, anchor, depth, {
-      read: (f) => readTextFile(this.abs(f)), resolve: (t, from) => this.resolve(t, from), deps: this.deps, abs: (f) => this.abs(f) });
+      read: (f) => readNote(this.abs(f), { read: readTextFile, exists: fs.exists }), resolve: (t, from) => this.resolve(t, from), deps: this.deps, abs: (f) => this.abs(f) });
   }
 
   // A PDF's pages one at a time (each shows as it's drawn), up to PDF_PAGES;
@@ -252,32 +281,34 @@ export default class Reader extends View {
     const phase = async (what, fn) => {
       try { await fn(); } catch (e) { if (gen === this.gen) { this.note(`${what}: ${String(e?.message ?? e).split("\n")[0].slice(0, 160)}`); cx.notify(); } }
     };
-    const st = await stamps(files.map((f) => f.abs)).catch(() => new Map());
+    const st = await this.fileStamps(files.map((f) => f.abs));
     for (const f of files) {
       this.deps.add(f.abs);
       if (f.as === "excalidraw") f.d.key = job({ kind: "excalidraw", file: f.abs, stamp: st.get(f.abs) });
     }
-    // Pictures first (fast), then whatever needs the renderer. One failing file shows its own message.
-    for (const f of files) {
+    // Pictures first (fast), a few at a time, each shown as it arrives; then whatever needs the renderer.
+    // One failing file shows its own message.
+    await mapPool(files.filter((f) => f.as !== "excalidraw"), FETCH_CONCURRENCY, (f) => {
       if (gen !== this.gen) return;
-      if (f.as === "excalidraw") continue;
-      await phase(`${f.abs.split("/").pop()}`, async () => {
+      return phase(`${f.abs.split("/").pop()}`, async () => {
         if (f.as === "pdfdoc") { await this.pdfPages(f, st.get(f.abs) ?? "", gen, commit); return; }
         const res = f.as === "pdf" ? await pdfPage(f.abs, st.get(f.abs) ?? "") : await vaultImage(f.abs, st.get(f.abs) ?? "");
         f.d.key = hash(`file:${f.abs}:${st.get(f.abs)}`);
         if (res.missing) this.note(res.error);
         commit(new Map([[f.d.key, res]]));
       });
-    }
-    for (const b of remote) {
+    });
+    if (gen !== this.gen) return;
+    await mapPool(remote, FETCH_CONCURRENCY, (b) => {
       if (gen !== this.gen) return;
       b.key = hash(`url:${b.src}`);
-      await phase("Web image", async () => {
+      return phase("Web image", async () => {
         const res = await remoteImage(b.src);
         if (res.missing) this.note(res.error);
         commit(new Map([[b.key, res]]));
       });
-    }
+    });
+    if (gen !== this.gen) return;
     await phase("Canvas", async () => {
       for (const d of canvases) {
         const svgText = edgesSvg(d.canvas, { line: t.muted, text: t.foreground, bg: t.background, font: "sans-serif" });
@@ -323,9 +354,13 @@ export default class Reader extends View {
       else if (!isHidden(rel)) rels.push(rel);
     }
     if (!all && !rels.length) return;
-    let relist = all || rels.some((r) => !this.fileSet.has(r));
+    if (all) this.stampMemo = null;
+    else for (const r of rels) (this.dirty ??= new Set()).add(this.abs(r));
+    const known = (r) => this.fileSet.has(r) || this.dirSet?.has(r);
+    let relist = all || rels.some((r) => !known(r));
+    // A known file or folder that is gone.
     if (!relist) for (const r of rels.slice(0, 50)) if (!(await fs.exists(this.abs(r)).catch(() => true))) { relist = true; break; }
-    if (relist) await this.relist();
+    if (relist) await this.relistSoon(cx);
     if (all || rels.some((r) => this.deps?.has(this.abs(r)))) this.load(cx);
     else if (relist) cx.notify();
   }
@@ -341,9 +376,23 @@ export default class Reader extends View {
       const now = await this.depStamps();
       const before = this.snapshot;
       this.snapshot = now;
-      if (before && before !== now) { await this.relist().catch(() => {}); this.load(cx); }
+      if (before && before !== now) { this.stampMemo = null; await this.relist().catch(() => {}); this.load(cx); }
     }));
     cx.notify();
+  }
+
+  // Stamps of the files a note shows. The ones already known are reused for STAMP_TTL_MS unless the watcher
+  // said they changed: a reload of the same note costs no `stat` (on Windows, a PowerShell start) when nothing
+  // but the note itself changed.
+  async fileStamps(paths) {
+    const now = Date.now();
+    const known = this.stampMemo ??= new Map();
+    const need = paths.filter((p) => { const k = known.get(p); return !k || now - k.at > STAMP_TTL_MS || this.dirty?.has(p); });
+    if (need.length) {
+      const fresh = await stamps(need).catch(() => new Map());
+      for (const p of need) { known.delete(p); if (fresh.has(p)) known.set(p, { stamp: fresh.get(p), at: now }); this.dirty?.delete(p); }
+    }
+    return new Map(paths.filter((p) => known.has(p)).map((p) => [p, known.get(p).stamp]));
   }
 
   async depStamps() {

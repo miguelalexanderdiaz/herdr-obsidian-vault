@@ -168,10 +168,14 @@ export function makeToolFinder(opts) {
   };
 }
 
-// Node 22 or newer: "v22.14.0" → true.
+// Node 22.4 or newer: "v22.14.0" → true. render.mjs needs the global WebSocket, which Node 22 only has
+// unflagged from 22.4 (22.0 to 22.3 are "Node 22" and would still fail). render.mjs stays the authority.
+export const NODE_MIN = "22.4";
 export function nodeOk(versionText) {
-  const m = String(versionText ?? "").match(/v?(\d+)\./);
-  return Boolean(m) && Number(m[1]) >= 22;
+  const m = String(versionText ?? "").match(/v?(\d+)\.(\d+)/);
+  if (!m) return false;
+  const [major, minor] = [Number(m[1]), Number(m[2])];
+  return major > 22 || (major === 22 && minor >= 4);
 }
 
 // ---- what to tell the person ----------------------------------------------------
@@ -179,7 +183,7 @@ export function nodeOk(versionText) {
 const HINTS = {
   rg: { macos: "brew install ripgrep", linux: "install ripgrep with your package manager (for example: apt install ripgrep)", windows: "winget install BurntSushi.ripgrep.MSVC" },
   poppler: { macos: "brew install poppler", linux: "install poppler-utils with your package manager (for example: apt install poppler-utils)", windows: "scoop install poppler" },
-  node: { macos: "brew install node", linux: "install Node.js 22 or newer (nodejs.org, or your package manager)", windows: "winget install OpenJS.NodeJS" },
+  node: { macos: "brew install node", linux: "install Node.js 22.4 or newer (nodejs.org, or your package manager)", windows: "winget install OpenJS.NodeJS" },
   curl: { macos: "curl ships with macOS", linux: "install curl with your package manager (for example: apt install curl)", windows: "curl ships with Windows 10 and newer" },
   browser: { macos: "install Google Chrome, Chromium, Brave or Microsoft Edge", linux: "install Chrome, Chromium, Brave or Microsoft Edge", windows: "Microsoft Edge is built into Windows; or install Chrome or Brave" },
   obsidian: { macos: "install the Obsidian app (obsidian.md)", linux: "install the Obsidian app (obsidian.md)", windows: "install the Obsidian app (obsidian.md)" },
@@ -187,7 +191,7 @@ const HINTS = {
 
 // → "<what> isn't installed: <hint>" for the UI. what: rg | poppler | node | curl | browser | obsidian.
 export function missingMessage(platform, what) {
-  const names = { rg: "ripgrep (rg)", poppler: "Poppler (pdftoppm, pdfinfo)", node: "Node.js 22 or newer", curl: "curl", browser: "A Chromium-based browser", obsidian: "The Obsidian app" };
+  const names = { rg: "ripgrep (rg)", poppler: "Poppler (pdftoppm, pdfinfo)", node: "Node.js 22.4 or newer", curl: "curl", browser: "A Chromium-based browser", obsidian: "The Obsidian app" };
   const hint = HINTS[what]?.[normPlatform(platform)] ?? "";
   const lead = what === "browser" || what === "obsidian" ? `${names[what]} wasn't found` : `${names[what] ?? what} isn't installed`;
   return hint ? `${lead}: ${hint}` : lead;
