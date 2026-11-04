@@ -6,6 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { register } from "node:module";
+import "./stubs/runtime.mjs"; // Herdr has no TextDecoder, TextEncoder or structuredClone
 import { VAULT, ROOT } from "./helpers.mjs";
 
 register("./stubs/hooks.mjs", import.meta.url);
