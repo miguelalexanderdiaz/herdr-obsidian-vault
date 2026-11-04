@@ -482,3 +482,38 @@ test("render: no browser anywhere (shell finds nothing) is the browser sentence,
   await a.renderJobs([{ key: "k3", kind: "math", src: "z" }], {});
   assert.equal(exec.calls.filter((c) => c.cmd === "sh").length, 2, "asked again later");
 });
+
+// ---- the fetch pipeline (R2-CR-11, CR-2-11) --------------------------------------------------------------------
+
+import { mapPool, FETCH_CONCURRENCY, IMAGE_MAX_BYTES } from "../mods/vault-reader/assets-core.js";
+
+test("mapPool runs every item with at most `limit` at once (6 images, 4 at a time)", async () => {
+  assert.equal(FETCH_CONCURRENCY, 4);
+  let live = 0, peak = 0;
+  const done = [];
+  await mapPool([1, 2, 3, 4, 5, 6], FETCH_CONCURRENCY, async (n) => {
+    live++; peak = Math.max(peak, live);
+    await new Promise((r) => setTimeout(r, 5 * (7 - n)));
+    live--; done.push(n);
+  });
+  assert.equal(peak, 4);
+  assert.deepEqual([...done].sort(), [1, 2, 3, 4, 5, 6]);
+  await mapPool([], 4, () => { throw new Error("never"); });
+  let one = 0;
+  await mapPool([1, 2], 0, async () => { one++; }); // a limit below 1 still makes progress
+  assert.equal(one, 2);
+});
+
+test("a 20 MB+ image is refused from its stamp, without reading the file (CR-2-11)", async () => {
+  const fs = fakeFs({ "/h/v/huge.png": png(10, 10) });
+  let reads = 0;
+  const read = fs.readFile;
+  fs.readFile = async (p) => { reads++; return read(p); };
+  const a = createAssets({ exec: fakeExec(() => undefined), fs, appHome: APP, home: "/h", platform: "linux" });
+  const big = await a.vaultImage("/h/v/huge.png", `1700000000:${IMAGE_MAX_BYTES + 1}`);
+  assert.match(big.error, /too large/);
+  assert.equal(reads, 0, "never read");
+  const ok = await a.vaultImage("/h/v/huge.png", `1700000000:${IMAGE_MAX_BYTES}`);
+  assert.equal(ok.error, undefined);
+  assert.equal(reads, 1);
+});

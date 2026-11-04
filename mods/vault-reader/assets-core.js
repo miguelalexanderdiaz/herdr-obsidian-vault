@@ -19,6 +19,7 @@ export const CACHE_MAX_AGE_DAYS = 30;
 export const CACHE_MAX_MB = 200;
 export const REMOTE_MAX_BYTES = 20_000_000;
 export const IMAGE_MAX_BYTES = 40_000_000;
+export const FETCH_CONCURRENCY = 4; // pictures fetched at the same time for one note (render jobs stay one at a time)
 export const REMOTE_RETRY_MS = 5 * 60_000; // a failed download is not tried again for this long (and never stored on disk)
 
 // A problem that is the file's own (not an image, a page that cannot be drawn): cached, so it is not
@@ -35,6 +36,14 @@ export function hash(s) {
     b = Math.imul(b ^ c, 0x5bd1e995) ^ (b >>> 13);
   }
   return (a >>> 0).toString(16).padStart(8, "0") + (b >>> 0).toString(16).padStart(8, "0");
+}
+
+// fn(item, index) for every item, at most `limit` at a time; results are not collected (fn commits its own).
+// An exception in fn ends that worker only after it is thrown to the caller: fn is expected to catch.
+export async function mapPool(items, limit, fn) {
+  let next = 0;
+  const worker = async () => { while (next < items.length) { const i = next++; await fn(items[i], i); } };
+  await Promise.all(Array.from({ length: Math.min(Math.max(1, limit), items.length) }, worker));
 }
 
 // The theme part of a picture's key: a new theme draws new pictures.
@@ -187,6 +196,8 @@ export function createAssets(deps) {
     const m = await meta(key);
     if (m) return hit(key, ext, m);
     try {
+      // The stamp is "mtime:size": a huge file is refused before it is read into memory.
+      if (parseStamp(stamp).size > IMAGE_MAX_BYTES) throw new FileProblem("This image is too large to show here");
       const bytes = await fs.readFile(file);
       if (bytes.length > IMAGE_MAX_BYTES) throw new FileProblem("This image is too large to show here");
       const dest = abs(`${REL}/${key}.${ext}`);

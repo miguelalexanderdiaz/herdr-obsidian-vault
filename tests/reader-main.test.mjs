@@ -214,3 +214,42 @@ test("a note over 1 MiB gets its own message, a missing one keeps 'no longer in 
   const gone = await open(vault, "Gone.md");
   assert.equal(gone.r.doc.error, "This file is no longer in the vault");
 });
+
+// ---- the fetch pipeline (R2-CR-11, CR-2-11) --------------------------------------------------------------------
+
+// A vault with a note that shows 6 pictures; exec answers `stat` from the real files and counts the calls.
+function picsVault() {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "herdr-pics-vault-"));
+  const png = Buffer.from("89504e470d0a1a0a0000000d49484452000000050000000308060000008d6f26e5", "hex");
+  const names = Array.from({ length: 6 }, (_, i) => `pic${i}.png`);
+  for (const n of names) fs.writeFileSync(path.join(vault, n), png);
+  fs.writeFileSync(path.join(vault, "Pics.md"), names.map((n) => `![[${n}]]`).join("\n\n"));
+  return vault;
+}
+const statExec = (log) => async (cmd, args) => {
+  if (cmd !== "stat") throw new Error(`spawn ${cmd} ENOENT`);
+  log.push(args.length - 2);
+  const out = args.slice(2).map((p) => { const s = fs.statSync(p); return `${Math.floor(s.mtimeMs / 1000)}:${s.size} ${p}`; }).join("\n");
+  return { code: 0, stdout: out, stderr: "" };
+};
+
+test("six pictures all arrive; a reload of the note stats nothing it already knows; a changed picture is stat'ed again", async () => {
+  const vault = picsVault();
+  const stats = [];
+  const { r, cx } = await open(vault, "Pics.md", { exec: statExec(stats) });
+  const shown = r.doc.blocks.filter((b) => b.type === "embed");
+  assert.equal(shown.length, 6);
+  assert.ok(shown.every((b) => r.assets.get(b.key)?.w === 5), "every picture drew, 5 x 3");
+  assert.equal(stats.reduce((a, b) => a + b, 0), 6, "first load: one stat call, six files");
+  stats.length = 0;
+  // only the note changed
+  await r.changed(vault, [path.join(vault, "Pics.md")], cx);
+  for (let i = 0; i < 5; i++) await Promise.all(cx.tasks.splice(0));
+  assert.deepEqual(stats, [], "no stat on the reload");
+  assert.ok(shown.length === 6);
+  // one picture changed
+  fs.writeFileSync(path.join(vault, "pic3.png"), Buffer.concat([fs.readFileSync(path.join(vault, "pic3.png")), Buffer.from([0])]));
+  await r.changed(vault, [path.join(vault, "pic3.png")], cx);
+  for (let i = 0; i < 5; i++) await Promise.all(cx.tasks.splice(0));
+  assert.deepEqual(stats, [1], "only the changed picture");
+});
