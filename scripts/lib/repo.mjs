@@ -5,7 +5,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const HERE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+// `--root <dir>` points every script at another copy of the repo (self-tests mutate a temp copy, never the checkout).
+const rootArg = process.argv.indexOf("--root");
+export const ROOT = rootArg > 1 && process.argv[rootArg + 1] ? fs.realpathSync(path.resolve(process.argv[rootArg + 1])) : HERE_ROOT;
+export const SELF_ROOT = HERE_ROOT;
 
 /** Run git with an argument array (no shell). Returns stdout (Buffer) or null when git fails. */
 export function git(args, root = ROOT) {
@@ -82,4 +86,42 @@ export class Report {
 export function pngSize(buf) {
   if (buf.length < 24 || buf.readUInt32BE(0) !== 0x89504e47) return null;
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+}
+
+/**
+ * Every `run:` command of a GitHub workflow file, one entry per command line: [{ line, cmd }].
+ * Handles `run: cmd` and `run: |` blocks. Comments and blank lines are skipped. No YAML library needed.
+ */
+export function workflowCommands(text) {
+  const out = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^(\s*)(?:-\s+)?run:\s*(.*)$/.exec(lines[i]);
+    if (!m) continue;
+    const rest = m[2].trim();
+    if (rest && !/^[|>][+-]?$/.test(rest)) {
+      out.push({ line: i + 1, cmd: rest.replace(/\s+#.*$/, "") });
+      continue;
+    }
+    const indent = m[1].length;
+    for (let j = i + 1; j < lines.length; j++) {
+      const l = lines[j];
+      if (!l.trim()) continue;
+      if (l.length - l.trimStart().length <= indent) break;
+      out.push({ line: j + 1, cmd: l.trim() });
+    }
+  }
+  return out;
+}
+
+/** Why a workflow command cannot work, or null. `scripts` is package.json scripts, `has(rel)` tells whether a repo file exists. */
+export function badWorkflowCommand(cmd, scripts, has) {
+  if (/^(?:if|fi|then|else|printf|echo|\[)\b/.test(cmd) || /^\w+=/.test(cmd)) return null; // shell glue of the word-list step
+  if (cmd === "npm test") return scripts.test ? null : "package.json has no `test` script";
+  let m = /^npm run ([\w:.-]+)(?:\s|$)/.exec(cmd);
+  if (m) return scripts[m[1]] ? null : `package.json has no script "${m[1]}"`;
+  if (/^node\s+--test\b/.test(cmd)) return "`node --test <dir>` reads a bare folder as a module on Node 22 and fails; use `npm test`";
+  m = /^node\s+(scripts\/[\w./-]+\.mjs)(?:\s|$)/.exec(cmd);
+  if (m) return has(m[1]) ? null : `${m[1]} does not exist`;
+  return "only `npm test`, `npm run <script>` and `node scripts/<file>.mjs` are allowed in the template";
 }
