@@ -396,7 +396,7 @@ if (RELEASE) {
   {
     const open = [];
     for (const f of files) {
-      if (f.startsWith("plans/") || f.startsWith("scripts/") || isBinaryName(f)) continue;
+      if (f.startsWith("plans/") || f.startsWith("scripts/") || f.startsWith("tests/") || isBinaryName(f)) continue; // tests/ use it as a fixture
       const n = (readText(f).match(/<owner>/g) ?? []).length;
       if (n) open.push(`${f} (${n})`);
     }
