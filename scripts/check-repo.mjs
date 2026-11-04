@@ -2,7 +2,7 @@
 // Structure, contract and licensing checks for the repo. Node 22, no dependencies, same result on every OS.
 //
 //   node scripts/check-repo.mjs            checks that must always hold (CI)
-//   node scripts/check-repo.mjs --release  adds the publish gate (preview.png, no TODO, no placeholders,
+//   node scripts/check-repo.mjs --release  adds the publish gate (preview.png, no TODO, no unfilled licence placeholders,
 //                                          no Obsidian logo in history). Fails until the author steps in
 //                                          scripts/PUBLISH.md are done.
 //   node scripts/check-repo.mjs --root DIR a temp copy of the repo (used by --self-test)
@@ -359,7 +359,22 @@ if (has("package.json")) {
   if (p) r.check(p.private === true, "package.json is private", "root package.json must be private");
 }
 
-// ---- 10. Release gate ----
+// ---- 10. No <owner> placeholder ----
+// The repository is public, so its URLs name the real owner. A leftover <owner> placeholder (from before it was public)
+// would be a broken link or a broken agent prompt in every text file that is published; scripts/ and tests/ are left
+// out because they name the placeholder to look for it.
+{
+  const open = [];
+  for (const f of files) {
+    if (f.startsWith("plans/") || f.startsWith("scripts/") || f.startsWith("tests/") || isBinaryName(f)) continue;
+    const n = (readText(f).match(/<owner>|&lt;owner&gt;/g) ?? []).length;
+    if (n) open.push(`${f} (${n})`);
+  }
+  if (open.length) r.error(`the <owner> placeholder is in ${open.length} file(s): ${open.join(", ")} (write the real owner, miguelalexanderdiaz)`);
+  else r.ok("no <owner> placeholder is left outside scripts/ and tests/");
+}
+
+// ---- 11. Release gate ----
 // The publish steps are read from scripts/PUBLISH.md, so the list printed here is the list in that file. It must be a
 // consecutive numbered list with a bold title on every step.
 const publishSteps = has("scripts/PUBLISH.md")
@@ -384,18 +399,6 @@ if (RELEASE) {
     const t = readText(f);
     if (/\bTODO\b|\bFIXME\b/.test(t)) r.error(`${f} still has a TODO/FIXME`);
     if (/<author[^>]*>|\[yyyy\]|\[name of copyright owner\]/i.test(t)) r.error(`${f} still has an unfilled placeholder`);
-  }
-  // The <owner> placeholder stands for the GitHub owner in docs; agents may not write usernames. Every text file that
-  // will be published counts, except scripts/ (which explain the placeholder) and plans/ (not published, PUBLISH.md).
-  {
-    const open = [];
-    for (const f of files) {
-      if (f.startsWith("plans/") || f.startsWith("scripts/") || f.startsWith("tests/") || isBinaryName(f)) continue; // tests/ use it as a fixture
-      const n = (readText(f).match(/<owner>/g) ?? []).length;
-      if (n) open.push(`${f} (${n})`);
-    }
-    if (open.length) r.error(`the <owner> placeholder is still in ${open.length} file(s): ${open.join(", ")} (author step: replace it, scripts/PUBLISH.md)`);
-    else r.ok("no <owner> placeholder is left outside scripts/ and plans/");
   }
   // Publish-time marks in docs: documentation's own gate knows its wording (check-docs --release), we only run it.
   {
@@ -422,7 +425,7 @@ if (RELEASE) {
   for (const st of publishSteps) console.log(`  note    ${st.n}. ${st.title}`);
 }
 
-// ---- 11. Self-test: seeded faults must be caught ----
+// ---- 12. Self-test: seeded faults must be caught ----
 if (process.argv.includes("--self-test")) await selfTest();
 
 r.finish();
@@ -451,7 +454,7 @@ async function selfTest() {
     ["a step may fail (continue-on-error)", "scripts/ci.workflow.yml", (t) => t.replace("- name: Docs checks", "- name: Docs checks\n        continue-on-error: true"), []],
     ["an action floats on a tag", "scripts/ci.workflow.yml", (t) => t.replace(/actions\/setup-node@[0-9a-f]{40}/, "actions/setup-node@v4"), []],
     ["the template runs a script that does not exist", "scripts/ci.workflow.yml", (t) => t.replace("node scripts/check-docs.mjs", "node scripts/nope.mjs"), []],
-    ["a placeholder <owner> is left in the docs", "README.md", (t) => `${t}\nSee https://github.com/<owner>/x\n`, ["--release"], /<owner> placeholder is still in 1 file|<owner> placeholder is still in \d+ file.*README\.md/],
+    ["a placeholder <owner> is left in the docs", "README.md", (t) => `${t}\nSee https://github.com/<owner>/x\n`, [], /<owner> placeholder is in \d+ file.*README\.md/],
     ["the vault.add command is gone", "mods/vault/main.js", (t) => t.replaceAll("vault.add", "vault.pick"), [], /command vault\.add disappeared/],
     ["RECIPE.md puts cmd /c start back", "RECIPE.md", (t) => t.replace("`xdg-open` or `rundll32`", "`xdg-open` or `cmd /c start`"), [], /check-recipe/],
     ["a lz-string licence text is missing", "mods/vault-reader/render/LICENSE-lz-string.txt", null, [], /LICENSE-lz-string/],

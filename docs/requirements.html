@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Requirements - Herdr Obsidian Vault</title>
-<meta name="description" content="What the Vault panel and reader need, per operating system, and what they do without it. macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.">
+<meta name="description" content="What the Vault panel and reader need, what each program adds and how to install it. macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
@@ -23,8 +23,6 @@
 <li><a href="configuration.html">Configuration</a></li>
 <li><a href="privacy.html">Privacy</a></li>
 <li><a href="troubleshooting.html">Troubleshooting</a></li>
-<li><a href="verify.html">Check your install</a></li>
-<li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
 </nav>
@@ -33,80 +31,26 @@
 <main id="content">
 <div class="wrap">
 <h1>Requirements</h1>
-<p class="lede">Only Herdr is required. Everything else is optional and adds a feature. When a program is missing, the panel or the reader says which one in plain words instead of failing.</p>
-<p>macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.</p>
-<p>These programs are not bundled. For ripgrep, Node.js, Poppler and curl the mods try the bare name on your PATH, then the usual install folders of your operating system (Homebrew, Snap, Linuxbrew, Nix, Volta, Scoop, WinGet, Chocolatey, Program Files), then, for Node, the folders of nvm, fnm and asdf, and last your login shell (<code>command -v</code>) on macOS and Linux or <code>where</code> on Windows. The browser and Obsidian have their own search order, described under <a href="#overrides">Pointing the mods at a program</a>. A program that was missing is looked for again after 30 seconds, so installing it while Herdr runs works. The only thing the mods ever download is a web image that a note shows (see <a href="privacy.html">privacy</a>).</p>
+<p class="lede">Only Herdr is required. Each other program adds a feature; when one is missing, the mods name it and give the install command.</p>
+<p id="support">macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.</p>
 
-<div class="table-wrap" role="region" aria-label="Requirements per operating system" tabindex="0">
-<table id="requirements-table">
-<thead><tr><th scope="col">Program</th><th scope="col">Used for</th><th scope="col">Without it</th><th scope="col">macOS</th><th scope="col">Linux</th><th scope="col">Windows</th></tr></thead>
+<div class="table-wrap" role="region" aria-label="Requirements" tabindex="0">
+<table id="requirements-table" class="stack">
+<thead><tr><th scope="col">Program</th><th scope="col">Adds</th><th scope="col">Install</th></tr></thead>
 <tbody>
-<tr><th scope="row">Herdr desktop app</th><td>Runs both mods.</td><td>Nothing works.</td><td>Install Herdr.</td><td>Install Herdr.</td><td>Install Herdr.</td></tr>
-<tr><th scope="row">ripgrep (<code>rg</code>)</th><td>The search box in the Vault panel.</td><td>Search shows <code>ripgrep (rg) isn't installed:</code> and the install hint for your system. Browsing and reading still work.</td><td><code>brew install ripgrep</code></td><td>install ripgrep with your package manager (for example: <code>apt install ripgrep</code>)</td><td><code>winget install BurntSushi.ripgrep.MSVC</code></td></tr>
-<tr><th scope="row">Node.js 22.4 or newer (<code>node</code>)</th><td>Drawing math, Mermaid diagrams and Excalidraw drawings (the render script).</td><td>One line above the note names what is missing; the source of each diagram, formula or drawing stays visible.</td><td><code>brew install node</code></td><td>install Node.js 22.4 or newer (nodejs.org, or your package manager)</td><td><code>winget install OpenJS.NodeJS</code></td></tr>
-<tr><th scope="row">A Chromium-family browser (Chrome, Chromium, Edge or Brave)</th><td>Runs headless to take a picture of each diagram, formula and drawing.</td><td>Same: one line above the note, <code>A Chromium-based browser wasn't found</code>, and the source stays visible.</td><td>Chrome, Chromium, Brave or Edge in <code>/Applications</code> (or <code>~/Applications</code>)</td><td>Chrome, Chromium, Brave or Edge in <code>/usr/bin</code>, <code>/opt</code> or <code>/snap/bin</code>, or on PATH (Flatpak browsers are not looked for)</td><td>Edge, Chrome or Brave in Program Files or Local AppData (Edge is built into Windows)</td></tr>
-<tr><th scope="row">Obsidian desktop app</th><td>Supplies its own Mermaid and MathJax, read at run time from <code>obsidian.asar</code>.</td><td>Same: one line above the note, <code>The Obsidian app wasn't found</code>, and the source stays visible. Notes, canvases and images still open.</td><td>Obsidian in <code>/Applications</code> (or <code>~/Applications</code>)</td><td>Obsidian from <code>/opt</code>, <code>/usr/lib</code>, <code>/usr/share</code>, Snap or Flatpak (an AppImage cannot be found: name its file in <code>settings.json</code>)</td><td>Obsidian in <code>%LOCALAPPDATA%</code> or Program Files</td></tr>
-<tr><th scope="row">Poppler (<code>pdftoppm</code>, <code>pdfinfo</code>)</th><td>Every page of a PDF (the first 30).</td><td>macOS draws page 1 through Quick Look. Linux and Windows show <code>Poppler (pdftoppm, pdfinfo) isn't installed:</code> with the hint, and the PDF opens in your default app.</td><td><code>brew install poppler</code></td><td>install poppler-utils with your package manager (for example: <code>apt install poppler-utils</code>)</td><td><code>scoop install poppler</code></td></tr>
-<tr><th scope="row">curl</th><td>Downloading web images that a note shows with <code>![](https://...)</code>.</td><td>Those images show <code>curl isn't installed:</code> with the hint. Turn web images off on purpose with the Web images button.</td><td>Ships with macOS</td><td>install curl with your package manager (for example: <code>apt install curl</code>)</td><td>Ships with Windows 10 and newer</td></tr>
-<tr><th scope="row">System file opener</th><td>Opening files the reader cannot show, web links, and PDFs in your viewer.</td><td>The click does nothing.</td><td><code>open</code> (built in)</td><td><code>xdg-open</code> (package <code>xdg-utils</code>)</td><td><code>rundll32 url.dll,FileProtocolHandler</code> (built in)</td></tr>
+<tr><th scope="row">Herdr desktop app</th><td data-label="Adds">Runs both mods (required).</td><td data-label="Install">herdr.dev</td></tr>
+<tr><th scope="row">ripgrep (<code>rg</code>)</th><td data-label="Adds">Search in the panel.</td><td data-label="Install">macOS <code>brew install ripgrep</code>, Linux <code>apt install ripgrep</code>, Windows <code>winget install BurntSushi.ripgrep.MSVC</code></td></tr>
+<tr><th scope="row">Node.js 22.4 or newer</th><td data-label="Adds">Math, Mermaid and Excalidraw, with the next two.</td><td data-label="Install">macOS <code>brew install node</code>, Linux nodejs.org or your package manager, Windows <code>winget install OpenJS.NodeJS</code></td></tr>
+<tr><th scope="row">Chrome, Chromium, Edge or Brave</th><td data-label="Adds">Draws those pictures, headless.</td><td data-label="Install">Any one; Edge is built into Windows.</td></tr>
+<tr><th scope="row">Obsidian desktop app</th><td data-label="Adds">Its own Mermaid and MathJax.</td><td data-label="Install">Its installer; an AppImage needs the <code>asar</code> setting.</td></tr>
+<tr><th scope="row">Poppler</th><td data-label="Adds">Every PDF page (the first 30); without it macOS shows page 1.</td><td data-label="Install">macOS <code>brew install poppler</code>, Linux <code>apt install poppler-utils</code>, Windows <code>scoop install poppler</code></td></tr>
+<tr><th scope="row">curl</th><td data-label="Adds">Web images in notes.</td><td data-label="Install">Built into macOS and Windows 10 or newer; Linux <code>apt install curl</code></td></tr>
+<tr><th scope="row">System file opener</th><td data-label="Adds">Opens other files, links and PDFs in your viewer.</td><td data-label="Install">Built in (<code>open</code>, <code>rundll32 url.dll,FileProtocolHandler</code>); Linux <code>xdg-open</code> from <code>xdg-utils</code></td></tr>
 </tbody>
 </table>
 </div>
-
-<h2 id="matrix">What works where</h2>
-<p>This table says how far each feature has been checked on each system. &ldquo;Used by the author&rdquo; means the feature was in the version imported from the author&rsquo;s own macOS setup. Code changed since then was checked by the unit tests and <code>herdr-app check</code> only, because the agents that made the changes may not drive the live app. &ldquo;Fake-OS tests&rdquo; means the unit tests run the code for that system with a made-up operating system, program lookup and file system, not the real thing. Where a program is needed and absent, the cell says what you see instead.</p>
-<div class="table-wrap" role="region" aria-label="What works where" tabindex="0"><table id="matrix-table">
-<thead><tr><th scope="col">Feature</th><th scope="col">Needs</th><th scope="col">macOS</th><th scope="col">Linux</th><th scope="col">Windows</th></tr></thead>
-<tbody>
-<tr><th scope="row">Panel, vault picker, tree, live refresh</th><td>Herdr</td><td>Used by the author</td><td>Fake-OS tests</td><td>Fake-OS tests</td></tr>
-<tr><th scope="row">Vault list from Obsidian, Import</th><td>Obsidian&rsquo;s <code>obsidian.json</code></td><td>First-run list used by the author; Import is new, fake-OS tests</td><td>Fake-OS tests (also Flatpak and Snap places)</td><td>Fake-OS tests</td></tr>
-<tr><th scope="row">Search</th><td><code>rg</code></td><td>Used by the author</td><td>Fake-OS tests; without <code>rg</code> a named message</td><td>Fake-OS tests; without <code>rg</code> a named message</td></tr>
-<tr><th scope="row">Notes, callouts, links, embeds, canvas, images</th><td>Herdr</td><td>Used by the author</td><td>Same code on every system; fake-OS tests for the file stamps</td><td>Same code on every system; fake-OS tests for the file stamps</td></tr>
-<tr><th scope="row">PDF pages</th><td>Poppler</td><td>Used by the author; without Poppler page 1 through Quick Look</td><td>Fake-OS tests; without Poppler a named message</td><td>Fake-OS tests; without Poppler a named message</td></tr>
-<tr><th scope="row">Math, Mermaid, Excalidraw</th><td>Node.js, a browser, the Obsidian app</td><td>Used by the author</td><td>Fake-OS tests of the lookup; without a piece a named message</td><td>Fake-OS tests of the lookup; without a piece a named message</td></tr>
-<tr><th scope="row">Web images</th><td><code>curl</code></td><td>Fake-OS tests (the <code>curl</code> download is new)</td><td>Fake-OS tests; without <code>curl</code> a named message</td><td>Fake-OS tests; without <code>curl</code> a named message</td></tr>
-<tr><th scope="row">Opening other files and links</th><td>The system opener</td><td>Used by the author</td><td>Fake-OS tests; a missing opener does nothing</td><td>Fake-OS tests; a missing opener does nothing</td></tr>
-</tbody></table></div>
-<p>The end-to-end render test (<code>tests/render-e2e.test.mjs</code>) starts the real render script with a stand-in Obsidian bundle and a real browser, and skips with a stated reason where there is no browser. It has run on macOS only. Nothing is marked as used for Linux or Windows because nobody has watched the mods run there. <a href="verify.html">Check your install</a> is how that evidence arrives.</p>
-
-<h2 id="vault-list">Where Obsidian keeps its vault list</h2>
-<p>On first run, and when you choose <em>Import from Obsidian</em>, the panel reads Obsidian&rsquo;s own list of vaults, so you do not have to add them again. The first file in the order below that holds at least one vault is used. If none is found, the empty panel says <em>Obsidian&rsquo;s vault list wasn&rsquo;t found</em> and names the places it looked.</p>
-<div class="table-wrap" role="region" aria-label="Obsidian vault list location per OS" tabindex="0"><table>
-<thead><tr><th scope="col">System</th><th scope="col">File read</th></tr></thead>
-<tbody>
-<tr><th scope="row">macOS</th><td><code>~/Library/Application Support/obsidian/obsidian.json</code></td></tr>
-<tr><th scope="row">Linux</th><td><code>~/.config/obsidian/obsidian.json</code>; for Flatpak <code>~/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json</code>; for Snap <code>~/snap/obsidian/current/.config/obsidian/obsidian.json</code></td></tr>
-<tr><th scope="row">Windows</th><td><code>~/AppData/Roaming/obsidian/obsidian.json</code> (that is <code>%APPDATA%\obsidian</code>)</td></tr>
-</tbody></table></div>
-<div class="warn"><strong>Vaults must live inside your home folder.</strong> Herdr mods can only read files under the home folder. A vault on another drive or a network share cannot be shown; the panel lists it as outside the home folder and not readable.</div>
-
-<h2 id="overrides">Pointing the mods at a program</h2>
-<p>If the browser or Obsidian is installed somewhere unusual, name it. The easiest way is the settings file, because it needs no restart and reaches Herdr however it was started.</p>
-<h3 id="settings-file">The settings file</h3>
-<p>Create or edit <code>data/vault/settings.json</code> in your Herdr home and add one or both keys. Both must be absolute paths; a value of the wrong type, or a relative path, is ignored without a message. The file is read again at every render run.</p>
-<pre><code>{
-  "browser": "/opt/example/chromium/chrome",
-  "asar": "/opt/Example/resources/obsidian.asar"
-}</code></pre>
-<p>On Windows write the path with forward slashes or doubled backslashes, for example <code>"C:/Tools/Chrome/chrome.exe"</code>. The <em>Web images</em> button writes the same file (key <code>remoteImages</code>) and keeps the other keys.</p>
-<h3 id="order">Search order</h3>
-<p>For the <strong>browser</strong>, the first one that exists wins:</p>
-<ol>
-<li>the <code>browser</code> key in <code>data/vault/settings.json</code>;</li>
-<li>the environment variable <code>HERDR_VAULT_BROWSER</code>, then <code>CHROME_PATH</code>;</li>
-<li>the install folders of your system: on macOS Chrome, Chromium, Brave and Edge in <code>/Applications</code> and <code>~/Applications</code>; on Windows Edge, Chrome, Brave and Chromium under Program Files, Program Files (x86) and Local AppData; on Linux <code>/usr/bin/google-chrome</code> (and <code>-stable</code>), <code>/opt/google/chrome/chrome</code>, <code>/usr/bin/chromium</code> (and <code>chromium-browser</code>), <code>/usr/lib/chromium/chromium</code>, <code>/usr/bin/brave-browser</code>, <code>/opt/brave.com/brave/brave</code>, <code>/usr/bin/microsoft-edge</code> (and <code>-stable</code>), <code>/opt/microsoft/msedge/msedge</code>, <code>/usr/local/bin/chromium</code> and <code>/snap/bin/chromium</code>. Flatpak browsers are left out on purpose;</li>
-<li>the browser names on the PATH of the render script&rsquo;s own process;</li>
-<li>last, your login shell (<code>command -v</code>) on macOS and Linux, or <code>where</code> on Windows, asked once per session and only when everything above failed. A miss is remembered for 30 seconds.</li>
-</ol>
-<p>For <strong>Obsidian&rsquo;s <code>obsidian.asar</code></strong>: the <code>asar</code> key, then the environment variable <code>HERDR_VAULT_ASAR</code>, then the install folders in the table above. There is no PATH or shell lookup for it.</p>
-<h3 id="env-vars">Environment variables</h3>
-<p><code>HERDR_VAULT_BROWSER</code>, <code>CHROME_PATH</code> and <code>HERDR_VAULT_ASAR</code> are read by the render script, not by the mod, so they only count if Herdr itself was started with them. A variable exported in your shell profile does not reach a Herdr started from Finder or a desktop launcher; Herdr&rsquo;s own notes say that such a launch loads the login shell&rsquo;s PATH and little else. To use one:</p>
-<ul>
-<li>start Herdr from a terminal where the variable is set (<code>herdr-app</code>), or</li>
-<li>macOS: run <code>launchctl setenv NAME value</code>, then restart Herdr; Windows: set a user environment variable (System Properties, or <code>setx</code>), then restart Herdr; Linux: set it in the desktop entry or the systemd user environment, then restart Herdr.</li>
-</ul>
-<p>The per-system steps follow from how Herdr starts and have not been tested here. Prefer the settings file.</p>
-<p>For the other programs (ripgrep, Node.js, Poppler, curl), put their folder on the PATH that your login shell sets, or install them in one of the usual places.</p>
+<p>Programs are found on your PATH or in the usual install folders; for one elsewhere, see <a href="configuration.html#lookup">Configuration</a>.</p>
+<div class="warn"><strong>Vaults must live inside your home folder.</strong> Herdr mods cannot read anywhere else.</div>
 <div class="pager"><a href="usage.html" rel="prev">&larr; Usage</a><a href="configuration.html" rel="next">Configuration &rarr;</a></div>
 </div>
 </main>

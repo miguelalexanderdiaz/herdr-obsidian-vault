@@ -95,7 +95,7 @@ Each rule above has a reason. The reasons, with where they come from, so you can
 
 State these plainly; do not write "works on Linux" or "works on Windows" anywhere.
 
-- Linux and Windows have never been seen running in the live Herdr app. The code paths are covered by tests with a fake operating system. The one-sentence support level is in `README.md`, and the per-feature table is on `docs/requirements.html`.
+- Linux and Windows have never been seen running in the live Herdr app. The code paths are covered by tests with a fake operating system. The one-sentence support level is in `README.md` and on `docs/requirements.html`; Linux and Windows results arrive through the Platform report issue form (`.github/ISSUE_TEMPLATE/platform-report.yml`).
 - The Windows Herdr home folder is the documented default `.config/herdr-app` under the user folder. Nobody has checked it on Windows.
 - The CI workflow in `scripts/ci.workflow.yml` is a template that has not run: the unattended runs had no token scope to install it. No page may say that CI ran.
 - `herdr-app check` loads a mod once and checks its first description. It does not run later states, layout or async work.
@@ -130,7 +130,7 @@ The test vault is `examples/sample-vault`. Open `Feature tour` in the reader to 
 ## Adapting for a different setup
 
 - A different mod name: [Renaming a mod](#renaming-a-mod).
-- A browser or Obsidian in an unusual place: the keys `browser` and `asar` (absolute paths) in `data/vault/settings.json` in the Herdr home, which need no restart and reach Herdr however it was started; the environment variables `HERDR_VAULT_BROWSER` / `CHROME_PATH` and `HERDR_VAULT_ASAR` count only if Herdr itself was started with them (a Finder or launcher start does not carry shell variables); or add the path to `browserCandidates` / `obsidianAsarCandidates` in `platform.js` and its test. The order is on `docs/requirements.html#order`. Other tools: put them on the person's login-shell PATH or add them to `toolCandidates` in both `platform.js` files.
+- A browser or Obsidian in an unusual place: the keys `browser` and `asar` (absolute paths) in `data/vault/settings.json` in the Herdr home, which need no restart and reach Herdr however it was started; the environment variables `HERDR_VAULT_BROWSER` / `CHROME_PATH` and `HERDR_VAULT_ASAR` count only if Herdr itself was started with them (a Finder or launcher start does not carry shell variables); or add the path to `browserCandidates` / `obsidianAsarCandidates` in `platform.js` and its test. The order is on `docs/configuration.html#order`. Other tools: put them on the person's login-shell PATH or add them to `toolCandidates` in both `platform.js` files.
 - No network wanted: set `remoteImages` to `false` in `data/vault/settings.json` (or press **Web images** in the reader bar).
 - Bigger or smaller limits: the constants listed on `docs/configuration.html`.
 - Another operating system's quirk: add it to `platform.js` in both mods, with a test that uses a fake platform and a fake `exec`.
@@ -149,7 +149,7 @@ Run `herdr-app check` on both folders afterwards, then search the repository for
 
 ## Privacy rules for contributors and agents
 
-- No personal data in any file or commit: no real names (except the copyright line in `LICENSE`), usernames, e-mail addresses, home paths, host names or employer names. Write `~`, `<Herdr home>`, `<vault>`, `<owner>`.
+- No personal data in any file or commit: no real names (except the copyright line in `LICENSE`), usernames, e-mail addresses, home paths, host names or employer names. Write `~`, `<Herdr home>`, `<vault>`. The one GitHub account the docs name is the repository owner, `miguelalexanderdiaz`, in its public URLs.
 - Examples use generic text. Never copy content from a real vault or window into tests, docs or the sample vault.
 - Do not add the Obsidian logo, name artwork or application files. Icons come from Lucide with its license text.
 - Do not commit generated data: `data/`, caches, screenshots of real windows.
@@ -160,7 +160,7 @@ Small, logical commits with a clear subject and a body that says why. Commit onl
 
 ## Documentation upkeep
 
-Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), `docs/verify.html` (the check steps), and this file (`CHANGELOG.md` is written by release-please from the pull request title, so make that a Conventional Commit: see CONTRIBUTING.md). Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
+Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), the checklist in `.github/ISSUE_TEMPLATE/platform-report.yml`, and this file (`CHANGELOG.md` is written by release-please from the pull request title, so make that a Conventional Commit: see CONTRIBUTING.md). Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
 
 The script compares the requirements tables, the keys table, the two `llms.txt` copies, a freshly built `docs/llms-full.txt`, the one support-level sentence, and the messages quoted in the troubleshooting page, which must be string literals in the code (a quote only found in a comment fails; a short one must be a whole literal). `scripts/doc-claims.json` ties each number, name and phrase in the docs to the constant or string that backs it. When you rename or change one in the code, change the doc and the claim row together; `node scripts/check-docs.mjs` names the row that broke.
 

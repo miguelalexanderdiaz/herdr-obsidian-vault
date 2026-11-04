@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy and trust - Herdr Obsidian Vault</title>
-<meta name="description" content="Exactly what the Herdr Obsidian Vault mods read, run, download and write on your machine.">
+<meta name="description" content="What the Herdr Obsidian Vault mods read, run, download and write on your machine, in four lines, then mod by mod.">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
@@ -23,8 +23,6 @@
 <li><a href="configuration.html">Configuration</a></li>
 <li><a href="privacy.html" aria-current="page">Privacy</a></li>
 <li><a href="troubleshooting.html">Troubleshooting</a></li>
-<li><a href="verify.html">Check your install</a></li>
-<li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
 </nav>
@@ -33,57 +31,30 @@
 <main id="content">
 <div class="wrap">
 <h1>Privacy and trust</h1>
-<p class="lede">Herdr mods are trusted code: they can run programs and reach the network. Here is everything these two do, so you can decide before installing. Nothing from your notes leaves your machine.</p>
+<p class="lede">Herdr mods are trusted code. These two read your vault, never write into it, and send nothing from your notes anywhere.</p>
 
 <h2 id="summary">In short</h2>
 <ul>
-<li>It reads your vault and Obsidian&rsquo;s vault list. It never writes into your vault.</li>
-<li>It runs programs you installed (see the list below). It bundles none.</li>
-<li>It uses the network for one thing: downloading a web image when a note shows one. You can turn that off.</li>
-<li>It writes only under <code>data/vault</code> in the Herdr home.</li>
-<li>No telemetry, no analytics, no accounts. This documentation site has no scripts, fonts or trackers from anywhere else.</li>
+<li id="network"><strong>Network:</strong> one thing. A web image that a note shows is downloaded with <code>curl</code> when the note opens; the <em>Web images</em> button or <code>remoteImages</code> (<a href="configuration.html#settings">Configuration</a>) turns it off. No telemetry, no accounts.</li>
+<li id="runs"><strong>Runs:</strong> programs you installed, none bundled: <code>rg</code>, <code>node</code> with a headless browser, Poppler, <code>curl</code>, the system opener, and small system tools that stamp files and find programs.</li>
+<li id="reads"><strong>Reads:</strong> the selected vault, Obsidian&rsquo;s vault list, and the Mermaid and MathJax inside your Obsidian app.</li>
+<li id="writes"><strong>Writes:</strong> only <code>data/vault</code> in the Herdr home. Herdr&rsquo;s <code>shared.json</code> keeps your vault paths after uninstall; delete its <code>vault.*</code> keys to forget them.</li>
 </ul>
+<p id="verify">To check: search the mods for <code>exec(</code> to see every program they start; <code>tests/render-e2e.test.mjs</code> proves the render page fetches nothing.</p>
 
-<h2 id="reads">Reads</h2>
-<div class="table-wrap" role="region" aria-label="Files read" tabindex="0"><table>
-<thead><tr><th scope="col">What</th><th scope="col">Why</th></tr></thead>
+<details class="fold" id="mod-by-mod">
+<summary>Mod by mod</summary>
+<div class="table-wrap" role="region" aria-label="What each mod does" tabindex="0"><table id="programs-table" class="stack">
+<thead><tr><th scope="col"></th><th scope="col">Vault panel (<code>vault</code>)</th><th scope="col">Vault reader (<code>vault-reader</code>)</th></tr></thead>
 <tbody>
-<tr><th scope="row">The folder of the selected vault, recursively</th><td>The tree, search, links, embeds, and live refresh (a folder watcher). Folders starting with a dot are skipped by the tree.</td></tr>
-<tr><th scope="row">Obsidian&rsquo;s vault list (<code>obsidian.json</code>, see the <a href="requirements.html#vault-list">requirements</a>)</th><td>To start with the vaults you already have. Read on first run and again each time you choose <em>Import from Obsidian</em>.</td></tr>
-<tr><th scope="row">Obsidian&rsquo;s <code>obsidian.asar</code></th><td>To take out Mermaid and MathJax (only <code>lib/mermaid.min.js</code> and <code>lib/mathjax</code>) for the render script.</td></tr>
+<tr><th scope="row">Reads</th><td data-label="Vault panel">The selected vault, recursively, with a folder watcher. Obsidian&rsquo;s <code>obsidian.json</code> on first run and on <em>Import from Obsidian</em> (<a href="configuration.html#vault-list">where</a>). Only inside your home folder.</td><td data-label="Vault reader">The open note, the files it embeds, and a listing of the vault to resolve links, with a folder watcher. Only <code>lib/mermaid.min.js</code> and <code>lib/mathjax</code> from Obsidian&rsquo;s <code>obsidian.asar</code>. The render script (<code>node</code>) also reads the pictures an Excalidraw drawing embeds from the vault.</td></tr>
+<tr><th scope="row">Runs</th><td data-label="Vault panel"><code>rg</code> on each search, with your ripgrep config ignored. The system opener for a file that is not a note.</td><td data-label="Vault reader"><code>node</code> with <code>render.mjs</code>, which starts Chrome, Chromium, Edge or Brave headless in a private profile, with a DevTools debugging port on the loopback address for one render run. <code>pdfinfo</code> and <code>pdftoppm</code>; <code>curl</code>; <code>stat</code> or <code>powershell</code> for change stamps; on macOS <code>qlmanage</code> and <code>sips</code> as fallbacks.</td></tr>
+<tr><th scope="row">Both</th><td colspan="2">Your login shell (<code>command -v</code>) or <code>where</code>, with only a program name, when a program is not found by the usual means. The system opener (<code>open</code>, <code>xdg-open</code>, <code>rundll32 url.dll,FileProtocolHandler</code>) gets only <code>http</code>, <code>https</code> and <code>mailto</code> links and documents; files that start programs are never opened.</td></tr>
+<tr><th scope="row">Network</th><td data-label="Vault panel">None.</td><td data-label="Vault reader">Web images with <code>curl</code>: <code>http</code> and <code>https</code> only, 20 seconds, 20 MB, at most 5 redirects; the host sees your IP address. The render page allows only its own loopback address, and the browser is started so that no name but 127.0.0.1 resolves and no proxy is used, so a diagram label that names a web address fetches nothing.</td></tr>
+<tr><th scope="row">Writes</th><td data-label="Vault panel">Shared state (<code>vault.list</code>, <code>vault.current</code>, <code>vault.outside</code>, which keep your vault paths) and the open folders in Herdr&rsquo;s per-mod storage.</td><td data-label="Vault reader"><code>data/vault</code>: the <code>cache</code> (pictures, copies of vault images, web images, PDF pages), <code>lib</code>, a temporary <code>chrome-&hellip;</code> profile per run, <code>settings.json</code>; and <code>vault.open</code> in shared state. Cached pictures can show your notes: delete <code>data/vault/cache</code> to wipe them (<a href="configuration.html#stored">pruning</a>).</td></tr>
 </tbody></table></div>
-<p>Herdr only lets mods read inside your home folder, so a vault elsewhere is not readable.</p>
-<p>The render script (<code>node</code>, started by the reader) also reads files itself: when a note shows an Excalidraw drawing that embeds pictures by reference, it reads those picture files from the vault with Node&rsquo;s own file access, to draw them into the picture. That read is by <code>node</code>, not by the mod, and stays inside the vault folder.</p>
-
-<h2 id="runs">Runs</h2>
-<div class="table-wrap" role="region" aria-label="Programs run" tabindex="0"><table id="programs-table">
-<thead><tr><th scope="col">Program</th><th scope="col">When</th><th scope="col">What it gets</th></tr></thead>
-<tbody>
-<tr><th scope="row"><code>rg</code> (ripgrep)</th><td>Each search</td><td>The vault folder and your query words. It is run with your ripgrep config ignored.</td></tr>
-<tr><th scope="row"><code>node</code> with <code>render.mjs</code></th><td>A note has math, Mermaid or an Excalidraw drawing that is not cached</td><td>A temporary job file with the source of the formulas, diagrams and drawings, and your theme colours.</td></tr>
-<tr><th scope="row">Chrome, Chromium, Edge or Brave, headless</th><td>Started by the render script</td><td>A page served from <code>127.0.0.1</code> on a random port, in a private profile folder, with background networking and sync switched off. The browser is also started with a DevTools debugging port on the loopback address (random port), which the render script uses to control it; it exists only for the length of one render run. It is closed when the batch ends.</td></tr>
-<tr><th scope="row"><code>pdfinfo</code>, <code>pdftoppm</code> (Poppler)</th><td>A PDF is shown</td><td>The PDF file; it writes page pictures to the cache.</td></tr>
-<tr><th scope="row"><code>curl</code></th><td>A note shows a web image and Web images is on</td><td>The image address from the note (only <code>http</code> and <code>https</code>; 20 seconds, 20 MB, at most 5 redirects).</td></tr>
-<tr><th scope="row">The system opener (<code>open</code>, <code>xdg-open</code>, <code>rundll32 url.dll,FileProtocolHandler</code>)</th><td>You click a non-note file, a web link, or the PDF button</td><td>The path or the address. Files that start programs are never passed to it.</td></tr>
-<tr><th scope="row"><code>stat</code> (macOS, Linux) or <code>powershell</code> (Windows)</th><td>The reader needs a change stamp for the files a note shows</td><td>The paths of those files; it prints their modification time and size.</td></tr>
-<tr><th scope="row">Your login shell (<code>command -v</code>) on macOS and Linux, <code>where</code> on Windows</th><td>A program is not found by the usual means</td><td>Only the program name, to find its path. Your shell profile runs, as it does for any login shell.</td></tr>
-<tr><th scope="row"><code>qlmanage</code>, <code>sips</code> (macOS only, fallbacks)</th><td>A PDF is shown on a Mac without Poppler; an AVIF or TIFF image is shown</td><td>The PDF file, to make a picture of page 1; the image file, to read its size.</td></tr>
-</tbody></table></div>
-<p>Dataview, Dataviewjs, Tasks and other plugin queries are never run; their text is displayed. Mermaid runs in its strict security mode.</p>
-
-<h2 id="network">Network</h2>
-<ul>
-<li>When a note shows an image with an <code>http</code> or <code>https</code> address, <code>curl</code> downloads it. The site that hosts the image sees your IP address and the request, as soon as the note is opened. Set <code>remoteImages</code> to <code>false</code> (<a href="configuration.html#settings">Configuration</a>) to stop this.</li>
-<li>Links in a note are opened only when you click them, and only <code>http</code>, <code>https</code> and <code>mailto</code> addresses are passed to your system. <code>file:</code>, <code>obsidian:</code>, <code>javascript:</code> and every other scheme are ignored. Files that start programs are never opened from a note or from the tree.</li>
-<li>The render page is local and may load nothing from anywhere else. Its content-security policy allows only its own loopback address, <code>data:</code> and <code>blob:</code>, and the browser is started so that no name but <code>127.0.0.1</code> resolves and no proxy is used. A diagram label in a note that points at a web address therefore fetches nothing. This is proven by a test that serves a counting server and checks that a Mermaid label pointing at it gets no request (<code>tests/render-e2e.test.mjs</code>); that test needs a Chromium-family browser and is skipped, with a reason, on a machine without one.</li>
-</ul>
-
-<h2 id="writes">Writes</h2>
-<p>Only under <code>data/vault</code> in the Herdr home: the <code>cache</code> (rendered pictures, copies of vault images, downloaded web images, page images of PDFs), <code>lib</code> (Obsidian&rsquo;s Mermaid and MathJax), a temporary <code>chrome-&hellip;</code> profile folder per render run, and <code>settings.json</code>. Vault images are copied there because Herdr can only show pictures from its own folder. Cached pictures can contain a rendering of your private notes: delete <code>data/vault/cache</code> to wipe them. The cache is pruned by age and size automatically, once per session (see <a href="configuration.html#stored">Configuration</a>). A failed download or a missing program is never written to the cache.</p>
-<p>Herdr keeps the vault list and the open note in its shared state (<code>shared.json</code> in the Herdr home), and the open folders of the tree in its per-mod storage. Shared state holds paths of your vaults and the file of the open note, and it stays after you uninstall: <code>vault.list</code> and <code>vault.current</code> hold the paths of your vaults, <code>vault.open</code> the vault and file of the note that was open, and <code>vault.outside</code> the vaults outside your home folder. They are harmless; to forget them, close Herdr and delete those <code>vault.*</code> keys from <code>shared.json</code>.</p>
-
-<h2 id="third-party">Third-party material</h2>
-<p>Mermaid (MIT) and MathJax (Apache-2.0) are not distributed by this project. They are copied from your own Obsidian installation to <code>data/vault/lib</code> on your machine, and stay under their own licenses. Icons: Lucide (ISC). Obsidian is a trademark of its owner; this project is not affiliated with it.</p>
+<p>Dataview, Tasks and other plugin queries are shown as text, never run, and Mermaid runs in strict mode. Mermaid (MIT) and MathJax (Apache-2.0) are copied from your own Obsidian to <code>data/vault/lib</code>, not distributed here. Icons: Lucide (ISC).</p>
+</details>
 <div class="pager"><a href="configuration.html" rel="prev">&larr; Configuration</a><a href="troubleshooting.html" rel="next">Troubleshooting &rarr;</a></div>
 </div>
 </main>

@@ -31,7 +31,7 @@ Documentation for people and agents: [docs site](docs/index.html) (GitHub Pages 
 
 macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.
 
-The mods look for every external program in the places used by macOS, Linux and Windows, and say in the panel which one is missing. Reports from Linux and Windows are welcome: [docs/verify.html](docs/verify.html) is a short checklist on the sample vault with a report template.
+The mods look for every external program in the places used by macOS, Linux and Windows, and say in the panel which one is missing. Reports from Linux and Windows are welcome: the [Platform report](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/new?template=platform-report.yml) issue form has a short checklist on the sample vault.
 
 A CI workflow template is in `scripts/ci.workflow.yml`. It has not run yet because the author still has to install it, so no system is claimed to be checked by it.
 
@@ -75,16 +75,16 @@ Details are on the [usage page](docs/usage.html). Notes over 1 MiB cannot be ope
 
 Only Herdr is required. Each program below adds a feature; without it you get a plain message, not a failure. Programs are found on PATH and then in the usual install folders of each system. Vaults must be inside your home folder.
 
-| Program | Used for | Without it | macOS | Linux | Windows |
-| --- | --- | --- | --- | --- | --- |
-| Herdr desktop app | Runs both mods. | Nothing works. | Install Herdr. | Install Herdr. | Install Herdr. |
-| ripgrep (`rg`) | The search box in the Vault panel. | Search shows `ripgrep (rg) isn't installed:` and the install hint for your system. Browsing and reading still work. | `brew install ripgrep` | install ripgrep with your package manager (for example: `apt install ripgrep`) | `winget install BurntSushi.ripgrep.MSVC` |
-| Node.js 22.4 or newer (`node`) | Drawing math, Mermaid diagrams and Excalidraw drawings (the render script). | One line above the note names what is missing; the source of each diagram, formula or drawing stays visible. | `brew install node` | install Node.js 22.4 or newer (nodejs.org, or your package manager) | `winget install OpenJS.NodeJS` |
-| A Chromium-family browser (Chrome, Chromium, Edge or Brave) | Runs headless to take a picture of each diagram, formula and drawing. | Same: one line above the note, `A Chromium-based browser wasn't found`, and the source stays visible. | Chrome, Chromium, Brave or Edge in `/Applications` (or `~/Applications`) | Chrome, Chromium, Brave or Edge in `/usr/bin`, `/opt` or `/snap/bin`, or on PATH (Flatpak browsers are not looked for) | Edge, Chrome or Brave in Program Files or Local AppData (Edge is built into Windows) |
-| Obsidian desktop app | Supplies its own Mermaid and MathJax, read at run time from `obsidian.asar`. | Same: one line above the note, `The Obsidian app wasn't found`, and the source stays visible. Notes, canvases and images still open. | Obsidian in `/Applications` (or `~/Applications`) | Obsidian from `/opt`, `/usr/lib`, `/usr/share`, Snap or Flatpak (an AppImage cannot be found: name its file in `settings.json`) | Obsidian in `%LOCALAPPDATA%` or Program Files |
-| Poppler (`pdftoppm`, `pdfinfo`) | Every page of a PDF (the first 30). | macOS draws page 1 through Quick Look. Linux and Windows show `Poppler (pdftoppm, pdfinfo) isn't installed:` with the hint, and the PDF opens in your default app. | `brew install poppler` | install poppler-utils with your package manager (for example: `apt install poppler-utils`) | `scoop install poppler` |
-| curl | Downloading web images that a note shows with `![](https://...)`. | Those images show `curl isn't installed:` with the hint. Turn web images off on purpose with the Web images button. | Ships with macOS | install curl with your package manager (for example: `apt install curl`) | Ships with Windows 10 and newer |
-| System file opener | Opening files the reader cannot show, web links, and PDFs in your viewer. | The click does nothing. | `open` (built in) | `xdg-open` (package `xdg-utils`) | `rundll32 url.dll,FileProtocolHandler` (built in) |
+| Program | Adds | Install |
+| --- | --- | --- |
+| Herdr desktop app | Runs both mods (required). | herdr.dev |
+| ripgrep (`rg`) | Search in the panel. | macOS `brew install ripgrep`, Linux `apt install ripgrep`, Windows `winget install BurntSushi.ripgrep.MSVC` |
+| Node.js 22.4 or newer | Math, Mermaid and Excalidraw, with the next two. | macOS `brew install node`, Linux nodejs.org or your package manager, Windows `winget install OpenJS.NodeJS` |
+| Chrome, Chromium, Edge or Brave | Draws those pictures, headless. | Any one; Edge is built into Windows. |
+| Obsidian desktop app | Its own Mermaid and MathJax. | Its installer; an AppImage needs the `asar` setting. |
+| Poppler | Every PDF page (the first 30); without it macOS shows page 1. | macOS `brew install poppler`, Linux `apt install poppler-utils`, Windows `scoop install poppler` |
+| curl | Web images in notes. | Built into macOS and Windows 10 or newer; Linux `apt install curl` |
+| System file opener | Opens other files, links and PDFs in your viewer. | Built in (`open`, `rundll32 url.dll,FileProtocolHandler`); Linux `xdg-open` from `xdg-utils` |
 
 To install the optional programs in one go (the same commands as the table; a missing one is only a feature lost):
 
@@ -101,7 +101,7 @@ winget install BurntSushi.ripgrep.MSVC OpenJS.NodeJS
 scoop install poppler
 ```
 
-A browser or Obsidian in an unusual place: add `"browser"` and `"asar"` (absolute paths) to `data/vault/settings.json` in the Herdr home, no restart needed. The environment variables `HERDR_VAULT_BROWSER` (or `CHROME_PATH`) and `HERDR_VAULT_ASAR` also work, but only if Herdr itself was started with them. The search order and where Obsidian keeps its vault list on each system are on the [requirements page](docs/requirements.html).
+A browser or Obsidian in an unusual place: add `"browser"` and `"asar"` (absolute paths) to `data/vault/settings.json` in the Herdr home, no restart needed. The environment variables `HERDR_VAULT_BROWSER` (or `CHROME_PATH`) and `HERDR_VAULT_ASAR` also work, but only if Herdr itself was started with them. The search order and where Obsidian keeps its vault list on each system are on the [configuration page](docs/configuration.html#lookup).
 
 ## Privacy
 
@@ -250,7 +250,7 @@ Each rule above has a reason. The reasons, with where they come from, so you can
 
 State these plainly; do not write "works on Linux" or "works on Windows" anywhere.
 
-- Linux and Windows have never been seen running in the live Herdr app. The code paths are covered by tests with a fake operating system. The one-sentence support level is in `README.md`, and the per-feature table is on `docs/requirements.html`.
+- Linux and Windows have never been seen running in the live Herdr app. The code paths are covered by tests with a fake operating system. The one-sentence support level is in `README.md` and on `docs/requirements.html`; Linux and Windows results arrive through the Platform report issue form (`.github/ISSUE_TEMPLATE/platform-report.yml`).
 - The Windows Herdr home folder is the documented default `.config/herdr-app` under the user folder. Nobody has checked it on Windows.
 - The CI workflow in `scripts/ci.workflow.yml` is a template that has not run: the unattended runs had no token scope to install it. No page may say that CI ran.
 - `herdr-app check` loads a mod once and checks its first description. It does not run later states, layout or async work.
@@ -285,7 +285,7 @@ The test vault is `examples/sample-vault`. Open `Feature tour` in the reader to 
 ## Adapting for a different setup
 
 - A different mod name: [Renaming a mod](#renaming-a-mod).
-- A browser or Obsidian in an unusual place: the keys `browser` and `asar` (absolute paths) in `data/vault/settings.json` in the Herdr home, which need no restart and reach Herdr however it was started; the environment variables `HERDR_VAULT_BROWSER` / `CHROME_PATH` and `HERDR_VAULT_ASAR` count only if Herdr itself was started with them (a Finder or launcher start does not carry shell variables); or add the path to `browserCandidates` / `obsidianAsarCandidates` in `platform.js` and its test. The order is on `docs/requirements.html#order`. Other tools: put them on the person's login-shell PATH or add them to `toolCandidates` in both `platform.js` files.
+- A browser or Obsidian in an unusual place: the keys `browser` and `asar` (absolute paths) in `data/vault/settings.json` in the Herdr home, which need no restart and reach Herdr however it was started; the environment variables `HERDR_VAULT_BROWSER` / `CHROME_PATH` and `HERDR_VAULT_ASAR` count only if Herdr itself was started with them (a Finder or launcher start does not carry shell variables); or add the path to `browserCandidates` / `obsidianAsarCandidates` in `platform.js` and its test. The order is on `docs/configuration.html#order`. Other tools: put them on the person's login-shell PATH or add them to `toolCandidates` in both `platform.js` files.
 - No network wanted: set `remoteImages` to `false` in `data/vault/settings.json` (or press **Web images** in the reader bar).
 - Bigger or smaller limits: the constants listed on `docs/configuration.html`.
 - Another operating system's quirk: add it to `platform.js` in both mods, with a test that uses a fake platform and a fake `exec`.
@@ -304,7 +304,7 @@ Run `herdr-app check` on both folders afterwards, then search the repository for
 
 ## Privacy rules for contributors and agents
 
-- No personal data in any file or commit: no real names (except the copyright line in `LICENSE`), usernames, e-mail addresses, home paths, host names or employer names. Write `~`, `<Herdr home>`, `<vault>`, `<owner>`.
+- No personal data in any file or commit: no real names (except the copyright line in `LICENSE`), usernames, e-mail addresses, home paths, host names or employer names. Write `~`, `<Herdr home>`, `<vault>`. The one GitHub account the docs name is the repository owner, `miguelalexanderdiaz`, in its public URLs.
 - Examples use generic text. Never copy content from a real vault or window into tests, docs or the sample vault.
 - Do not add the Obsidian logo, name artwork or application files. Icons come from Lucide with its license text.
 - Do not commit generated data: `data/`, caches, screenshots of real windows.
@@ -315,7 +315,7 @@ Small, logical commits with a clear subject and a body that says why. Commit onl
 
 ## Documentation upkeep
 
-Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), `docs/verify.html` (the check steps), and this file (`CHANGELOG.md` is written by release-please from the pull request title, so make that a Conventional Commit: see CONTRIBUTING.md). Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
+Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), the checklist in `.github/ISSUE_TEMPLATE/platform-report.yml`, and this file (`CHANGELOG.md` is written by release-please from the pull request title, so make that a Conventional Commit: see CONTRIBUTING.md). Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
 
 The script compares the requirements tables, the keys table, the two `llms.txt` copies, a freshly built `docs/llms-full.txt`, the one support-level sentence, and the messages quoted in the troubleshooting page, which must be string literals in the code (a quote only found in a comment fails; a short one must be a whole literal). `scripts/doc-claims.json` ties each number, name and phrase in the docs to the constant or string that backs it. When you rename or change one in the code, change the doc and the claim row together; `node scripts/check-docs.mjs` names the row that broke.
 
@@ -343,7 +343,7 @@ Two small mods for the Herdr desktop app. One is a side panel that lists an Obsi
 
 macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.
 
-The code looks for every external program in the places that each operating system uses, and says in the panel which one is missing. The support table lists each feature per system. To report what you see on Linux or Windows, follow Check your install.
+The code looks for every external program in the places that each operating system uses, and says in the panel which one is missing. The requirements list each program. To report what you see on Linux or Windows, file a Platform report.
 
 A CI workflow template is in the repository (scripts/ci.workflow.yml). It has not run yet because the author still has to install it, so no system is claimed to be checked by it.
 
@@ -356,7 +356,7 @@ One command, with an agent, or by hand.
 What every click and key does.
 
 - Requirements
-What to install, per OS, and what you lose without it.
+What to install and what each program adds.
 
 - Configuration
 Settings, shared keys, limits, environment variables.
@@ -366,12 +366,6 @@ What it reads, runs, fetches and writes.
 
 - Troubleshooting
 Messages you may see and what fixes them.
-
-- Check your install
-A short checklist on the sample vault, and a report to send back.
-
-- How it works
-The pieces and how they talk.
 
 - For agents
 AGENTS.md and llms.txt.
@@ -420,10 +414,10 @@ Copy
 
 With an agent
 
-Paste this into an agent running in Herdr, with the repository address filled in:
+Paste this into an agent running in Herdr:
 
 ```
-Install the Herdr mods from https://github.com/<owner>/herdr-obsidian-vault .
+Install the Herdr mods from https://github.com/miguelalexanderdiaz/herdr-obsidian-vault .
 It has two mods, mods/vault and mods/vault-reader, and a keys.json.
 Read every file first, tell me what they run and fetch, copy both
 folders into my mods folder without overwriting anything, merge
@@ -475,7 +469,7 @@ Options, name clashes and checks
 
 - Name clashes: the installer replaces a vault or vault-reader folder that is already there, after a backup. Both names are needed as they are, because the panel opens the reader by name. By hand, never overwrite another mod of the same name: rename the new one (If a mod name is taken).
 
-- Checks: it runs herdr-app check on each mod and says which one failed. To check what you see, follow Check your install on the sample vault.
+- Checks: it runs herdr-app check on each mod and says which one failed.
 
 - Requirements: only Herdr; each optional program adds a feature (Requirements).
 
@@ -503,7 +497,7 @@ Herdr’s shipped layouts are read-only, so clone one first (herdr-app do layout
 
 - Split a pane. Run the Herdr app command pane.split with a direction and mod set to vault (herdr-app commands lists its arguments).
 
-On first run the panel lists the vaults that Obsidian already knows, most recently opened first. Otherwise use Add vault and pick a folder that contains .obsidian. To try it without a vault of your own, add examples/sample-vault from the repository and follow Check your install.
+On first run the panel lists the vaults that Obsidian already knows, most recently opened first. Otherwise use Add vault and pick a folder that contains .obsidian. To try it without a vault of your own, add examples/sample-vault from the repository and open Feature tour.
 
 ## The Vault panel
 
@@ -585,7 +579,7 @@ Excalidraw | .excalidraw.md and .excalidraw files, drawn clean by a small render
 
 Dataview, Tasks, Bases | The query text is shown with a “shown, not run” label. Nothing is executed.
 
-The sample vault note Feature tour contains one of each; open it to check an install, step by step with Check your install.
+The sample vault note Feature tour contains one of each; open it to check an install.
 
 ## Limits you may hit
 
@@ -613,112 +607,31 @@ The sample vault note Feature tour contains one of each; open it to check an ins
 
 # Requirements
 
-Only Herdr is required. Everything else is optional and adds a feature. When a program is missing, the panel or the reader says which one in plain words instead of failing.
+Only Herdr is required. Each other program adds a feature; when one is missing, the mods name it and give the install command.
 
 macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.
 
-These programs are not bundled. For ripgrep, Node.js, Poppler and curl the mods try the bare name on your PATH, then the usual install folders of your operating system (Homebrew, Snap, Linuxbrew, Nix, Volta, Scoop, WinGet, Chocolatey, Program Files), then, for Node, the folders of nvm, fnm and asdf, and last your login shell (command -v) on macOS and Linux or where on Windows. The browser and Obsidian have their own search order, described under Pointing the mods at a program. A program that was missing is looked for again after 30 seconds, so installing it while Herdr runs works. The only thing the mods ever download is a web image that a note shows (see privacy).
+Program | Adds | Install
 
-Program | Used for | Without it | macOS | Linux | Windows
+Herdr desktop app | Runs both mods (required). | herdr.dev
 
-Herdr desktop app | Runs both mods. | Nothing works. | Install Herdr. | Install Herdr. | Install Herdr.
+ripgrep (rg) | Search in the panel. | macOS brew install ripgrep, Linux apt install ripgrep, Windows winget install BurntSushi.ripgrep.MSVC
 
-ripgrep (rg) | The search box in the Vault panel. | Search shows ripgrep (rg) isn't installed: and the install hint for your system. Browsing and reading still work. | brew install ripgrep | install ripgrep with your package manager (for example: apt install ripgrep) | winget install BurntSushi.ripgrep.MSVC
+Node.js 22.4 or newer | Math, Mermaid and Excalidraw, with the next two. | macOS brew install node, Linux nodejs.org or your package manager, Windows winget install OpenJS.NodeJS
 
-Node.js 22.4 or newer (node) | Drawing math, Mermaid diagrams and Excalidraw drawings (the render script). | One line above the note names what is missing; the source of each diagram, formula or drawing stays visible. | brew install node | install Node.js 22.4 or newer (nodejs.org, or your package manager) | winget install OpenJS.NodeJS
+Chrome, Chromium, Edge or Brave | Draws those pictures, headless. | Any one; Edge is built into Windows.
 
-A Chromium-family browser (Chrome, Chromium, Edge or Brave) | Runs headless to take a picture of each diagram, formula and drawing. | Same: one line above the note, A Chromium-based browser wasn't found, and the source stays visible. | Chrome, Chromium, Brave or Edge in /Applications (or ~/Applications) | Chrome, Chromium, Brave or Edge in /usr/bin, /opt or /snap/bin, or on PATH (Flatpak browsers are not looked for) | Edge, Chrome or Brave in Program Files or Local AppData (Edge is built into Windows)
+Obsidian desktop app | Its own Mermaid and MathJax. | Its installer; an AppImage needs the asar setting.
 
-Obsidian desktop app | Supplies its own Mermaid and MathJax, read at run time from obsidian.asar. | Same: one line above the note, The Obsidian app wasn't found, and the source stays visible. Notes, canvases and images still open. | Obsidian in /Applications (or ~/Applications) | Obsidian from /opt, /usr/lib, /usr/share, Snap or Flatpak (an AppImage cannot be found: name its file in settings.json) | Obsidian in %LOCALAPPDATA% or Program Files
+Poppler | Every PDF page (the first 30); without it macOS shows page 1. | macOS brew install poppler, Linux apt install poppler-utils, Windows scoop install poppler
 
-Poppler (pdftoppm, pdfinfo) | Every page of a PDF (the first 30). | macOS draws page 1 through Quick Look. Linux and Windows show Poppler (pdftoppm, pdfinfo) isn't installed: with the hint, and the PDF opens in your default app. | brew install poppler | install poppler-utils with your package manager (for example: apt install poppler-utils) | scoop install poppler
+curl | Web images in notes. | Built into macOS and Windows 10 or newer; Linux apt install curl
 
-curl | Downloading web images that a note shows with ![](https://...). | Those images show curl isn't installed: with the hint. Turn web images off on purpose with the Web images button. | Ships with macOS | install curl with your package manager (for example: apt install curl) | Ships with Windows 10 and newer
+System file opener | Opens other files, links and PDFs in your viewer. | Built in (open, rundll32 url.dll,FileProtocolHandler); Linux xdg-open from xdg-utils
 
-System file opener | Opening files the reader cannot show, web links, and PDFs in your viewer. | The click does nothing. | open (built in) | xdg-open (package xdg-utils) | rundll32 url.dll,FileProtocolHandler (built in)
+Programs are found on your PATH or in the usual install folders; for one elsewhere, see Configuration.
 
-## What works where
-
-This table says how far each feature has been checked on each system. “Used by the author” means the feature was in the version imported from the author’s own macOS setup. Code changed since then was checked by the unit tests and herdr-app check only, because the agents that made the changes may not drive the live app. “Fake-OS tests” means the unit tests run the code for that system with a made-up operating system, program lookup and file system, not the real thing. Where a program is needed and absent, the cell says what you see instead.
-
-Feature | Needs | macOS | Linux | Windows
-
-Panel, vault picker, tree, live refresh | Herdr | Used by the author | Fake-OS tests | Fake-OS tests
-
-Vault list from Obsidian, Import | Obsidian’s obsidian.json | First-run list used by the author; Import is new, fake-OS tests | Fake-OS tests (also Flatpak and Snap places) | Fake-OS tests
-
-Search | rg | Used by the author | Fake-OS tests; without rg a named message | Fake-OS tests; without rg a named message
-
-Notes, callouts, links, embeds, canvas, images | Herdr | Used by the author | Same code on every system; fake-OS tests for the file stamps | Same code on every system; fake-OS tests for the file stamps
-
-PDF pages | Poppler | Used by the author; without Poppler page 1 through Quick Look | Fake-OS tests; without Poppler a named message | Fake-OS tests; without Poppler a named message
-
-Math, Mermaid, Excalidraw | Node.js, a browser, the Obsidian app | Used by the author | Fake-OS tests of the lookup; without a piece a named message | Fake-OS tests of the lookup; without a piece a named message
-
-Web images | curl | Fake-OS tests (the curl download is new) | Fake-OS tests; without curl a named message | Fake-OS tests; without curl a named message
-
-Opening other files and links | The system opener | Used by the author | Fake-OS tests; a missing opener does nothing | Fake-OS tests; a missing opener does nothing
-
-The end-to-end render test (tests/render-e2e.test.mjs) starts the real render script with a stand-in Obsidian bundle and a real browser, and skips with a stated reason where there is no browser. It has run on macOS only. Nothing is marked as used for Linux or Windows because nobody has watched the mods run there. Check your install is how that evidence arrives.
-
-## Where Obsidian keeps its vault list
-
-On first run, and when you choose Import from Obsidian, the panel reads Obsidian’s own list of vaults, so you do not have to add them again. The first file in the order below that holds at least one vault is used. If none is found, the empty panel says Obsidian’s vault list wasn’t found and names the places it looked.
-
-System | File read
-
-macOS | ~/Library/Application Support/obsidian/obsidian.json
-
-Linux | ~/.config/obsidian/obsidian.json; for Flatpak ~/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json; for Snap ~/snap/obsidian/current/.config/obsidian/obsidian.json
-
-Windows | ~/AppData/Roaming/obsidian/obsidian.json (that is %APPDATA%\obsidian)
-
-Vaults must live inside your home folder. Herdr mods can only read files under the home folder. A vault on another drive or a network share cannot be shown; the panel lists it as outside the home folder and not readable.
-
-## Pointing the mods at a program
-
-If the browser or Obsidian is installed somewhere unusual, name it. The easiest way is the settings file, because it needs no restart and reaches Herdr however it was started.
-
-### The settings file
-
-Create or edit data/vault/settings.json in your Herdr home and add one or both keys. Both must be absolute paths; a value of the wrong type, or a relative path, is ignored without a message. The file is read again at every render run.
-
-```
-{
-  "browser": "/opt/example/chromium/chrome",
-  "asar": "/opt/Example/resources/obsidian.asar"
-}
-```
-
-On Windows write the path with forward slashes or doubled backslashes, for example "C:/Tools/Chrome/chrome.exe". The Web images button writes the same file (key remoteImages) and keeps the other keys.
-
-### Search order
-
-For the browser, the first one that exists wins:
-
-- the browser key in data/vault/settings.json;
-
-- the environment variable HERDR_VAULT_BROWSER, then CHROME_PATH;
-
-- the install folders of your system: on macOS Chrome, Chromium, Brave and Edge in /Applications and ~/Applications; on Windows Edge, Chrome, Brave and Chromium under Program Files, Program Files (x86) and Local AppData; on Linux /usr/bin/google-chrome (and -stable), /opt/google/chrome/chrome, /usr/bin/chromium (and chromium-browser), /usr/lib/chromium/chromium, /usr/bin/brave-browser, /opt/brave.com/brave/brave, /usr/bin/microsoft-edge (and -stable), /opt/microsoft/msedge/msedge, /usr/local/bin/chromium and /snap/bin/chromium. Flatpak browsers are left out on purpose;
-
-- the browser names on the PATH of the render script’s own process;
-
-- last, your login shell (command -v) on macOS and Linux, or where on Windows, asked once per session and only when everything above failed. A miss is remembered for 30 seconds.
-
-For Obsidian’s obsidian.asar: the asar key, then the environment variable HERDR_VAULT_ASAR, then the install folders in the table above. There is no PATH or shell lookup for it.
-
-### Environment variables
-
-HERDR_VAULT_BROWSER, CHROME_PATH and HERDR_VAULT_ASAR are read by the render script, not by the mod, so they only count if Herdr itself was started with them. A variable exported in your shell profile does not reach a Herdr started from Finder or a desktop launcher; Herdr’s own notes say that such a launch loads the login shell’s PATH and little else. To use one:
-
-- start Herdr from a terminal where the variable is set (herdr-app), or
-
-- macOS: run launchctl setenv NAME value, then restart Herdr; Windows: set a user environment variable (System Properties, or setx), then restart Herdr; Linux: set it in the desktop entry or the systemd user environment, then restart Herdr.
-
-The per-system steps follow from how Herdr starts and have not been tested here. Prefer the settings file.
-
-For the other programs (ripgrep, Node.js, Poppler, curl), put their folder on the PATH that your login shell sets, or install them in one of the usual places.
+Vaults must live inside your home folder. Herdr mods cannot read anywhere else.
 
 ← UsageConfiguration →
 
@@ -740,7 +653,14 @@ browser | data/vault/settings.json, edited by hand | not set | Absolute path of 
 
 asar | data/vault/settings.json, edited by hand | not set | Absolute path of Obsidian’s obsidian.asar. Tried before everything else; the same rules as browser.
 
-The order in which the browser and the obsidian.asar are looked for is on the requirements page.
+Create or edit the file by hand; keys you do not set keep their defaults, and the Web images button keeps the others. Use absolute paths, on Windows with forward slashes ("C:/Tools/Chrome/chrome.exe") or doubled backslashes. No restart is needed.
+
+```
+{
+  "browser": "/opt/example/chromium/chrome",
+  "asar": "/opt/Example/resources/obsidian.asar"
+}
+```
 
 ## Environment variables
 
@@ -752,7 +672,47 @@ HERDR_VAULT_BROWSER, CHROME_PATH | Full path of the browser program for the rend
 
 HERDR_VAULT_ASAR | Full path of Obsidian’s obsidian.asar, tried after the asar setting and before the usual install folders.
 
-The render script reads these, not the mod, so they only count if Herdr itself was started with them (a variable set in a shell profile does not reach a Herdr started from Finder or a launcher). The requirements page says how; the settings file above avoids the problem.
+The render script reads these, not the mod, so they only count if Herdr itself was started with them (a variable set in a shell profile does not reach a Herdr started from Finder or a launcher). The settings file above avoids the problem.
+
+## How programs and vaults are found
+
+For ripgrep, Node.js, Poppler and curl the mods try the name on your PATH, then the usual install folders (Homebrew, Snap, Linuxbrew, Nix, Volta, Scoop, WinGet, Chocolatey, Program Files), for Node also nvm, fnm and asdf, and last your login shell (command -v, or where on Windows). A program that was missing is looked for again after 30 seconds, so installing one while Herdr runs works.
+
+Where the browser and Obsidian are looked for
+
+The browser, first match wins:
+
+- the browser setting;
+
+- HERDR_VAULT_BROWSER, then CHROME_PATH;
+
+- the install folders: on macOS Chrome, Chromium, Brave and Edge in /Applications and ~/Applications; on Windows Edge, Chrome, Brave and Chromium under Program Files, Program Files (x86) and Local AppData; on Linux the usual Chrome, Chromium, Brave and Edge paths under /usr/bin, /opt, /usr/lib, /usr/local/bin and /snap/bin (Flatpak browsers are left out on purpose);
+
+- the browser names on the PATH of the render script;
+
+- last, your login shell or where, once per session.
+
+Obsidian’s obsidian.asar: the asar setting, then HERDR_VAULT_ASAR, then the install folders (macOS /Applications and ~/Applications; Linux /opt, /usr/lib, /usr/share, Snap and Flatpak; Windows %LOCALAPPDATA% and Program Files). An AppImage cannot be found: name it with asar.
+
+Starting Herdr with a variable
+
+- Start Herdr from a terminal where the variable is set (herdr-app), or
+
+- macOS: launchctl setenv NAME value; Windows: a user environment variable (System Properties, or setx); Linux: the desktop entry or the systemd user environment. Then restart Herdr.
+
+These steps follow from how Herdr starts and have not been tested here. Prefer the settings file.
+
+Where Obsidian keeps its vault list
+
+On first run and on Import from Obsidian the panel reads the first of these that holds a vault. If none does, it says Obsidian’s vault list wasn’t found and names the places it looked.
+
+- macOS: ~/Library/Application Support/obsidian/obsidian.json
+
+- Linux: ~/.config/obsidian/obsidian.json; Flatpak ~/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json; Snap ~/snap/obsidian/current/.config/obsidian/obsidian.json
+
+- Windows: ~/AppData/Roaming/obsidian/obsidian.json (%APPDATA%\obsidian)
+
+A vault outside your home folder is listed as not readable.
 
 ## Keys
 
@@ -785,6 +745,8 @@ vault.add | mod command | Sent to vault by its picker menu (and by a key that yo
 vault.import | mod command | Sent to vault by the Import from Obsidian menu item to read Obsidian’s vault list again. Additive.
 
 obsidian | tab name | Kept notes go in a tab with this name. Matched without regard to case.
+
+If a mod name is taken: by hand, never overwrite another mod. Rename the new folder and the name in its mod-name.js (MOD, and READER in the panel), and the mod name in your layout and keys. AGENTS.md in the repository lists each step.
 
 ## Limits in the code
 
@@ -840,75 +802,35 @@ POLL_MS | mods/vault/watch.js, mods/vault-reader/watch.js | 10000 | Refresh inte
 
 # Privacy and trust
 
-Herdr mods are trusted code: they can run programs and reach the network. Here is everything these two do, so you can decide before installing. Nothing from your notes leaves your machine.
+Herdr mods are trusted code. These two read your vault, never write into it, and send nothing from your notes anywhere.
 
 ## In short
 
-- It reads your vault and Obsidian’s vault list. It never writes into your vault.
+- Network: one thing. A web image that a note shows is downloaded with curl when the note opens; the Web images button or remoteImages (Configuration) turns it off. No telemetry, no accounts.
 
-- It runs programs you installed (see the list below). It bundles none.
+- Runs: programs you installed, none bundled: rg, node with a headless browser, Poppler, curl, the system opener, and small system tools that stamp files and find programs.
 
-- It uses the network for one thing: downloading a web image when a note shows one. You can turn that off.
+- Reads: the selected vault, Obsidian’s vault list, and the Mermaid and MathJax inside your Obsidian app.
 
-- It writes only under data/vault in the Herdr home.
+- Writes: only data/vault in the Herdr home. Herdr’s shared.json keeps your vault paths after uninstall; delete its vault.* keys to forget them.
 
-- No telemetry, no analytics, no accounts. This documentation site has no scripts, fonts or trackers from anywhere else.
+To check: search the mods for exec( to see every program they start; tests/render-e2e.test.mjs proves the render page fetches nothing.
 
-## Reads
+Mod by mod
 
-What | Why
+ | Vault panel (vault) | Vault reader (vault-reader)
 
-The folder of the selected vault, recursively | The tree, search, links, embeds, and live refresh (a folder watcher). Folders starting with a dot are skipped by the tree.
+Reads | The selected vault, recursively, with a folder watcher. Obsidian’s obsidian.json on first run and on Import from Obsidian (where). Only inside your home folder. | The open note, the files it embeds, and a listing of the vault to resolve links, with a folder watcher. Only lib/mermaid.min.js and lib/mathjax from Obsidian’s obsidian.asar. The render script (node) also reads the pictures an Excalidraw drawing embeds from the vault.
 
-Obsidian’s vault list (obsidian.json, see the requirements) | To start with the vaults you already have. Read on first run and again each time you choose Import from Obsidian.
+Runs | rg on each search, with your ripgrep config ignored. The system opener for a file that is not a note. | node with render.mjs, which starts Chrome, Chromium, Edge or Brave headless in a private profile, with a DevTools debugging port on the loopback address for one render run. pdfinfo and pdftoppm; curl; stat or powershell for change stamps; on macOS qlmanage and sips as fallbacks.
 
-Obsidian’s obsidian.asar | To take out Mermaid and MathJax (only lib/mermaid.min.js and lib/mathjax) for the render script.
+Both | Your login shell (command -v) or where, with only a program name, when a program is not found by the usual means. The system opener (open, xdg-open, rundll32 url.dll,FileProtocolHandler) gets only http, https and mailto links and documents; files that start programs are never opened.
 
-Herdr only lets mods read inside your home folder, so a vault elsewhere is not readable.
+Network | None. | Web images with curl: http and https only, 20 seconds, 20 MB, at most 5 redirects; the host sees your IP address. The render page allows only its own loopback address, and the browser is started so that no name but 127.0.0.1 resolves and no proxy is used, so a diagram label that names a web address fetches nothing.
 
-The render script (node, started by the reader) also reads files itself: when a note shows an Excalidraw drawing that embeds pictures by reference, it reads those picture files from the vault with Node’s own file access, to draw them into the picture. That read is by node, not by the mod, and stays inside the vault folder.
+Writes | Shared state (vault.list, vault.current, vault.outside, which keep your vault paths) and the open folders in Herdr’s per-mod storage. | data/vault: the cache (pictures, copies of vault images, web images, PDF pages), lib, a temporary chrome-… profile per run, settings.json; and vault.open in shared state. Cached pictures can show your notes: delete data/vault/cache to wipe them (pruning).
 
-## Runs
-
-Program | When | What it gets
-
-rg (ripgrep) | Each search | The vault folder and your query words. It is run with your ripgrep config ignored.
-
-node with render.mjs | A note has math, Mermaid or an Excalidraw drawing that is not cached | A temporary job file with the source of the formulas, diagrams and drawings, and your theme colours.
-
-Chrome, Chromium, Edge or Brave, headless | Started by the render script | A page served from 127.0.0.1 on a random port, in a private profile folder, with background networking and sync switched off. The browser is also started with a DevTools debugging port on the loopback address (random port), which the render script uses to control it; it exists only for the length of one render run. It is closed when the batch ends.
-
-pdfinfo, pdftoppm (Poppler) | A PDF is shown | The PDF file; it writes page pictures to the cache.
-
-curl | A note shows a web image and Web images is on | The image address from the note (only http and https; 20 seconds, 20 MB, at most 5 redirects).
-
-The system opener (open, xdg-open, rundll32 url.dll,FileProtocolHandler) | You click a non-note file, a web link, or the PDF button | The path or the address. Files that start programs are never passed to it.
-
-stat (macOS, Linux) or powershell (Windows) | The reader needs a change stamp for the files a note shows | The paths of those files; it prints their modification time and size.
-
-Your login shell (command -v) on macOS and Linux, where on Windows | A program is not found by the usual means | Only the program name, to find its path. Your shell profile runs, as it does for any login shell.
-
-qlmanage, sips (macOS only, fallbacks) | A PDF is shown on a Mac without Poppler; an AVIF or TIFF image is shown | The PDF file, to make a picture of page 1; the image file, to read its size.
-
-Dataview, Dataviewjs, Tasks and other plugin queries are never run; their text is displayed. Mermaid runs in its strict security mode.
-
-## Network
-
-- When a note shows an image with an http or https address, curl downloads it. The site that hosts the image sees your IP address and the request, as soon as the note is opened. Set remoteImages to false (Configuration) to stop this.
-
-- Links in a note are opened only when you click them, and only http, https and mailto addresses are passed to your system. file:, obsidian:, javascript: and every other scheme are ignored. Files that start programs are never opened from a note or from the tree.
-
-- The render page is local and may load nothing from anywhere else. Its content-security policy allows only its own loopback address, data: and blob:, and the browser is started so that no name but 127.0.0.1 resolves and no proxy is used. A diagram label in a note that points at a web address therefore fetches nothing. This is proven by a test that serves a counting server and checks that a Mermaid label pointing at it gets no request (tests/render-e2e.test.mjs); that test needs a Chromium-family browser and is skipped, with a reason, on a machine without one.
-
-## Writes
-
-Only under data/vault in the Herdr home: the cache (rendered pictures, copies of vault images, downloaded web images, page images of PDFs), lib (Obsidian’s Mermaid and MathJax), a temporary chrome-… profile folder per render run, and settings.json. Vault images are copied there because Herdr can only show pictures from its own folder. Cached pictures can contain a rendering of your private notes: delete data/vault/cache to wipe them. The cache is pruned by age and size automatically, once per session (see Configuration). A failed download or a missing program is never written to the cache.
-
-Herdr keeps the vault list and the open note in its shared state (shared.json in the Herdr home), and the open folders of the tree in its per-mod storage. Shared state holds paths of your vaults and the file of the open note, and it stays after you uninstall: vault.list and vault.current hold the paths of your vaults, vault.open the vault and file of the note that was open, and vault.outside the vaults outside your home folder. They are harmless; to forget them, close Herdr and delete those vault.* keys from shared.json.
-
-## Third-party material
-
-Mermaid (MIT) and MathJax (Apache-2.0) are not distributed by this project. They are copied from your own Obsidian installation to data/vault/lib on your machine, and stay under their own licenses. Icons: Lucide (ISC). Obsidian is a trademark of its owner; this project is not affiliated with it.
+Dataview, Tasks and other plugin queries are shown as text, never run, and Mermaid runs in strict mode. Mermaid (MIT) and MathJax (Apache-2.0) are copied from your own Obsidian to data/vault/lib, not distributed here. Icons: Lucide (ISC).
 
 ← ConfigurationTroubleshooting →
 
@@ -1026,7 +948,7 @@ Also seen as Node.js 22.4 or newer isn't installed, followed by Diagrams and mat
 
 ### Diagrams and math need a browser to draw them
 
-Followed by A Chromium-based browser wasn't found and an install hint. Install Chrome, Chromium, Brave or Edge, or name the one you have: add "browser" (an absolute path) to data/vault/settings.json, or set HERDR_VAULT_BROWSER (or CHROME_PATH) in the environment Herdr was started with. If you named a browser in the settings file and it does not exist, the line says The browser named in settings.json ("browser") wasn't found, and neither was any other. before the hint. The places that are searched, in order, are on the requirements page.
+Followed by A Chromium-based browser wasn't found and an install hint. Install Chrome, Chromium, Brave or Edge, or name the one you have: add "browser" (an absolute path) to data/vault/settings.json, or set HERDR_VAULT_BROWSER (or CHROME_PATH) in the environment Herdr was started with. If you named a browser in the settings file and it does not exist, the line says The browser named in settings.json ("browser") wasn't found, and neither was any other. before the hint. The places that are searched, in order, are on the configuration page.
 
 ### Diagrams and math use Obsidian's own Mermaid and MathJax, read from the installed app
 
@@ -1094,132 +1016,9 @@ Only http, https and mailto links are opened, and other schemes are dropped with
 
 ## Still stuck
 
-Run the short install check on the sample vault first; it tells you which step fails. Then open an issue in the repository (the “Platform report” form has the same fields) with: your operating system, node --version, the output of herdr-app check on both mods, and the exact text of the message. Do not paste note content or paths that name you.
+Open an issue with the Platform report form; its short checklist on the sample vault tells you which step fails. It asks for your operating system, node --version, the result of herdr-app check on both mods, and the exact text of the message. Do not paste note content or paths that name you.
 
-← PrivacyCheck your install →
-
----
-
-<source: docs/verify.html>
-
-# Check your install
-
-Fifteen short steps on the sample vault tell you what works on your system and what says it cannot. They are also how Linux and Windows results get reported, because those systems have not been seen running in the live Herdr app.
-
-Use the sample vault (examples/sample-vault), never your own notes. Do not paste note text, or paths that contain your name, into a report.
-
-## The steps
-
-Step | Do | Expect
-
-1. Install | Copy both mods, then run herdr-app check on each (see Install). | Both say they pass.
-
-2. Show the panel | Add the panel block to a layout, or merge keys.json and press Ctrl+Shift+M. | The Vault panel appears. Without a vault it says No vault yet.
-
-3. Add the sample vault | Choose Add vault and pick the folder examples/sample-vault of this repository. | The picker shows sample-vault. A folder without .obsidian is refused with Not an Obsidian vault.
-
-4. Tree | Look at the top level, then open projects. | Folders first (attachments, projects), then Board.canvas, Feature tour.md, Flow sketch.excalidraw.md and Other note.md without their extensions. .obsidian is hidden. projects/a and projects/b are folders.
-
-5. Search | Type nested example in the search box, then tour. | The first finds Feature tour.md by a line of text. The second finds it by name, first in the list. Without ripgrep you see ripgrep (rg) isn’t installed and the install command.
-
-6. Open a note | Click Feature tour.md. | A floating reader fills most of the window. A properties table shows status, project, tags, aliases and created.
-
-7. Callouts and tasks | Scroll to Callouts and Tasks. | Five callouts; Folded warning is closed and Open tip, foldable is open, and a click toggles them. Six tasks each show their own mark.
-
-8. Links and Back | Click Other note in the Links line, then press Alt+Left (or Backspace). | Other note.md opens in the same reader. Back returns to the tour. Missing note is shown as unresolved.
-
-9. Math and Mermaid | Scroll to Math and Mermaid. | Two inline formulas and one block formula, then a flowchart and a sequence diagram, drawn as pictures. If something is missing, one line above the note names it (Node.js, a browser or the Obsidian app) and the source stays visible. The first run takes a few seconds.
-
-10. Embeds | Scroll to Embeds. | The section of Other note.md, the block, attachments/photo.png about 320 wide, the drawing Flow sketch.excalidraw.md, the first page of attachments/spec.pdf, and Board.canvas.
-
-11. A PDF | Click attachments/manual.pdf in the tree. | The pages one after another. Without Poppler: macOS shows page 1; Linux and Windows show the install hint and the button Open in the default app.
-
-12. A canvas and a drawing | Open Board.canvas, then Flow sketch.excalidraw.md. | The canvas shows a group called This stage, text, note, image and link cards with arrows. The drawing is drawn clean, not as text.
-
-13. Code and queries | Scroll to the end of the tour. | The Python block is shown as code. The Dataview block is shown with a shown, not run label.
-
-14. Keep and Esc | Press Keep and choose New tab. Then open any note from the panel and press Esc. | A tab named obsidian holds the kept note. Esc closes the floating reader.
-
-15. Web images (optional) | Add a line ![](https://example.com/x.png) to a throw-away copy of the vault, never to your own. | The reader bar gets Web images: on and the picture downloads, or says why not. The sample vault itself has no web image, so this step is skipped there.
-
-A step that shows a plain message instead of the result is a pass when the message names the missing program and gives the install command for your system: that is the designed behaviour. A step that shows nothing, a blank reader or a raw error is a fail. The messages are listed on the troubleshooting page.
-
-## Report what you saw
-
-Copy this into a new issue in the repository (there is a “Platform report” form with the same fields), or into a message to the maintainers. Fill in what you can.
-
-```
-Operating system and version:
-Herdr version (herdr-app --version):
-Programs found (yes/no and version):
-  rg:
-  node (node --version):
-  browser (Chrome, Chromium, Edge or Brave):
-  Obsidian app:
-  pdftoppm and pdfinfo:
-  curl:
-herdr-app check on vault and vault-reader (pass/fail):
-Steps 1 to 15 (pass / fail / message shown):
-  1:
-  2:
-Anything else you noticed (on Windows, the Home line that herdr-app --help prints):
-```
-
-If a step fails, add the exact text of the message. Do not add note content, screenshots of your own vault, or paths that name you.
-
-← TroubleshootingHow it works →
-
----
-
-<source: docs/how-it-works.html>
-
-# How it works
-
-Two mods, one cache. The panel finds a note, the reader draws it, and a small script draws what the reader cannot draw natively.
-
-[figure: Data flow between the panel, the reader and the render script]
-
-## Files
-
-File | Job
-
-mods/vault/main.js | The panel: vault list, tree, search box, picker menu, add vault.
-
-mods/vault/search.js, search-core.js | Search with ripgrep: the Herdr glue, and the pure logic (arguments, parsing, ranking, snippet) that Node tests.
-
-obsidian-config.js, tree.js, watch.js | Pure helpers of the panel: Obsidian’s vault list, the tree rules, the restartable folder watcher with its timer fallback.
-
-mods/vault-reader/main.js | The reader window: loading, drawing blocks, links, Keep menu, keys.
-
-platform.js, mod-name.js (both mods) | Everything that differs between operating systems (tool lookup, openers, install hints, stamps, image sizes) and the mod folder name. Pure; each mod holds its own copy because a mod folder is self-contained.
-
-parse.js, doc.js, canvas.js | Pure functions: note text to blocks; a file to a document, two embed levels deep; canvas JSON to cards and an edge picture. They do not import Herdr, so Node can test them.
-
-assets.js, assets-core.js | Everything that becomes a picture: images, PDF pages, web images, rendered jobs; the cache. The core holds the logic without Herdr imports.
-
-render/render.mjs, lib.mjs, browser.mjs, page.js, excalidraw.js | The render script, its helpers (browser.mjs runs and cleans up the browser process of one run), and the page it loads in the headless browser. Plain Node and browser code, not Herdr mod code.
-
-## From a click to a picture
-
-- A click in the panel opens the reader as a floating window with { vault, file } and records vault.open in shared state.
-
-- The reader lists the vault once (to resolve wikilinks), reads the note, and parse.js turns it into blocks. Plain text blocks go straight to Herdr’s markdown view.
-
-- The reader collects what needs a picture: images, PDFs, math, Mermaid, drawings, canvas edges. Each one gets a cache key made from its source, file stamp (modification time and size), your theme colours and the render version.
-
-- Cached pictures show at once. Missing ones are made: images are copied into the cache (Herdr only loads pictures from its own folder) and measured; PDF pages come from Poppler; math, Mermaid and drawings are batched to the render script.
-
-- The render script serves one page on 127.0.0.1, starts the headless browser with its own temporary profile (a content-security policy in the page and a browser that resolves no name but 127.0.0.1 keep it from fetching anything else; the profile folder is removed when the run ends), draws each job with Obsidian’s copies of Mermaid and MathJax or the project’s own drawing renderer, takes a screenshot of each result and writes a PNG plus a size file.
-
-- Pictures appear as they are ready. A failure becomes a short message in place of that block, and a missing program becomes one line above the note; neither replaces the document, and neither is cached.
-
-- A folder watcher redraws the note when it, or a file it depends on, changes.
-
-## If a mod name is taken
-
-Herdr’s install rule is to never overwrite a mod, so if you already have a mod called vault, rename the new one. The folder name is spelled in one place per mod, mod-name.js (MOD, and READER in the panel); change it and the folder name together, and the mod name in your layout and keys. The shared keys keep their names unless you also want to separate the two copies. AGENTS.md in the repository lists each step.
-
-← TroubleshootingFor agents →
+← PrivacyFor agents →
 
 ---
 
@@ -1235,7 +1034,7 @@ If you are an AI agent asked to install, adapt or change these mods, start with 
 
 - llms-full.txt: the README, AGENTS.md and every page of this site as one plain text file, generated by scripts/build-llms-full.mjs. Read this if you cannot browse the site.
 
-- Check your install: the checklist on the sample vault and the report template, if you are asked to confirm a Linux or Windows install.
+- Platform report: the issue form with the checklist on the sample vault, if you are asked to confirm a Linux or Windows install.
 
 - RECIPE.md: the brief to rebuild the mods from nothing (behaviour and intent only).
 
@@ -1245,4 +1044,4 @@ Say plainly what is not verified: Linux and Windows have not been seen running i
 
 Three rules matter most. Never write inside a mod folder while it runs, because Herdr reloads a mod when any file in it changes. Never drive someone’s live Herdr window while testing; use herdr-app check on the mod folder and npm test. Keep personal data out of every file.
 
-← How it works
+← Troubleshooting

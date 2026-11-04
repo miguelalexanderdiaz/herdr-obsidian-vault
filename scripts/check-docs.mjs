@@ -6,9 +6,9 @@
 //   node scripts/check-docs.mjs --root DIR   check another copy (for example a temp copy
 //                                            with a broken link, to see it fail)
 //   node scripts/check-docs.mjs --release    also fail while anything that must change when the
-//                                            repository is published is still open (the owner
-//                                            placeholder, "not published yet", "still has to
-//                                            install", and every publish: mark). Used by
+//                                            repository is published is still open ("not published
+//                                            yet", "still has to install", and every publish:
+//                                            mark). Used by
 //                                            check-repo.mjs --release.
 //
 // What it checks, and why:
@@ -27,7 +27,8 @@
 //   - the claims table scripts/doc-claims.json: a number, name or phrase in a doc against the
 //     constant, string or key that backs it in the code;
 //   - the one support-level sentence is identical in the README, both llms.txt copies and the pages;
-//   - docs/verify.html names only files that exist in the sample vault;
+//   - the Platform report checklist (.github/ISSUE_TEMPLATE/platform-report.yml) names only files that exist in
+//     the sample vault;
 //   - the CI template runs only commands that exist (npm scripts, files in scripts/);
 //   - docs/llms-full.txt equals a fresh build (scripts/build-llms-full.mjs);
 //   - commands in AGENTS.md and CONTRIBUTING.md name scripts and test folders that exist.
@@ -123,7 +124,7 @@ const mustHave = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "
 for (const f of mustHave) if (!exists(path.join(ROOT, f))) fail(f, "missing");
 
 const pages = exists(DOCS) ? fs.readdirSync(DOCS).filter((f) => f.endsWith(".html")).sort() : [];
-const required = ["index", "install", "usage", "requirements", "configuration", "privacy", "troubleshooting", "verify", "how-it-works", "for-agents"];
+const required = ["index", "install", "usage", "requirements", "configuration", "privacy", "troubleshooting", "for-agents"];
 for (const r of required) if (!pages.includes(`${r}.html`)) fail(`docs/${r}.html`, "missing");
 
 // ---------------------------------------------------------------- HTML pages
@@ -191,10 +192,11 @@ for (const name of pages) {
 
 // ---------------------------------------------------------------- Markdown files and llms.txt
 
-const owner = "<owner>";
+// The repository is public under this owner; links to its Pages site and its files on main must lead somewhere.
+const owner = "miguelalexanderdiaz";
 function ownerTarget(url) {
-  const pages = new RegExp(`^https://${owner.replace(/[<>]/g, (c) => `\\${c}`)}\\.github\\.io/${REPO}/?(.*)$`);
-  const repo = new RegExp(`^https://github\\.com/${owner.replace(/[<>]/g, (c) => `\\${c}`)}/${REPO}/(?:blob|raw|tree)/main/(.*)$`);
+  const pages = new RegExp(`^https://${owner}\\.github\\.io/${REPO}/?(.*)$`);
+  const repo = new RegExp(`^https://github\\.com/${owner}/${REPO}/(?:blob|raw|tree)/main/(.*)$`);
   let m = url.match(pages);
   if (m) return path.join(DOCS, m[1] || "index.html");
   m = url.match(repo);
@@ -241,10 +243,6 @@ for (const file of docFiles) {
     if (file.endsWith("check-docs.mjs")) continue;
     const m = src.match(re);
     if (m) fail(rel(file), `looks like ${what}: ${m[0]}`);
-  }
-  // In --release mode the owner is meant to be real (the author has replaced <owner>), so the rule is off.
-  if (!RELEASE && !file.endsWith("check-docs.mjs") && /github\.com\/(?!<owner>|anthropics\/|orgs\/)[A-Za-z0-9-]+\/herdr-/i.test(src)) {
-    fail(rel(file), "a real GitHub owner in a repository URL: write <owner>");
   }
 }
 
@@ -305,7 +303,7 @@ function rows(tableHtml) {
 const readme = exists(path.join(ROOT, "README.md")) ? read(path.join(ROOT, "README.md")) : "";
 const reqPage = exists(path.join(DOCS, "requirements.html")) ? read(path.join(DOCS, "requirements.html")) : "";
 {
-  const t = (reqPage.match(/<table id="requirements-table">[\s\S]*?<\/table>/) || [])[0];
+  const t = (reqPage.match(/<table id="requirements-table"[^>]*>[\s\S]*?<\/table>/) || [])[0];
   if (!t) fail("docs/requirements.html", 'no <table id="requirements-table">');
   const md = readme.match(/<!-- requirements:start -->([\s\S]*?)<!-- requirements:end -->/);
   if (!md) fail("README.md", "no <!-- requirements:start --> ... <!-- requirements:end --> table");
@@ -589,23 +587,27 @@ if (exists(claimsFile)) {
   }
 }
 
-// ---------------------------------------------------------------- docs/verify.html names files of the sample vault
+// ---------------------------------------------------------------- the Platform report checklist names files of the sample vault
 
+// The checklist testers follow on Linux and Windows lives in the issue form. Every file or folder of the sample vault it
+// names in backticks (a name with a note, canvas, PDF or image extension, or under attachments/ or projects/) must exist.
 {
-  const file = path.join(DOCS, "verify.html");
-  if (exists(file)) {
+  const rel0 = ".github/ISSUE_TEMPLATE/platform-report.yml";
+  const file = path.join(ROOT, ...rel0.split("/"));
+  if (!exists(file)) fail(rel0, "missing (the platform checklist lives there)");
+  else {
     const vault = path.join(ROOT, "examples", "sample-vault");
-    const html = read(file);
-    const names = [...html.matchAll(/<code class="sv">([\s\S]*?)<\/code>/g)].map((m) => text(m[1]));
-    if (names.length < 8) fail("docs/verify.html", `only ${names.length} <code class="sv"> names; every step must name its file`);
+    const src = read(file);
+    const names = [...src.matchAll(/`([^`\n]+)`/g)].map((m) => m[1])
+      .filter((n) => /\.(md|canvas|pdf|png)$/.test(n) || /^(attachments|projects)(\/|$)/.test(n));
+    if (names.length < 8) fail(rel0, `only ${names.length} sample-vault names in the checklist; every step must name its file`);
     for (const n of names) {
-      const candidates = [path.join(vault, n), path.join(ROOT, n)];
-      if (!candidates.some(exists)) fail("docs/verify.html", `names "${n}", which is not in examples/sample-vault`);
+      if (![path.join(vault, n), path.join(ROOT, n)].some(exists)) fail(rel0, `names "${n}", which is not in examples/sample-vault`);
     }
-    const steps = (html.match(/<table id="verify-table"[^>]*>[\s\S]*?<\/table>/) || [""])[0].match(/<tr><th scope="row">\d+\./g) || [];
-    const claimed = (html.match(/\b(Fifteen|Fourteen|Sixteen|Twelve|Ten) short steps\b/) || [])[1];
-    const words = { Ten: 10, Twelve: 12, Fourteen: 14, Fifteen: 15, Sixteen: 16 };
-    if (claimed && words[claimed] !== steps.length) fail("docs/verify.html", `says ${claimed} steps but has ${steps.length}`);
+    const steps = [...src.matchAll(/^\s+(\d+)\. \*\*/gm)].map((m) => Number(m[1]));
+    if (!steps.length || steps.some((n, k) => n !== k + 1)) fail(rel0, "the checklist steps must be numbered 1, 2, 3 ... with a bold title");
+    const said = src.match(/\(1 to (\d+)\)/)?.[1];
+    if (said && Number(said) !== steps.length) fail(rel0, `the steps field says 1 to ${said} but the checklist has ${steps.length}`);
   }
 }
 
@@ -684,7 +686,7 @@ for (const file of releaseFiles) {
   const lineOf = (idx) => src.slice(0, idx).split("\n").length;
   for (const m of src.matchAll(/<!--\s*publish:([\s\S]*?)-->/g)) marks.push([rel(file), lineOf(m.index), "open mark: " + m[1].trim().split(/\.\s|\n/)[0].slice(0, 60)]);
   if (!file.endsWith("llms-full.txt")) {
-    for (const [re, what] of [[/<owner>|&lt;owner&gt;/g, "the <owner> placeholder"], [/not published yet/gi, '"not published yet"'], [/still has to install/gi, '"still has to install"']]) {
+    for (const [re, what] of [[/not published yet/gi, '"not published yet"'], [/still has to install/gi, '"still has to install"']]) {
       const hits = [...src.matchAll(re)];
       if (hits.length) marks.push([rel(file), lineOf(hits[0].index), `${what}${hits.length > 1 ? ` (${hits.length} times)` : ""}`]);
     }

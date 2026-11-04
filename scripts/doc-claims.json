@@ -158,7 +158,7 @@
  },
  {
   "id": "tool-retry",
-  "doc": "docs/requirements.html",
+  "doc": "docs/configuration.html",
   "docText": "looked for again after 30 seconds",
   "code": [
    "mods/vault/platform.js",
@@ -168,30 +168,21 @@
  },
  {
   "id": "env-browser",
-  "doc": [
-   "docs/configuration.html",
-   "docs/requirements.html"
-  ],
+  "doc": "docs/configuration.html",
   "docText": "HERDR_VAULT_BROWSER",
   "code": "mods/vault-reader/render/lib.mjs",
   "pattern": "env\\.HERDR_VAULT_BROWSER\\b"
  },
  {
   "id": "env-chrome-path",
-  "doc": [
-   "docs/configuration.html",
-   "docs/requirements.html"
-  ],
+  "doc": "docs/configuration.html",
   "docText": "CHROME_PATH",
   "code": "mods/vault-reader/render/lib.mjs",
   "pattern": "env\\.CHROME_PATH\\b"
  },
  {
   "id": "env-asar",
-  "doc": [
-   "docs/configuration.html",
-   "docs/requirements.html"
-  ],
+  "doc": "docs/configuration.html",
   "docText": "HERDR_VAULT_ASAR",
   "code": "mods/vault-reader/render/lib.mjs",
   "pattern": "env\\.HERDR_VAULT_ASAR\\b"

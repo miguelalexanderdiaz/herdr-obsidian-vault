@@ -10,7 +10,7 @@ Thanks for helping. This project is two Herdr mods plus the checks and documenta
 - Optional, for `node scripts/typecheck.mjs`: TypeScript (`tsc`) and Herdr's own `herdr.d.ts` and `gpui-kit.d.ts` in the Herdr home. Without either it prints `skipped: <reason>` and exits 0.
 
 ```sh
-git clone https://github.com/<owner>/herdr-obsidian-vault.git
+git clone https://github.com/miguelalexanderdiaz/herdr-obsidian-vault.git
 cd herdr-obsidian-vault
 node --version   # v22.4 or newer
 ```
@@ -98,9 +98,23 @@ Node has globals and options that Herdr's JavaScript runtime lacks, which is how
 
 On macOS with Herdr 0.1.12 this showed `TextDecoder`, `TextEncoder`, `structuredClone` and `Intl` as `undefined`, `localeCompare` ignoring `numeric`, and `setTimeout`, `process`, `Buffer` and `URL` present. That something is present does not make it allowed: Herdr's own notes forbid `setTimeout` and Node APIs, and the runtime-globals test lists what mod code may not use. Update that list and `AGENTS.md` ("Herdr facts behind the rules") when a probe changes an answer, and say which Herdr version it was.
 
+## How it works
+
+Two mods, one cache. The panel finds a note, the reader draws it, and a small Node script draws what the reader cannot draw natively. `AGENTS.md` has the file map.
+
+1. A click in the panel opens the reader as a floating window with `{ vault, file }`; the reader records `vault.open` in shared state, and the panel highlights that note.
+2. The reader lists the vault once (to resolve wikilinks), reads the note, and `parse.js` turns it into blocks; `doc.js` resolves embeds two levels deep and `canvas.js` turns canvas JSON into cards and an edge picture. Plain text blocks go straight to Herdr's markdown view.
+3. Everything that needs a picture (images, PDF pages, math, Mermaid, drawings, canvas edges) gets a cache key from its source, the file stamp (modification time and size), the theme colours and `RENDER_VERSION`. Cached pictures show at once.
+4. Missing ones are made by `assets.js` (logic in `assets-core.js`): images are copied into `data/vault/cache` (Herdr only loads pictures from its own home) and measured; PDF pages come from Poppler; math, Mermaid and drawings are batched to `render/render.mjs`, `BATCH` at a time so a cold start fits Herdr's 30 second `exec` limit.
+5. The render script serves one page on `127.0.0.1`, starts the headless browser with its own temporary profile (`browser.mjs` runs and cleans up that process), draws each job with Obsidian's copies of Mermaid and MathJax or the project's own drawing renderer (`excalidraw.js`), screenshots each result and writes a PNG plus a size file. A content-security policy and a browser that resolves no name but `127.0.0.1` keep it offline.
+6. Pictures appear as they are ready. A failure becomes a short message in place of that block and a missing program one line above the note; neither replaces the document, and neither is cached.
+7. A folder watcher (`watch.js`, with a timer fallback) redraws the note when it, or a file it depends on, changes.
+
+Everything that differs between operating systems is in `platform.js` (tool lookup, openers, install hints, stamps, image sizes), and the folder name in `mod-name.js`. Each mod holds its own copy of both because a mod folder is self-contained; a test compares the shared parts.
+
 ## Reporting a platform result
 
-Linux and Windows have not been seen running in the live Herdr app. If you have either, the most useful contribution is a result: follow [Check your install](docs/verify.html) on `examples/sample-vault` (fifteen steps, each with what to expect) and file it with the "Platform report" issue form, which has the same fields as the report block on that page. Include the exact text of any message. Do not include note text, screenshots of your own vault, or paths that name you. A result that shows a plain message naming a missing program is a pass: that is the designed behaviour.
+Linux and Windows have not been seen running in the live Herdr app. If you have either, the most useful contribution is a result: open the [Platform report](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/new?template=platform-report.yml) issue form and follow its checklist on `examples/sample-vault` (fifteen steps, each with what to expect; the steps live in `.github/ISSUE_TEMPLATE/platform-report.yml`). Include the exact text of any message. Do not include note text, screenshots of your own vault, or paths that name you. A result that shows a plain message naming a missing program is a pass: that is the designed behaviour.
 
 ## Privacy checklist
 
@@ -114,18 +128,18 @@ Before every commit, make sure that nothing personal got in. `node scripts/priva
 
 ## Documentation
 
-If you change a requirement, a message, a key, a limit or a setting, change the docs in the same pull request: `README.md` (requirements table), the matching page in `docs/` (`requirements`, `configuration`, `troubleshooting`, `usage` limits, `verify` steps), `AGENTS.md` and `CHANGELOG.md`. After editing `llms.txt`, copy it (`cp llms.txt docs/llms.txt`) and rebuild the long text (`node scripts/build-llms-full.mjs`). Then run `node scripts/check-docs.mjs`; it checks:
+If you change a requirement, a message, a key, a limit or a setting, change the docs in the same pull request: `README.md` (requirements table), the matching page in `docs/` (`requirements`, `configuration`, `troubleshooting`, `usage` limits), the checklist in `.github/ISSUE_TEMPLATE/platform-report.yml`, and `AGENTS.md`. After editing `llms.txt`, copy it (`cp llms.txt docs/llms.txt`) and rebuild the long text (`node scripts/build-llms-full.mjs`). Then run `node scripts/check-docs.mjs`; it checks:
 
 - links, anchors, contrast, that the README and the site list the same requirements, and that the keys table equals `keys.json`;
 - that pages run no inline script and no `on...=` attribute, load only the site's own `docs/assets/*.js`, and that those scripts reach no network, load no code and store nothing;
 - that every message quoted in the troubleshooting page (`class="msg"`) is a string literal in the code. A quote found only in a comment fails. A quote shorter than 12 characters must be a whole literal or the whole text between two `${...}` holes of a template;
 - the claims table `scripts/doc-claims.json`: each row names a phrase in a doc (`docText`), a code file and a pattern run on that file with comments removed. To add one, copy a row; when you change a constant, change the doc and the row together, and the failure names the row;
 - the one support-level sentence (`SUPPORT` in `scripts/check-docs.mjs`), word for word, in the README, both `llms.txt` copies, `docs/index.html` and `docs/requirements.html` (page text and meta description);
-- that the CI template runs only commands that exist, that `docs/verify.html` names only files in the sample vault, and that `docs/llms-full.txt` is current.
+- that the CI template runs only commands that exist, that the Platform report checklist names only files in the sample vault, and that `docs/llms-full.txt` is current.
 
 `tests/check-docs.test.mjs` seeds faults into a temp copy of the repository and expects each to fail; add a case there when you add a check.
 
-Every sentence that changes when the repository is published (the screenshot slot, the CI sentence, the owner placeholder, the herdr.dev form, the tag links) carries a mark: an HTML comment that starts with `publish:`. `rg "publish:"` lists them, and `node scripts/check-docs.mjs --release` fails until they are resolved. Add a mark to any new sentence of that kind; never remove one for the author.
+Every sentence that changes when the repository is published (the screenshot slot, the CI sentence, the herdr.dev form, the tag links) carries a mark: an HTML comment that starts with `publish:`. `rg "publish:"` lists them, and `node scripts/check-docs.mjs --release` fails until they are resolved. Add a mark to any new sentence of that kind; never remove one for the author.
 
 Write plainly: short sentences, what happens and what to do. State the real support level; do not promise what the code does not do.
 

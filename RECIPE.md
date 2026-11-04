@@ -162,8 +162,8 @@ Herdr's settings with generic fallbacks, and the one binding is `ctrl-shift-m` (
 It is a global key: check `herdr-app commands` and your own `keys.json`, and when asked to merge, keep your key
 if `ctrl-shift-m` is already used (open the panel with `mod.open` from the palette instead).
 
-**Requirements per operating system, what is lost without each, and the exact messages** are in the docs
-(`docs/requirements.html`); this recipe only states the behaviour. In short: ripgrep gives search; Node.js 22.4 or newer
+**Requirements, their install commands and the exact messages** are in the docs (`docs/requirements.html`,
+`docs/troubleshooting.html`); this recipe only states the behaviour. In short: ripgrep gives search; Node.js 22.4 or newer
 plus a Chromium-family browser plus the Obsidian app give diagrams, maths and drawings (Mermaid and MathJax are not
 in this repo: they are read at run time from your own Obsidian install, see `NOTICE`); Poppler gives all PDF
 pages. Per operating system: macOS has none of them by default (`brew install ripgrep poppler node`, plus a

@@ -6,7 +6,25 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you. The mods were written and tested on macOS; the Linux and Windows paths have not been run on a real machine yet, so every report helps. Follow the checklist in `docs/verify.html` of this repository, on the sample vault in `examples/sample-vault`, and fill in the result below. Please do not paste note text, vault paths or other personal data.
+        Thank you. The mods were written and tested on macOS; the Linux and Windows paths have not been run on a real machine yet, so every report helps. Use the sample vault in `examples/sample-vault`, never your own notes, and do not paste note text, vault paths or other personal data.
+
+        **The checklist.** A step that shows a message naming the missing program with its install command is a pass: that is the designed behaviour. Nothing at all, a blank reader or a raw error is a fail.
+
+        1. **Install.** Install both mods, then run `herdr-app check` on each. Both pass.
+        2. **Show the panel.** Press Ctrl+Shift+M (or add the panel to a layout). The Vault panel appears; without a vault it says *No vault yet*.
+        3. **Add the sample vault.** *Add vault*, pick `examples/sample-vault`. The picker shows *sample-vault*; a folder without `.obsidian` is refused with *Not an Obsidian vault*.
+        4. **Tree.** Folders first (`attachments`, `projects`), then `Board.canvas`, `Feature tour.md`, `Flow sketch.excalidraw.md` and `Other note.md` without extensions; `.obsidian` is hidden; `projects/a` and `projects/b` are folders.
+        5. **Search.** `nested example` finds `Feature tour.md` by a line; `tour` finds it by name, first. Without ripgrep: *ripgrep (rg) isn't installed* and the install command.
+        6. **Open a note.** Click `Feature tour.md`: a floating reader with a properties table (`status`, `project`, `tags`, `aliases`, `created`).
+        7. **Callouts and tasks.** Five callouts (*Folded warning* closed, *Open tip, foldable* open, a click toggles); six tasks, each with its own mark.
+        8. **Links and Back.** Click *Other note*: `Other note.md` opens in place. Alt+Left or Backspace returns. *Missing note* shows as unresolved.
+        9. **Math and Mermaid.** Two inline formulas, one block formula, a flowchart and a sequence diagram as pictures (the first run takes a few seconds), or one line above the note naming what is missing, with the source visible.
+        10. **Embeds.** The section of `Other note.md`, the block, `attachments/photo.png` about 320 wide, `Flow sketch.excalidraw.md`, page 1 of `attachments/spec.pdf`, and `Board.canvas`.
+        11. **A PDF.** Click `attachments/manual.pdf`: its pages. Without Poppler, macOS shows page 1; Linux and Windows show the hint and *Open in the default app*.
+        12. **Canvas and drawing.** `Board.canvas` shows a group *This stage* with text, note, image and link cards and arrows; `Flow sketch.excalidraw.md` is drawn, not shown as text.
+        13. **Code and queries.** At the end of the tour, the Python block is code and the Dataview block says *shown, not run*.
+        14. **Keep and Esc.** *Keep*, then *New tab*: a tab named `obsidian` holds the note. Open another note and press Esc: the reader closes.
+        15. **Web images (optional).** In a throw-away copy of the vault, add `![](https://example.com/x.png)`: the bar shows *Web images: on* and the picture downloads, or says why not.
   - type: input
     id: os
     attributes:
@@ -52,7 +70,7 @@ body:
     id: steps
     attributes:
       label: Result of each checklist step
-      description: One line per step of `docs/verify.html`, on `examples/sample-vault`.
+      description: One line per step of the checklist above (1 to 15), on `examples/sample-vault`.
       placeholder: "1: pass, 2: pass, 3: fail, the message was ..."
     validations:
       required: true
@@ -65,6 +83,7 @@ body:
     id: other
     attributes:
       label: Anything else
+      description: On Windows, the Home line that `herdr-app --help` prints helps.
   - type: checkboxes
     id: privacy
     attributes:
