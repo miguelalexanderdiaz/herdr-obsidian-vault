@@ -1,7 +1,7 @@
 #!/bin/sh
 # Installs this repository's layout or mods into your Herdr home (macOS and Linux; Windows:
-# install/install.ps1). The same file is in herdr-portrait-layout, herdr-agents-waiting and
-# herdr-obsidian-vault: only the REPO line differs, and what it installs is in install/manifest.
+# install/install.ps1). The same installer can serve other repositories: only the REPO line
+# differs, and what it installs is in install/manifest.
 #
 #   curl -fsSL https://raw.githubusercontent.com/<REPO>/main/install/install.sh | sh
 #   curl -fsSL .../install/install.sh | sh -s -- --yes        no questions

@@ -1,6 +1,6 @@
 // JSON edits for install/install.sh, which can't edit JSON itself. Runs under Node (any version)
 // or under macOS's built-in JavaScript (`osascript -l JavaScript`), so a Mac needs nothing
-// installed. Same file in herdr-portrait-layout, herdr-agents-waiting and herdr-obsidian-vault.
+// installed. The same file can serve other repositories' installers.
 //
 //   keys-plan  <your keys.json> <repo keys.json>   one line per binding, tab-separated:
 //              add|same|conflict <section> <chord> <repo action> [<your action>]

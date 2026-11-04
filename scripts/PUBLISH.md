@@ -60,7 +60,4 @@ so the list it prints is this list). `rg "publish:"` lists the sentences in the 
     mods use (they look for `mods/<name>/` inside the Herdr home, not in this repo).
 12. **Create the issue label `platform-report`** (Issues, Labels). The form in `.github/ISSUE_TEMPLATE/platform-report.yml`
     applies it, and `docs/verify.html` asks testers on Linux and Windows to file one.
-13. **Tell the portrait layout repo** (board `herdr-portrait-layout`) that this repo is public so its RECIPE
-    can link here, and that `mods/vault-reader/obsidian.png` now holds a generic icon (`vault.svg` is the
-    vector version it should switch to).
-14. **Look at the herdr.dev page.** After publishing, a second pair of eyes on description, preview and RECIPE text.
+13. **Look at the herdr.dev page.** After publishing, a second pair of eyes on description, preview and RECIPE text.

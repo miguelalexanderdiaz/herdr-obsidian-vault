@@ -53,7 +53,7 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/<owner>/herdr-obsidian-vault/main/install/install.ps1 | iex
 ```
 
-It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies `mods/vault` and `mods/vault-reader` into your Herdr home, adds `ctrl-shift-m` to `keys.json` (asking before it replaces a key you use) and runs `herdr-app check`. The portrait layout's installer adds the Vault panel when it finds these mods. Anything it replaces is backed up first under `community/herdr-obsidian-vault/` in the Herdr home;
+It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies `mods/vault` and `mods/vault-reader` into your Herdr home, adds `ctrl-shift-m` to `keys.json` (asking before it replaces a key you use) and runs `herdr-app check`. Anything it replaces is backed up first under `community/herdr-obsidian-vault/` in the Herdr home;
 running it again updates in place. From a clone: `install/install.sh` (or `.\install\install.ps1`).
 No questions: `sh -s -- --yes` (Windows: `$env:HERDR_YES = 1` first). Another Herdr home: `--home
 <folder>` or `HERDR_APP_HOME`. Merging `keys.json` uses Node, or on macOS the system's own JavaScript;
@@ -98,13 +98,15 @@ mods, then add the Vault panel to my layout.
 
 ### Show the panel
 
-The mods are installed with `"place": "none"`, so nothing shows until you place the panel. Add a block to a column or stack in a layout file:
+The mods are installed with `"place": "none"`, so they do not dock anywhere by themselves. In any layout, Herdr's own included, press Ctrl+Shift+M (the key from `keys.json`): it opens the panel as a 420 by 640 popup, and pressed again closes it. No layout change is needed.
+
+To keep the panel docked instead, add a block to a column or stack of one of your own layout files:
 
 ```json
 { "id": "vault", "type": "block", "content": { "mod": "vault" } }
 ```
 
-For the portrait layout (`herdr-portrait-layout`), append it to the children of the node with id `panel-body`; its bar then shows a Vault button by itself. You can also split a pane with the app command `pane.split` and `mod` set to `vault`, or skip the layout: the optional key Ctrl+Shift+M in `keys.json` opens the panel as a 420 by 640 popup. See the [install page](docs/install.html) for more.
+Herdr's shipped layouts are read-only, so clone one first (`herdr-app do layout.clone '{"name":"main","as":"my-layout"}'`) and edit the clone. You can also split a pane with the app command `pane.split` and `mod` set to `vault`. See the [install page](docs/install.html) for more.
 
 On first run the panel lists the vaults Obsidian already knows. Otherwise use **Add vault** and pick a folder that contains `.obsidian`.
 
@@ -255,7 +257,7 @@ The reference version of this list is `docs/privacy.html`. Keep the two in step.
 3. Copy the folders `mods/vault` and `mods/vault-reader` into `<Herdr home>/mods/`. Leave `RECIPE.md` and previews out. **Never overwrite.** If either name is taken, follow [Renaming a mod](#renaming-a-mod).
 4. Merge `keys.json` into the person's `keys.json`: add its sections and keys, ask before replacing a key they already use. Run `herdr-app commands` to see what is free.
 5. Run `herdr-app check <absolute path of each mod folder in the Herdr home>`. Both must pass.
-6. Put the panel where the person wants it. In a layout, add a stack or column child `{ "id": "vault", "type": "block", "content": { "mod": "vault" } }`. In `herdr-portrait-layout`, append it to the children of the node with id `panel-body`. The mods have `"place": "none"`, so they show nowhere until placed.
+6. Put the panel where the person wants it. The mods have `"place": "none"`, so they dock nowhere by themselves. In any layout, Herdr's own `main` included, the key from `keys.json` (`ctrl-shift-m`, `mod.open:vault`) opens the panel as a popup, and nothing else is needed. To dock it, add a stack or column child `{ "id": "vault", "type": "block", "content": { "mod": "vault" } }` to one of the person's own layouts; Herdr's shipped layouts are read-only, so clone one first (`herdr-app do layout.clone '{"name":"main","as":"my-layout"}'`).
 7. Check the programs the person has (table in `README.md`). Missing ones are not a reason to stop: the UI says what is missing. Offer the install command for their system.
 8. Do not drive their live window to "test" it (see Testing).
 9. To uninstall: delete the two mod folders, the layout block and the merged keys; `data/vault` in the Herdr home is optional to delete.
@@ -273,7 +275,7 @@ These come from Herdr and from mistakes already made here.
 - **Slow work goes through `exec` or `fetch`**, not a loop in `render`. `exec` has a 30 second limit and 8 MiB of output per call (`herdr.d.ts`); the renderer batches stay under it.
 - **Images and SVGs** passed to `image()` and `svg()` load only from the Herdr home folder. That is why vault images are copied into `data/vault/cache`.
 - **`mod.json` has `"place": "none"`**; the only fields are those Herdr documents (`place`, `size`, `overlay`, `title`, `focusable`). Do not add a `version` field. The panel's `overlay` carries `width` and `height` and also `kind`, `at` and `offset`, which come from Herdr's shipped picker mods and official examples (see `RECIPE.md`); do not add more placement fields without a source.
-- **Keep the contract stable**: mod names `vault` and `vault-reader`; shared keys `vault.list`, `vault.current`, `vault.open`, `vault.panes` (same shapes; `vault.outside` was added beside them); commands `vault.add` and `vault.import`; reader props `{ vault, file, anchor?, kept?, id?, overlay? }`; the tab name `obsidian`; the path `mods/vault/icons/book-open.svg`, which the portrait layout's bar draws. `mods/vault-reader/obsidian.png` and `vault.svg` stay for older copies of the portrait layout (its board confirmed its current layout does not use them, so a later cleanup may remove them). `vault.adding` is internal (a two-minute picker lock), not contract. The portrait layout depends on the rest. To change one, post on that repository's board first. `scripts/check-repo.mjs` enforces the list.
+- **Keep the contract stable**: mod names `vault` and `vault-reader`; shared keys `vault.list`, `vault.current`, `vault.open` (same shapes; `vault.outside` was added beside them); commands `vault.add` and `vault.import`; reader props `{ vault, file, anchor?, kept?, overlay? }`; the tab name `obsidian`. A person's own layouts, keys and mods may use these names, so a change breaks them. `vault.adding` is internal (a two-minute picker lock), not contract. `scripts/check-repo.mjs` enforces the list.
 - **Herdr's runtime is smaller than Node's.** `TextDecoder`, `TextEncoder`, `structuredClone` and `Intl` do not exist in a mod, and `localeCompare` ignores its options (so no `numeric` or `sensitivity`). Node has all of them, which is how code passed the tests and failed in the app. The tests replace those globals for mod code, check method names against `gpui-kit.d.ts`, and scan mod source for these names (`tests/runtime-globals.test.mjs`). See "Herdr facts behind the rules" below.
 - **Do not edit** `herdr.d.ts`, `gpui-kit.d.ts` or `jsconfig.json`; Herdr writes them and `.gitignore` hides them.
 - **Escape hatch**: `ctrl-alt-shift-escape` sets the person's layout and `keys.json` aside. Mention it if you change keys.
@@ -343,9 +345,9 @@ The test vault is `examples/sample-vault`. Open `Feature tour` in the reader to 
 Only when a name is taken. Rename the folder, then search the whole repository for the old name and change each hit:
 
 1. The folder name, and the constants in `mod-name.js` of that mod: `MOD` and `MOD_DIR` in both, plus `READER` in `mods/vault/mod-name.js` (the name the panel opens the reader as). All paths of the mod's own icons, scripts and cache are built from `MOD_DIR`, and the overlay, `tab.new` and `pane.split` calls use `MOD` or `READER`, so nothing else spells the name in code.
-2. If you rename `vault-reader`, also its name in `RECIPE.md` and `docs/` text, and in the portrait layout if it uses it.
+2. If you rename `vault-reader`, also its name in `RECIPE.md` and `docs/` text.
 3. The `mod` name in the layout block and in `keys.json` (`mod:<name>` sections, `mod.open:<name>`).
-4. The shared keys (`vault.*`) and the command `vault.add`: change them only if the person wants the two copies kept apart, and then everywhere, including the other layouts that read them.
+4. The shared keys (`vault.*`) and the command `vault.add`: change them only if the person wants the two copies kept apart, and then everywhere, including any layout or mod of theirs that uses them.
 5. The data folder `data/vault`: keep it shared unless the two copies must not share a cache.
 
 Run `herdr-app check` on both folders afterwards, then search the repository for the old name: the hits left are text, not code.
@@ -452,7 +454,7 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/<owner>/herdr-obsidian-vault/main/install/install.ps1 | iex
 ```
 
-It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies mods/vault and mods/vault-reader into your Herdr home, adds ctrl-shift-m to keys.json (asking before it replaces a key you use) and runs herdr-app check. The portrait layout's installer adds the Vault panel when it finds these mods. Anything it replaces is backed up first under community/herdr-obsidian-vault/ in the Herdr home, and running it again updates in place. sh -s -- --yes answers every question with yes (Windows: $env:HERDR_YES = 1 first); --home <folder> or HERDR_APP_HOME picks another Herdr home; from a clone, run install/install.sh or .\install\install.ps1. Merging keys.json uses Node, or on macOS the system's own JavaScript; without either the script prints the keys to add by hand. To remove it: the same line with sh -s -- --uninstall (Windows: $env:HERDR_UNINSTALL = 1 first); it leaves data/vault, the cache and settings, in place.
+It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies mods/vault and mods/vault-reader into your Herdr home, adds ctrl-shift-m to keys.json (asking before it replaces a key you use) and runs herdr-app check. Anything it replaces is backed up first under community/herdr-obsidian-vault/ in the Herdr home, and running it again updates in place. sh -s -- --yes answers every question with yes (Windows: $env:HERDR_YES = 1 first); --home <folder> or HERDR_APP_HOME picks another Herdr home; from a clone, run install/install.sh or .\install\install.ps1. Merging keys.json uses Node, or on macOS the system's own JavaScript; without either the script prints the keys to add by hand. To remove it: the same line with sh -s -- --uninstall (Windows: $env:HERDR_UNINSTALL = 1 first); it leaves data/vault, the cache and settings, in place.
 
 ## Or ask a Herdr agent
 
@@ -518,19 +520,19 @@ Diagrams and math also need a Chromium-family browser and the Obsidian app; the 
 
 ## Show the panel
 
-The mods have "place": "none", so nothing appears until you put the panel somewhere. Pick one:
+The mods have "place": "none", so they do not dock anywhere by themselves. Pick one:
 
-- In a layout. Add a block to a column or stack of your layout file in layouts/:
+- As a popup, in any layout. The repository’s keys.json binds Ctrl+Shift+M to mod.open:vault, which opens the panel as a 420 by 640 popup and, pressed again, closes it. The installer merges that key (by hand, see Configuration). It works in Herdr’s own layout and in any other, with no layout change.
+
+- Docked in a layout. Add a block to a column or stack of one of your own layout files in layouts/:
 
 ```
 { "id": "vault", "type": "block", "content": { "mod": "vault" } }
 ```
 
-For the herdr-portrait-layout layout, append that object to the children of the node whose id is panel-body. Its bar then shows a Vault button by itself.
+Herdr’s shipped layouts are read-only, so clone one first (herdr-app do layout.clone '{"name":"main","as":"my-layout"}') and edit the clone.
 
 - Split a pane. Run the Herdr app command pane.split with a direction and mod set to vault (herdr-app commands lists its arguments).
-
-- As a popup. The repository’s keys.json binds Ctrl+Shift+M to mod.open:vault, which opens the panel as a 420 by 640 popup and, pressed again, closes it. Merge that key (see Configuration) and no layout change is needed.
 
 ## First run
 
@@ -544,7 +546,7 @@ The panel starts with the vaults that Obsidian already lists on this machine, mo
 
 - Optional: delete data/vault in the Herdr home. It holds the picture cache, the Mermaid and MathJax copies, the headless browser profile and the reader settings. Nothing else is written outside the mod folders.
 
-Your vaults are never touched. Herdr keeps a few values in its own shared.json (in the Herdr home) after the mods are gone: vault.list and vault.current hold the paths of your vaults, vault.open the vault and file of the note that was open, vault.panes kept notes, and vault.outside vaults outside your home folder. They are harmless, but to forget them, close Herdr and delete those vault.* keys from shared.json.
+Your vaults are never touched. Herdr keeps a few values in its own shared.json (in the Herdr home) after the mods are gone: vault.list and vault.current hold the paths of your vaults, vault.open the vault and file of the note that was open, and vault.outside vaults outside your home folder. They are harmless, but to forget them, close Herdr and delete those vault.* keys from shared.json.
 
 ← OverviewUsage →
 
@@ -598,7 +600,7 @@ Cmd+[ | Go back (macOS only).
 
 - Links. A wikilink or a markdown link to a note opens that note in the same reader, with a Back button (its tooltip names the keys that apply on your system). Links with a heading or block anchor ([[Note#Heading]], [[Note#^block]]) show only that section, with a button to show the whole note. A link to another kind of file opens it with the system, except files that start programs, which are never launched from a note (the reader says is a program: the reader doesn’t launch programs from notes). Only http, https and mailto addresses are opened; other schemes are ignored without a message.
 
-- Keep. The Keep menu pins the note into your Herdr space: New tab makes a tab named obsidian with this note, Add to obsidian splits one more pane below the notes of that tab. Kept panes follow edits to the file and are listed in the shared key vault.panes.
+- Keep. The Keep menu pins the note into your Herdr space: New tab makes a tab named obsidian with this note, Add to obsidian splits one more pane below the notes of that tab. Kept panes follow edits to the file.
 
 - PDFs and images have a button in the bar to open the file outside the reader: Open in Preview on macOS, Open in the default app elsewhere.
 
@@ -777,7 +779,7 @@ For the other programs (ripgrep, Node.js, Poppler, curl), put their folder on th
 
 # Configuration
 
-There is no settings screen. What can be changed is below, and everything that other mods or layouts may rely on is in the contract table.
+There is no settings screen. What can be changed is below, and everything your own layouts, keys or mods may rely on is in the contract table.
 
 ## Settings
 
@@ -813,21 +815,19 @@ global | ctrl-shift-m | mod.open:vault
 
 ## Public contract
 
-Other layouts and mods (the herdr-portrait-layout layout, for one) rely on these names. They do not change without a note on that project’s board. Do not rename them in a fork you want to stay compatible with. Today that layout reads the shared key vault.panes, treats a pane of the mod vault-reader as a note, and draws mods/vault/icons/book-open.svg; it does not read vault.list, vault.current or vault.open, which stay for other layouts.
+A layout block, a key binding or a mod of your own can use these names, so they do not change between releases without a note in the changelog. Do not rename them in a fork you want to stay compatible with.
 
 Name | Kind | Shape and meaning
 
 vault | mod | The panel. Also draws its own picker menu when opened with the prop menu: true.
 
-vault-reader | mod | The reader. Props: { vault, file, anchor?, kept?, id?, overlay? } where vault is an absolute folder and file a path inside it. The Keep menu uses { menu: true, window, vault, file, anchor, overlay }.
+vault-reader | mod | The reader. Props: { vault, file, anchor?, kept?, overlay? } where vault is an absolute folder and file a path inside it. The Keep menu uses { menu: true, window, vault, file, anchor, overlay }.
 
 vault.list | shared key | [{ path, name }], the vaults shown in the picker.
 
 vault.current | shared key | Path of the selected vault.
 
 vault.open | shared key | { vault, file, token } | null, the note the floating reader shows; the panel highlights it.
-
-vault.panes | shared key | { [pane id]: { vault, file, id } }, notes kept in panes, so a tree or pane header can show their names.
 
 vault.outside | shared key | [{ path, name }], vaults Obsidian knows that lie outside the home folder. Added in this release; it does not change the shape of vault.list.
 
@@ -836,10 +836,6 @@ vault.add | mod command | Sent to vault by its picker menu (and by a key that yo
 vault.import | mod command | Sent to vault by the Import from Obsidian menu item to read Obsidian’s vault list again. Additive.
 
 obsidian | tab name | Kept notes go in a tab with this name. Matched without regard to case.
-
-mods/vault/icons/book-open.svg | file | Drawn by the bar of the portrait layout when the vault mod is installed. Keep the path.
-
-mods/vault-reader/obsidian.png | file | Kept for older copies of the portrait layout. That project’s board has confirmed that its current layout uses neither this file nor vault.svg, so they may be removed in a later cleanup. The content is a generic gem, not the Obsidian logo. vault.svg beside it is the vector version.
 
 ## Limits in the code
 
@@ -885,7 +881,7 @@ POLL_MS | mods/vault/watch.js, mods/vault-reader/watch.js | 10000 | Refresh inte
 
 - data/vault/settings.json: the settings above.
 
-- Herdr shared state (shared.json): the keys of the contract table (vault.list, vault.current, vault.outside, vault.open, vault.panes), and one internal key, vault.adding. vault.adding is not part of the contract: it holds the time at which an Add vault folder picker was opened, so the docked panel and the popup copy do not open two pickers, and a picker abandoned for two minutes no longer blocks. Herdr’s per-mod storage: open:<vault path>, the open folders of the tree.
+- Herdr shared state (shared.json): the keys of the contract table (vault.list, vault.current, vault.outside, vault.open), and one internal key, vault.adding. vault.adding is not part of the contract: it holds the time at which an Add vault folder picker was opened, so the docked panel and the popup copy do not open two pickers, and a picker abandoned for two minutes no longer blocks. Herdr’s per-mod storage: open:<vault path>, the open folders of the tree.
 
 ← RequirementsPrivacy →
 

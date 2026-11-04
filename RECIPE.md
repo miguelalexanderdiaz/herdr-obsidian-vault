@@ -84,8 +84,8 @@ is drawn as a note. Foldable callouts (`[!tip]-`) can be collapsed.
   splits one more note below the others in that tab. A kept pane has no close X and no Esc; it can take the
   keyboard through `pane.go`.
 - **Key:** `ctrl-shift-m` toggles the Vault panel popup (`keys.json`, `mod.open:vault`).
-- **Shared state** other mods may read: `vault.list`, `vault.current`, `vault.open`, `vault.panes` (the stable
-  four, see Built from).
+- **Shared state** other mods may read: `vault.list`, `vault.current`, `vault.open` (the stable three, see
+  Built from).
 
 Degraded behaviour, always a visible one-line message, never a stack trace or raw JSON: no ripgrep, search says
 so and how to install it; no Poppler, a PDF shows what the system can draw or an install hint; no browser, no
@@ -101,9 +101,9 @@ documented, so the large-note message is not verified in the live app.
 
 ## Built from
 
-Files: `mods/vault/` (`main.js`, `search.js`, `platform.js`, `mod.json`, `icons/`, `vault.svg`, `obsidian.png`),
+Files: `mods/vault/` (`main.js`, `search.js`, `platform.js`, `mod.json`, `icons/`, `vault.svg`),
 `mods/vault-reader/` (`main.js`, `parse.js`, `doc.js`, `canvas.js`, `assets.js`, `platform.js`, `mod.json`,
-`icons/`, `vault.svg`, `obsidian.png`, `render/` with `render.mjs`, `page.html`, `page.js`, `excalidraw.js`,
+`icons/`, `vault.svg`, `render/` with `render.mjs`, `page.html`, `page.js`, `excalidraw.js`,
 `lzstring.js`), `keys.json`, `examples/sample-vault/`.
 
 `mods/vault/mod.json`: `{ "place": "none", "title": "Vault", "overlay": { "kind": "popup", "at": "top", "offset": 40, "width": 420, "height": 640 } }`
@@ -114,13 +114,13 @@ and the placement has not been checked on a small window, see Watch out).
 itself; the reader is opened by the panel with `openOverlay({ mod: "vault-reader", kind: "window",
 key: "vault-reader", width: 0.78, height: 0.86, props: { vault, file } })`.
 
-Reader props: `{ vault: absolute folder, file: vault-relative path, anchor?: heading or ^block, kept?: true,
-id?: pane id of an "obsidian" tab, overlay? }`; `{ menu: true, window, vault, file, anchor, overlay }` draws the
+Reader props: `{ vault: absolute folder, file: vault-relative path, anchor?: heading or ^block, kept?: true
+(a pane of an "obsidian" tab), overlay? }`; `{ menu: true, window, vault, file, anchor, overlay }` draws the
 Keep menu as a popup.
 
-Shared keys (persisted, the stable contract that the portrait layout reads, frozen): `vault.list`
-`[{ path, name }]`, `vault.current` (path), `vault.open` `{ vault, file, token }` (what the floating reader shows),
-`vault.panes` (pane id to `{ vault, file, id }`). Additive keys, not part of the frozen four: `vault.outside` (the
+Shared keys (persisted, the stable contract, frozen): `vault.list` `[{ path, name }]`, `vault.current` (path),
+`vault.open` `{ vault, file, token }` (what the floating reader shows). Additive keys, not part of the frozen three:
+`vault.outside` (the
 vaults of Obsidian's list that are outside the home folder) and `vault.adding` (internal: set while a folder picker
 is open, so the docked and the popup copy of the panel agree; it expires after 2 minutes). Commands, delivered to
 the panel's `nextCommand()`: `vault.add` (the selector menu's "Add vault…") and `vault.import` ("Import from
@@ -128,7 +128,7 @@ Obsidian"); the reader gets `focus`. Local storage: `open:<vault path>` keeps ex
 
 `herdr` functions used: `theme`, `props`, `shared`, `setShared`, `pickFolder`, `readTextFile`, `watchFolder`,
 `exec`, `home`, `appHome`, `window`, `notify`, `openOverlay`, `closeOverlay`, `settings`, `nextCommand`, `run`,
-`spaces`, `panes`, `focused`. Commands run: `tab.new`, `tab.select`, `pane.split`, `vault.add`, `vault.import`.
+`spaces`, `panes`. Commands run: `tab.new`, `tab.select`, `pane.split`, `vault.add`, `vault.import`.
 gpui-kit and gpui-base: `View`, `div`, `svg`, `image`, `v_flex`, `h_flex`, `InputState`, `Input`, `TextView`.
 
 Programs run through `exec` (none are bundled; each is optional and its absence is reported in the UI): `rg`
@@ -140,8 +140,8 @@ Windows; Windows does not use `cmd /c start`, which would read an `&` in a link 
 that is not on Herdr's PATH, and on macOS only, as fallbacks, `qlmanage` and `sips`. Every operating-system-specific
 path, name and command lives in one `platform.js` per mod.
 
-Art: Lucide icons (`icons/*.svg`, ISC) and a generic gem for the vault icon (`vault.svg`, with `obsidian.png` a
-PNG copy kept at that path because another layout loads it). The Obsidian logo is not included.
+Art: Lucide icons (`icons/*.svg`, ISC) and a generic gem for the vault icon (`vault.svg`). The Obsidian logo is not
+included.
 
 ## Watch out
 
@@ -198,9 +198,8 @@ jobs after 24 seconds so a batch stays under Herdr's 30 second `exec` limit and 
 - `watchFolder` can be refused for very large trees on Linux; do not assume it works, show a hint.
 - Back must not use `[` with the platform modifier alone: off macOS that is the Windows key. Use Alt+Left and
   Backspace everywhere, Cmd+[ on macOS only.
-- Stable contract with `herdr-portrait-layout`: mod names `vault` and `vault-reader`, the four shared keys, the
-  commands `vault.add` and `vault.import`, the tab name `obsidian`, the reader props, and the files
-  `mods/vault-reader/obsidian.png` and `mods/vault/icons/book-open.svg` (the portrait layout draws it).
+- Stable contract, for the layouts and keys a person writes: mod names `vault` and `vault-reader`, the three
+  shared keys, the commands `vault.add` and `vault.import`, the tab name `obsidian` and the reader props.
   `node scripts/check-repo.mjs` fails if one disappears.
 - `examples/sample-vault` is the only vault in this repo and contains no real data; use it for screenshots.
 
@@ -225,6 +224,5 @@ Each line is something a build really does, and the commands run on all three op
    Poppler a visible line saying what to install.
 7. With the headless-render prerequisites missing, a Mermaid block shows its source and one line naming the
    missing piece; with them present it shows a picture.
-8. "Keep ▾ then New tab" creates a tab named `obsidian` with the note, and `shared("vault.panes")` has an entry for
-   its pane.
+8. "Keep ▾ then New tab" creates a tab named `obsidian` with the note as its pane.
 9. No file in the repo contains a home path, an e-mail address or a real name outside `LICENSE` and `NOTICE`.

@@ -251,13 +251,6 @@
   "pattern": "\"vault\\.import\""
  },
  {
-  "id": "contract-vault.panes",
-  "doc": "docs/configuration.html",
-  "docText": "vault.panes shared key",
-  "code": "mods/vault-reader/main.js",
-  "pattern": "\"vault\\.panes\""
- },
- {
   "id": "contract-tab",
   "doc": "docs/configuration.html",
   "docText": "obsidian tab name",
@@ -333,13 +326,6 @@
   "docText": "Vault images over 40 MB are not shown; web images over 20 MB are not downloaded",
   "code": "mods/vault-reader/assets-core.js",
   "pattern": "\\bIMAGE_MAX_BYTES\\s*=\\s*40_000_000\\b"
- },
- {
-  "id": "book-open-contract",
-  "doc": "docs/configuration.html",
-  "docText": "mods/vault/icons/book-open.svg file",
-  "code": "mods/vault/icons/book-open.svg",
-  "pattern": "<svg"
  },
  {
   "id": "rows-max",

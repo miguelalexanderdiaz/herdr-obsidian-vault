@@ -1,6 +1,6 @@
 # Installs this repository's layout or mods into your Herdr home (Windows; macOS and Linux:
-# install/install.sh). The same file is in herdr-portrait-layout, herdr-agents-waiting and
-# herdr-obsidian-vault: only the $Repo line differs, and what it installs is in install/manifest.
+# install/install.sh). The same installer can serve other repositories: only the $Repo line
+# differs, and what it installs is in install/manifest.
 #
 #   irm https://raw.githubusercontent.com/<Repo>/main/install/install.ps1 | iex
 #   $env:HERDR_YES = 1; irm .../install/install.ps1 | iex          no questions
