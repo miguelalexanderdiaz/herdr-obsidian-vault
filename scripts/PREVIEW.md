@@ -1,7 +1,10 @@
 # How to take `preview.png`
 
 Agents may not drive the running Herdr app, so the screenshot is a one-time author step. Save it as
-`preview.png` at the repo root (RECIPE.md already links it).
+`preview.png` at the repo root, copy it to `docs/assets/preview.png`, and open the blocks marked
+`<!-- publish: preview -->` (`rg "publish: preview"`: RECIPE.md, README.md, docs/index.html) by deleting the first and
+last line of each comment. Until then the repository shows a labelled schematic (`docs/assets/layout.svg`), not a
+screenshot, and `check-repo --release` keeps failing on the missing file.
 
 - **Content:** only `examples/sample-vault`. Never a real vault, a real window title, a real space or agent name,
   or a terminal with your prompt. Add the sample vault with the panel's "Add vault" item (it has a
