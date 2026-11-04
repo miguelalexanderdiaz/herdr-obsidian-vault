@@ -24,6 +24,10 @@ const CONTRACT = {
   compatImage: "mods/vault-reader/obsidian.png",
 };
 // The Obsidian logo that was imported by mistake. It is judged by content, never by file name (PLAN D2).
+// ctrl-shift-<letter> chords Herdr binds by default (Linux/Windows defaults of Herdr 0.1.12; macOS has none of
+// these) plus the ones the sibling portrait layout binds. keys.json must not take them.
+const TAKEN_CHORDS = new Set(["ctrl-shift-b", "ctrl-shift-n", "ctrl-shift-t", "ctrl-shift-k", "ctrl-shift-p", "ctrl-shift-o", "ctrl-shift-e",
+  "ctrl-shift-w", "ctrl-shift-x", "ctrl-shift-z", "ctrl-shift-l", "ctrl-shift-c", "ctrl-shift-v", "ctrl-shift-f", "ctrl-shift-g", "ctrl-shift-y", "ctrl-shift-j"]);
 const LOGO_SHA256 = "df5329070f7ff72c589e97abae5498f5bbe0d3fa8f59fdad4867856666e7911f";
 const LOGO_GIT_BLOB = "7c7b02d475b3edb51bceabe36f08f3257df47061";
 
@@ -130,6 +134,7 @@ if (has("keys.json")) {
         if (/^(?:cmd|super)-/.test(key) || /-(?:cmd|super)-/.test(key)) {
           r.error(`keys.json: "${key}" uses cmd/super, which differs per OS; use ctrl-shift-<letter> or alt-<key>`);
         }
+        if (TAKEN_CHORDS.has(key)) r.error(`keys.json: "${key}" is already a Herdr default (or the portrait layout's); pick a free chord`);
         if (/^ctrl-[a-z]$/.test(key)) r.error(`keys.json: "${key}" is a plain ctrl+letter that programs in the terminal rely on`);
         const open = /^mod\.(?:open|clone):(.+)$/.exec(action);
         if (open && !CONTRACT.mods.includes(open[1])) r.error(`keys.json: "${action}" names a mod this repo does not ship`);

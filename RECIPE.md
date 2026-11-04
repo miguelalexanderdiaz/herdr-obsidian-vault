@@ -75,7 +75,7 @@ is drawn as a note. Foldable callouts (`[!tip]-`) can be collapsed.
 - **Keep ▾:** "New tab" creates a Herdr tab named `obsidian` holding the note as a pane; "Add to obsidian"
   splits one more note below the others in that tab. A kept pane has no close X and no Esc; it can take the
   keyboard through `pane.go`.
-- **Key:** `ctrl-shift-e` toggles the Vault panel popup (`keys.json`, `mod.open:vault`).
+- **Key:** `ctrl-shift-m` toggles the Vault panel popup (`keys.json`, `mod.open:vault`).
 - **Shared state** other mods may read: `vault.list`, `vault.current`, `vault.open`, `vault.panes` (see Built from).
 
 Degraded behaviour, always a visible one-line message, never a stack trace or raw JSON: no ripgrep, search says
@@ -133,9 +133,9 @@ PNG copy kept at that path because another layout loads it). The Obsidian logo i
 | Vault content | read only | Nothing is ever written to a vault. |
 
 **Assumptions about your setup.** None about theme, fonts or keys: colours come from Herdr's theme, the font from
-Herdr's settings with generic fallbacks, and the one binding is `ctrl-shift-e` (no `cmd-`, no plain ctrl+letter).
+Herdr's settings with generic fallbacks, and the one binding is `ctrl-shift-m` (no `cmd-`, no plain ctrl+letter).
 It is a global key: check `herdr-app commands` and your own `keys.json`, and when asked to merge, keep your key
-if `ctrl-shift-e` is already used (open the panel with `mod.open` from the palette instead).
+if `ctrl-shift-m` is already used (open the panel with `mod.open` from the palette instead).
 
 **Requirements per operating system, what is lost without each, and the exact messages** are in the docs
 (`docs/requirements.html`); this recipe only states the behaviour. In short: ripgrep gives search; Node 22 or newer
@@ -171,7 +171,7 @@ Each line is something a build really does, and the commands run on all three op
 1. `herdr-app check <path>/mods/vault` and `herdr-app check <path>/mods/vault-reader` both print `check passed`.
 2. `node --test tests/` passes with Node 22 or newer, with no Chrome, Obsidian, ripgrep or Poppler installed.
 3. `node scripts/check-repo.mjs` and `node scripts/privacy-scan.mjs` both exit 0.
-4. Pressing `ctrl-shift-e` opens the 420 x 640 panel, whose selector lists the vaults of Obsidian's own list,
+4. Pressing `ctrl-shift-m` opens the 420 x 640 panel, whose selector lists the vaults of Obsidian's own list,
    or, with none, an empty state with an "Add vault" button; adding `examples/sample-vault` selects it and the
    tree shows the folders `attachments` and `projects` first, then `Board`, `Feature tour`, `Flow sketch` and
    `Other note`.
