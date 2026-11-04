@@ -20,7 +20,7 @@ Agents may not do these: they change visibility, settings, topics or need the li
    ubuntu, windows and macos jobs are green.
 6. **Run everything locally once on your machine:**
    ```
-   node --test tests/
+   npm test
    node scripts/check-repo.mjs --release
    node scripts/privacy-scan.mjs        # add your real names, employer and project names to scripts/.privacy-words first
    node scripts/check-docs.mjs

@@ -126,7 +126,7 @@ PNG copy kept at that path because another layout loads it). The Obsidian logo i
 | --- | --- | --- |
 | Network | `mods/vault-reader/assets.js` | A remote image (`![](https://...)`) in a note is downloaded with `curl` when the note opens, so the image host sees your IP address. A reader setting `remoteImages` (stored in `data/vault/settings.json`, default on, as in Obsidian) turns it off. Nothing else is sent anywhere. |
 | Local server | `render/render.mjs` | The headless browser loads a render page from a loopback HTTP server on `127.0.0.1` and a random port, with background networking disabled. It is not reachable from other machines. |
-| Programs (`exec`) | see Built from | `rg`, `node`, browser, `pdftoppm`, `pdfinfo`, `curl`, the system opener. Arguments are passed as an array, never through a shell string. No `hc`. |
+| Programs (`exec`) | see Built from | `rg`, `node`, browser, `pdftoppm`, `pdfinfo`, `curl`, the system opener, and on macOS only, as fallbacks, `qlmanage` (page 1 of a PDF without Poppler) and `sips` (size of AVIF and TIFF images). Arguments are passed as an array, never through a shell string. No `hc`. |
 | Reads outside the mod folder | home folder only | Obsidian's `obsidian.json` vault list, every vault folder you pick (`readdir`, `readTextFile`, `watchFolder`), and, by Node, Obsidian's `obsidian.asar` to take Mermaid and MathJax from. Herdr mods cannot read outside the home folder, so a vault elsewhere is listed as not readable. |
 | Writes outside the mod folder | `<Herdr home>/data/vault/` | `cache/` (rendered pictures and copied images), `lib/` (libraries extracted from your Obsidian install), `chrome/` (a temporary browser profile per job), `settings.json`. Never inside a mod folder, because Herdr reloads a mod when its folder changes. The cache is pruned at reader start: entries older than 30 days, then oldest first until under 200 MB. Deleting `data/vault/` is always safe. |
 | Links | notes and canvas cards | Only `http`, `https` and `mailto` links are handed to the system opener. |
@@ -169,7 +169,7 @@ from the user's own install is not built.
 Each line is something a build really does, and the commands run on all three operating systems:
 
 1. `herdr-app check <path>/mods/vault` and `herdr-app check <path>/mods/vault-reader` both print `check passed`.
-2. `node --test tests/` passes with Node 22 or newer, with no Chrome, Obsidian, ripgrep or Poppler installed.
+2. `npm test` passes with Node 22 or newer, with no Chrome, Obsidian, ripgrep or Poppler installed.
 3. `node scripts/check-repo.mjs` and `node scripts/privacy-scan.mjs` both exit 0.
 4. Pressing `ctrl-shift-m` opens the 420 x 640 panel, whose selector lists the vaults of Obsidian's own list,
    or, with none, an empty state with an "Add vault" button; adding `examples/sample-vault` selects it and the
