@@ -1,0 +1,76 @@
+Herdr Obsidian Vault
+Copyright 2026 Miguel Chitiva Diaz
+
+This product includes software developed by the people named below. The
+project itself is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Trademarks and affiliation
+--------------------------
+Obsidian is a trademark of its owner (see https://obsidian.md/brand). This
+project is not affiliated with, endorsed by, or sponsored by Obsidian. It
+reads folders in the open Markdown format that Obsidian also uses, and it does
+not include, copy or modify the Obsidian logo, name artwork or application
+files. Herdr is a product of its own authors; this project is a community mod
+for it and is not affiliated with them either.
+
+Third-party material included in this repository
+------------------------------------------------
+1. Lucide icons (ISC License, with parts under the MIT License)
+   Files: mods/vault/icons/*.svg, mods/vault-reader/icons/*.svg
+   Copyright (c) Lucide Contributors; portions Copyright (c) Cole Bemis (Feather)
+   Source: https://lucide.dev
+   License text: mods/vault/icons/LICENSE-lucide.txt and
+   mods/vault-reader/icons/LICENSE-lucide.txt
+
+2. lz-string, decompressFromBase64 (MIT License)
+   File: mods/vault-reader/render/lzstring.js (a port of the decompressor)
+   Copyright (c) pieroxy
+   Source: https://github.com/pieroxy/lz-string
+   Used to read the compressed drawing data that the Excalidraw plugin stores
+   in .excalidraw.md files.
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to
+   deal in the Software without restriction, including without limitation the
+   rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+   sell copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+   IN THE SOFTWARE.
+
+3. Generic vault icon (mods/vault/vault.svg, mods/vault-reader/vault.svg and
+   the compatibility images mods/vault/obsidian.png and
+   mods/vault-reader/obsidian.png): the Lucide "gem" icon (ISC), rendered to
+   PNG for the compatibility images. They replace the earlier Obsidian logo,
+   which is not distributed.
+
+4. Callout colours: the callout types and their colours follow the defaults of
+   the Obsidian application's own theme (colour values only; no code, text or
+   artwork was copied).
+
+Material that is NOT included and is read at run time
+-----------------------------------------------------
+The diagrams and maths in a note are drawn by Mermaid and MathJax. This
+project does not contain or redistribute them. When rendering is needed, the
+mod reads them from the Obsidian application that the user has installed on
+their own machine and copies them into the mod's data folder
+(<Herdr home>/data/vault/lib) on that machine only. Those libraries stay under
+their own licenses (Mermaid: MIT, MathJax: Apache-2.0) and under Obsidian's
+terms for its application files. Without Obsidian installed, notes still open
+and diagrams or maths are shown as source text.
+
+Programs started on the user's machine (not included)
+-----------------------------------------------------
+Depending on the operating system and the feature used, the mods start
+ripgrep, Node.js, a Chromium-family browser in headless mode, Poppler's
+pdftoppm and pdfinfo, and the system's file opener. None of them is bundled;
+each keeps its own license.
