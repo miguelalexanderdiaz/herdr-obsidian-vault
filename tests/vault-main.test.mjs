@@ -14,6 +14,7 @@ const store = new Map();
 globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
 const { herdrTest } = await import("./stubs/herdr.mjs");
 const { default: Vault } = await import("../mods/vault/main.js");
+const { normPath } = await import("../mods/vault/platform.js");
 
 const tick = () => new Promise((r) => setImmediate(r));
 // Loops like nextCommand() never finish, so wait a moment instead of awaiting the tasks.
@@ -112,7 +113,8 @@ test("add-vault checks for a .obsidian folder, normalizes the path, and releases
   fs.mkdirSync(path.join(good, ".obsidian"), { recursive: true });
   herdrTest.pickFolder = async () => good + "/";
   await v.addVault();
-  assert.deepEqual(herdrTest.shared.get("vault.list").at(-1), { path: good, name: "Fresh" });
+  // The stored path is normalized: forward slashes on Windows too.
+  assert.deepEqual(herdrTest.shared.get("vault.list").at(-1), { path: normPath(good), name: "Fresh" });
   const plain = path.join(home, "Plain");
   fs.mkdirSync(plain);
   herdrTest.pickFolder = async () => plain;
@@ -229,4 +231,15 @@ test("5,000 files in a folder: the folder cap plus the more-row, never 5,000 row
   const all = v.rows("", 0, [], T);
   assert.equal(all.length, ROWS_MAX);
   assert.equal(all.over, true);
+});
+
+test("vault paths match whatever separator they arrive with (Windows CI regression)", async () => {
+  reset(makeHome("linux", () => []));
+  const { v } = await start();
+  herdrTest.shared.set("vault.list", [{ path: "C:/Users/x/A", name: "A" }, { path: "C:/Users/x/B", name: "B" }]);
+  herdrTest.shared.set("vault.current", "C:\\Users\\x\\B");
+  assert.equal(v.current()?.name, "B", "a backslash vault.current still selects its vault");
+  v.removeVault("C:\\Users\\x\\B");
+  assert.deepEqual(herdrTest.shared.get("vault.list").map((x) => x.name), ["A"], "and removes it");
+  assert.equal(herdrTest.shared.get("vault.current"), "C:/Users/x/A", "the selection moves to the next vault");
 });

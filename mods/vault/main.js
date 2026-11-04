@@ -24,6 +24,9 @@ import { Watcher, POLL_MS, LIVE_OFF } from "./watch.js";
 import { MOD, MOD_DIR, READER } from "./mod-name.js";
 
 const ICON = `${MOD_DIR}/icons`;
+// Vault paths are stored normalized, but one can reach the shared state with Windows
+// backslash separators, so every comparison goes through normPath.
+const samePath = (a, b) => a != null && b != null && normPath(a) === normPath(b);
 const MENU_W = 300;
 const PER_FOLDER = 2000;
 export const ROWS_MAX = 3000; // rows drawn in all open folders together: every render builds an element per row
@@ -102,7 +105,7 @@ export default class Vault extends View {
     const res = await obsidianVaults();
     this.importInfo = res.found ? null : `Obsidian's vault list wasn't found (looked in ${res.looked.map(tilde).join(", ")}).`;
     const have = this.list();
-    const fresh = res.vaults.filter((v) => !have.some((h) => h.path === v.path));
+    const fresh = res.vaults.filter((v) => !have.some((h) => samePath(h.path, v.path)));
     const list = first ? res.vaults : [...have, ...fresh];
     setShared("vault.list", list);
     setShared("vault.outside", res.outside);
@@ -113,7 +116,7 @@ export default class Vault extends View {
   list() { return shared("vault.list") ?? []; }
   current() {
     const cur = shared("vault.current");
-    return this.list().find((v) => v.path === cur) ?? this.list()[0] ?? null;
+    return this.list().find((v) => samePath(v.path, cur)) ?? this.list()[0] ?? null;
   }
 
   // ---- the selected vault's files --------------------------------------------------
@@ -311,23 +314,23 @@ export default class Vault extends View {
       if (!insideHome(path, home(), window().platform === "windows")) {
         notify({ title: "Vault outside your home folder", body: `Herdr mods can only read inside your home folder, so ${nameOf(path)} can't be added. A link to it from inside your home folder may work.`, level: "warning" });
         const out = shared("vault.outside") ?? [];
-        if (!out.some((o) => o.path === path)) setShared("vault.outside", [...out, { path, name: nameOf(path) }]);
+        if (!out.some((o) => samePath(o.path, path))) setShared("vault.outside", [...out, { path, name: nameOf(path) }]);
         return;
       }
       if (!(await fs.exists(`${path}/.obsidian`).catch(() => false))) {
         notify({ title: "Not an Obsidian vault", body: `${tilde(path)} has no .obsidian folder. Pick the vault's own folder (open it in Obsidian once if it's new).`, level: "warning" });
         return;
       }
-      const list = this.list().filter((v) => v.path !== path);
+      const list = this.list().filter((v) => !samePath(v.path, path));
       setShared("vault.list", [...list, { path, name: nameOf(path) }]);
       setShared("vault.current", path);
     } finally { setShared("vault.adding", null); }
   }
 
   removeVault(path) {
-    const list = this.list().filter((v) => v.path !== path);
+    const list = this.list().filter((v) => !samePath(v.path, path));
     setShared("vault.list", list);
-    if (shared("vault.current") === path) setShared("vault.current", list[0]?.path ?? null);
+    if (samePath(shared("vault.current"), path)) setShared("vault.current", list[0]?.path ?? null);
   }
 
   // ---- drawing ------------------------------------------------------------------------
@@ -428,11 +431,11 @@ export default class Vault extends View {
   menu(p) {
     const t = theme();
     const cur = this.current()?.path;
-    const outside = (shared("vault.outside") ?? []).filter((v) => !this.list().some((h) => h.path === v.path));
+    const outside = (shared("vault.outside") ?? []).filter((v) => !this.list().some((h) => samePath(h.path, v.path)));
     const item = (v, i) => h_flex().id(`vm-${i}`).px(8).py(6).gap(8).items_center().rounded(6).cursor_pointer()
       .hover((el) => el.bg(t.hover))
       .on_click(() => { setShared("vault.current", v.path); closeOverlay(p.overlay); })
-      .child(v.path === cur ? svg(`${ICON}/check.svg`).size(13).flex_none().text_color(t.accent) : div().w(13).flex_none())
+      .child(samePath(v.path, cur) ? svg(`${ICON}/check.svg`).size(13).flex_none().text_color(t.accent) : div().w(13).flex_none())
       .child(v_flex().flex_1().min_w(0)
         .child(div().truncate().text_size(12.5).text_color(t.foreground).child(v.name))
         .child(div().overflow_hidden().whitespace_nowrap().text_ellipsis_start().text_size(11).text_color(t.dim).child(tilde(v.path))))
