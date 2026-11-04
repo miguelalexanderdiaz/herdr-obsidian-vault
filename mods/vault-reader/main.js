@@ -6,21 +6,18 @@
 // window; later kept as a pane in an "obsidian" tab (props.kept).
 //
 // Props: { vault: absolute folder, file: vault-relative path, anchor?: heading | ^block,
-//          kept?: true, id? (a pane of an "obsidian" tab), overlay? }
+//          kept?: true (a pane of an "obsidian" tab), overlay? }
 //        { menu: true, window, vault, file, anchor, overlay }: the Keep ▾ menu (a popup).
 //
 // Keep ▾ → New tab: a tab named "obsidian" whose pane is this note.
 // Keep ▾ → Add to obsidian: one more pane, below the notes of that tab.
-// A kept pane records which note it shows in shared "vault.panes" (pane id →
-// { vault, file, id }), so the space tree (portrait-tree) and the pane header
-// (portrait-pane) show the Obsidian logo and the note's name.
 //
 // Mermaid, math and Excalidraw are drawn by render/render.mjs (headless Chrome
 // with Obsidian's own Mermaid and MathJax); pictures are cached in data/vault/cache.
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, TextView } from "gpui-base";
-import { props, theme, exec, readTextFile, watchFolder, closeOverlay, notify, run, shared, setShared, openOverlay, settings, spaces, panes, focused, nextCommand } from "herdr";
+import { props, theme, exec, readTextFile, watchFolder, closeOverlay, notify, run, shared, setShared, openOverlay, settings, spaces, panes, nextCommand } from "herdr";
 import * as fs from "fs/promises";
 import { makeResolver, parseSize, parseLinkUrl, safeUrl } from "./parse.js";
 import { buildDoc, kindOf, readNote } from "./doc.js";
@@ -93,9 +90,6 @@ export default class Reader extends View {
           cx.notify();
         }
       });
-      // Which pane is mine: known from an earlier run, else the vault-reader pane that
-      // has the focus right after tab.new / pane.split made it.
-      if (!this.claim()) for (const ms of [60, 200, 500, 1000, 2000]) cx.timer.after(ms, (cx) => { if (!this.pane && this.claim()) cx.notify(); });
     }
     this.announce();
     loadSettings().then((st) => { this.remoteImages = st.remoteImages; cx.notify(); }).catch(() => {});
@@ -105,26 +99,9 @@ export default class Reader extends View {
     if (!pruned) { pruned = true; cx.timer.after(8000, (cx) => cx.spawn(async () => { await pruneCache().catch(() => {}); })); }
   }
 
-  // Which note the floating reader shows (the Vault list marks it); a kept
-  // pane records its note for the space tree (mods/portrait-tree).
+  // Which note the floating reader shows (the Vault list marks it).
   announce() {
-    if (!this.kept) { setShared("vault.open", { vault: this.vault, file: this.file, token: this.token }); return; }
-    if (!this.pane) return;
-    const live = new Set(panes().map((x) => x.pane));
-    const all = Object.fromEntries(Object.entries(shared("vault.panes") ?? {}).filter(([pane]) => live.has(pane) || pane.includes("/")));
-    all[this.pane] = { vault: this.vault, file: this.file, id: (props() ?? {}).id ?? null };
-    setShared("vault.panes", all);
-  }
-
-  claim() {
-    const id = (props() ?? {}).id;
-    const map = shared("vault.panes") ?? {};
-    const known = id && Object.entries(map).find(([, v]) => v.id === id);
-    if (known && panes().some((x) => x.pane === known[0])) { this.pane = known[0]; this.announce(); return true; }
-    const f = focused();
-    const mine = f?.pane && panes().find((x) => x.pane === f.pane && x.mod === MOD);
-    if (mine && !(map[mine.pane] && map[mine.pane].id !== id)) { this.pane = mine.pane; this.announce(); return true; }
-    return false;
+    if (!this.kept) setShared("vault.open", { vault: this.vault, file: this.file, token: this.token });
   }
 
   async close() {
@@ -133,11 +110,6 @@ export default class Reader extends View {
     this.pollTask?.cancel();
     this.relistTimer?.cancel();
     if (!this.kept && shared("vault.open")?.token === this.token) setShared("vault.open", null);
-    // A kept pane that goes leaves no stale entry for the space tree (same keys and shape).
-    if (this.kept && this.pane) {
-      const map = shared("vault.panes");
-      if (map && this.pane in map) { const { [this.pane]: _gone, ...rest } = map; setShared("vault.panes", rest); }
-    }
   }
 
   // ---- loading ----------------------------------------------------------------
@@ -519,7 +491,6 @@ export default class Reader extends View {
   menu(p) {
     const t = theme();
     const note = { vault: p.vault, file: p.file, anchor: p.anchor ?? null, kept: true };
-    const newId = () => `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const done = () => { if (p.window) closeOverlay(p.window); closeOverlay(p.overlay); };
     const tabs = Reader.obsidianTabs();
     const item = (id, label, hint, action) => v_flex().id(id).px(10).py(6).rounded(6).cursor_pointer()
@@ -528,15 +499,15 @@ export default class Reader extends View {
       .child(div().text_size(11).text_color(t.dim).child(hint));
     return v_flex().id("vr-menu").w_full().p(4).gap(1).bg(t.raised)
       .child(item("keep-tab", "New tab", "A tab named obsidian, with this note", () => {
-        run("tab.new", { name: "obsidian", mod: MOD, props: { ...note, id: newId() } });
+        run("tab.new", { name: "obsidian", mod: MOD, props: note });
         done();
       }))
       .children(tabs.map((tab, i) => item(`keep-add-${i}`, tabs.length > 1 ? `Add to obsidian (tab ${tab.index})` : "Add to obsidian",
         `One more note in that tab (${tab.panes} now)`, () => {
           const last = panes().filter((x) => x.tab === tab.id).pop();
           run("tab.select", { id: tab.id });
-          if (last) run("pane.split", { pane: last.pane, direction: "down", mod: MOD, props: { ...note, id: newId() } });
-          else run("tab.new", { name: "obsidian", mod: MOD, props: { ...note, id: newId() } });
+          if (last) run("pane.split", { pane: last.pane, direction: "down", mod: MOD, props: note });
+          else run("tab.new", { name: "obsidian", mod: MOD, props: note });
           done();
         })));
   }

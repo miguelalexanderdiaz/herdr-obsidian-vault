@@ -33,7 +33,7 @@
 <main id="content">
 <div class="wrap">
 <h1>Configuration</h1>
-<p class="lede">There is no settings screen. What can be changed is below, and everything that other mods or layouts may rely on is in the contract table.</p>
+<p class="lede">There is no settings screen. What can be changed is below, and everything your own layouts, keys or mods may rely on is in the contract table.</p>
 
 <h2 id="settings">Settings</h2>
 <div class="table-wrap" role="region" aria-label="Settings" tabindex="0"><table>
@@ -64,22 +64,19 @@
 </tbody></table></div>
 
 <h2 id="contract">Public contract</h2>
-<p>Other layouts and mods (the <em>herdr-portrait-layout</em> layout, for one) rely on these names. They do not change without a note on that project&rsquo;s board. Do not rename them in a fork you want to stay compatible with. Today that layout reads the shared key <code>vault.panes</code>, treats a pane of the mod <code>vault-reader</code> as a note, and draws <code>mods/vault/icons/book-open.svg</code>; it does not read <code>vault.list</code>, <code>vault.current</code> or <code>vault.open</code>, which stay for other layouts.</p>
+<p>A layout block, a key binding or a mod of your own can use these names, so they do not change between releases without a note in the changelog. Do not rename them in a fork you want to stay compatible with.</p>
 <div class="table-wrap" role="region" aria-label="Public contract" tabindex="0"><table id="contract-table">
 <thead><tr><th scope="col">Name</th><th scope="col">Kind</th><th scope="col">Shape and meaning</th></tr></thead>
 <tbody>
 <tr><th scope="row"><code>vault</code></th><td>mod</td><td>The panel. Also draws its own picker menu when opened with the prop <code>menu: true</code>.</td></tr>
-<tr><th scope="row"><code>vault-reader</code></th><td>mod</td><td>The reader. Props: <code>{ vault, file, anchor?, kept?, id?, overlay? }</code> where <code>vault</code> is an absolute folder and <code>file</code> a path inside it. The Keep menu uses <code>{ menu: true, window, vault, file, anchor, overlay }</code>.</td></tr>
+<tr><th scope="row"><code>vault-reader</code></th><td>mod</td><td>The reader. Props: <code>{ vault, file, anchor?, kept?, overlay? }</code> where <code>vault</code> is an absolute folder and <code>file</code> a path inside it. The Keep menu uses <code>{ menu: true, window, vault, file, anchor, overlay }</code>.</td></tr>
 <tr><th scope="row"><code>vault.list</code></th><td>shared key</td><td><code>[{ path, name }]</code>, the vaults shown in the picker.</td></tr>
 <tr><th scope="row"><code>vault.current</code></th><td>shared key</td><td>Path of the selected vault.</td></tr>
 <tr><th scope="row"><code>vault.open</code></th><td>shared key</td><td><code>{ vault, file, token } | null</code>, the note the floating reader shows; the panel highlights it.</td></tr>
-<tr><th scope="row"><code>vault.panes</code></th><td>shared key</td><td><code>{ [pane id]: { vault, file, id } }</code>, notes kept in panes, so a tree or pane header can show their names.</td></tr>
 <tr><th scope="row"><code>vault.outside</code></th><td>shared key</td><td><code>[{ path, name }]</code>, vaults Obsidian knows that lie outside the home folder. Added in this release; it does not change the shape of <code>vault.list</code>.</td></tr>
 <tr><th scope="row"><code>vault.add</code></th><td>mod command</td><td>Sent to <code>vault</code> by its picker menu (and by a key that you bind) to open the add-vault folder picker.</td></tr>
 <tr><th scope="row"><code>vault.import</code></th><td>mod command</td><td>Sent to <code>vault</code> by the <em>Import from Obsidian</em> menu item to read Obsidian&rsquo;s vault list again. Additive.</td></tr>
 <tr><th scope="row"><code>obsidian</code></th><td>tab name</td><td>Kept notes go in a tab with this name. Matched without regard to case.</td></tr>
-<tr><th scope="row"><code>mods/vault/icons/book-open.svg</code></th><td>file</td><td>Drawn by the bar of the portrait layout when the vault mod is installed. Keep the path.</td></tr>
-<tr><th scope="row"><code>mods/vault-reader/obsidian.png</code></th><td>file</td><td>Kept for older copies of the portrait layout. That project&rsquo;s board has confirmed that its current layout uses neither this file nor <code>vault.svg</code>, so they may be removed in a later cleanup. The content is a generic gem, not the Obsidian logo. <code>vault.svg</code> beside it is the vector version.</td></tr>
 </tbody></table></div>
 
 <h2 id="limits">Limits in the code</h2>
@@ -109,7 +106,7 @@
 <li><code>data/vault/lib</code>: Mermaid and MathJax copied from your Obsidian installation, once per Obsidian version.</li>
 <li><code>data/vault/chrome-&hellip;</code>: a private, temporary profile of the headless browser, one per run, removed when the run ends (leftovers older than an hour are swept).</li>
 <li><code>data/vault/settings.json</code>: the settings above.</li>
-<li>Herdr shared state (<code>shared.json</code>): the keys of the contract table (<code>vault.list</code>, <code>vault.current</code>, <code>vault.outside</code>, <code>vault.open</code>, <code>vault.panes</code>), and one internal key, <code>vault.adding</code>. <code>vault.adding</code> is not part of the contract: it holds the time at which an Add vault folder picker was opened, so the docked panel and the popup copy do not open two pickers, and a picker abandoned for two minutes no longer blocks. Herdr&rsquo;s per-mod storage: <code>open:&lt;vault path&gt;</code>, the open folders of the tree.</li>
+<li>Herdr shared state (<code>shared.json</code>): the keys of the contract table (<code>vault.list</code>, <code>vault.current</code>, <code>vault.outside</code>, <code>vault.open</code>), and one internal key, <code>vault.adding</code>. <code>vault.adding</code> is not part of the contract: it holds the time at which an Add vault folder picker was opened, so the docked panel and the popup copy do not open two pickers, and a picker abandoned for two minutes no longer blocks. Herdr&rsquo;s per-mod storage: <code>open:&lt;vault path&gt;</code>, the open folders of the tree.</li>
 </ul>
 <div class="pager"><a href="requirements.html" rel="prev">&larr; Requirements</a><a href="privacy.html" rel="next">Privacy &rarr;</a></div>
 </div>

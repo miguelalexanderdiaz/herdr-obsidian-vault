@@ -49,11 +49,9 @@ Third-party material included in this repository
    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
    IN THE SOFTWARE.
 
-3. Generic vault icon (mods/vault/vault.svg, mods/vault-reader/vault.svg and
-   the compatibility images mods/vault/obsidian.png and
-   mods/vault-reader/obsidian.png): the Lucide "gem" icon (ISC), rendered to
-   PNG for the compatibility images. They replace the earlier Obsidian logo,
-   which is not distributed.
+3. Generic vault icon (mods/vault/vault.svg and mods/vault-reader/vault.svg):
+   the Lucide "gem" icon (ISC). It replaces the earlier Obsidian logo, which is
+   not distributed.
 
 4. Callout colours: the callout types and their colours follow the defaults of
    the Obsidian application's own theme (colour values only; no code, text or

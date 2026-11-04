@@ -21,19 +21,16 @@ const files = repoFiles();
 const has = (f) => files.includes(f);
 const r = new Report(RELEASE ? "check-repo --release" : "check-repo");
 
-// ---- The contract with herdr-portrait-layout (PLAN section 6). Do not edit without a post on that board. ----
+// ---- The public contract (docs/configuration.html#contract): names a person's own layouts and keys rely on. ----
 const CONTRACT = {
   mods: ["vault", "vault-reader"],
-  sharedKeys: ["vault.list", "vault.current", "vault.open", "vault.panes"],
+  sharedKeys: ["vault.list", "vault.current", "vault.open"],
   commands: ["vault.add"],
   tabName: "obsidian",
-  readerProps: ["vault", "file", "anchor", "kept", "id", "overlay"],
-  compatImage: "mods/vault-reader/obsidian.png",
-  // Drawn by herdr-portrait-layout's bar strip (its bar-strip/main.js, allow-listed in its tests): a frozen path (PLAN D11).
-  iconPaths: ["mods/vault/icons/book-open.svg"],
+  readerProps: ["vault", "file", "anchor", "kept", "overlay"],
 };
 // The Obsidian logo that was imported by mistake. It is judged by content, never by file name (PLAN D2).
-// ctrl-shift-<letter> chords Herdr binds by default, plus the portrait layout's: a snapshot in scripts/herdr-default-keys.json.
+// ctrl-shift-<letter> chords Herdr binds by default: a snapshot in scripts/herdr-default-keys.json.
 const SNAPSHOT = JSON.parse(readText("scripts/herdr-default-keys.json"));
 const TAKEN_CHORDS = new Set(SNAPSHOT.chords);
 const LOGO_SHA256 = "df5329070f7ff72c589e97abae5498f5bbe0d3fa8f59fdad4867856666e7911f";
@@ -189,7 +186,7 @@ if (has("keys.json")) {
         if (/^(?:cmd|super)-/.test(key) || /-(?:cmd|super)-/.test(key)) {
           r.error(`keys.json: "${key}" uses cmd/super, which differs per OS; use ctrl-shift-<letter> or alt-<key>`);
         }
-        if (TAKEN_CHORDS.has(key)) r.error(`keys.json: "${key}" is already a Herdr default (or the portrait layout's); pick a free chord`);
+        if (TAKEN_CHORDS.has(key)) r.error(`keys.json: "${key}" is already a Herdr default; pick a free chord`);
         if (/^ctrl-[a-z]$/.test(key)) r.error(`keys.json: "${key}" is a plain ctrl+letter that programs in the terminal rely on`);
         const open = /^mod\.(?:open|clone):(.+)$/.exec(action);
         if (open && !CONTRACT.mods.includes(open[1])) r.error(`keys.json: "${action}" names a mod this repo does not ship`);
@@ -234,9 +231,9 @@ if (has("keys.json")) {
   }
 }
 
-// ---- 5. Contract with the portrait layout ----
+// ---- 5. Public contract ----
 console.log("Contract");
-for (const key of CONTRACT.sharedKeys) r.check(sourceText.includes(`"${key}"`), `shared key ${key} still used`, `shared key ${key} disappeared from mods/ (frozen contract, PLAN section 6)`);
+for (const key of CONTRACT.sharedKeys) r.check(sourceText.includes(`"${key}"`), `shared key ${key} still used`, `shared key ${key} disappeared from mods/ (frozen contract)`);
 for (const c of CONTRACT.commands) r.check(sourceText.includes(c), `command ${c} still referenced`, `command ${c} disappeared`);
 r.check(sourceText.includes(`"${CONTRACT.tabName}"`), `tab name "${CONTRACT.tabName}" still used`, `tab name "${CONTRACT.tabName}" disappeared from mods/`);
 {
@@ -245,8 +242,6 @@ r.check(sourceText.includes(`"${CONTRACT.tabName}"`), `tab name "${CONTRACT.tabN
     if (!new RegExp(`\\b${p}\\b`).test(reader)) r.warn(`reader prop "${p}" no longer appears in vault-reader source`);
   }
 }
-for (const p of CONTRACT.iconPaths) r.check(has(p), `${p} exists (the portrait layout draws it)`, `${p} must stay as a path (the portrait layout's bar strip draws it, PLAN D11)`);
-r.check(has(CONTRACT.compatImage), `${CONTRACT.compatImage} exists (portrait layout loads it)`, `${CONTRACT.compatImage} must stay as a path (generic image, PLAN D1)`);
 
 // ---- 6. Obsidian logo ban (by content) ----
 console.log("Trademark");
@@ -263,9 +258,7 @@ console.log("Trademark");
     }
   }
   if (!bad) r.ok("no file has the Obsidian logo's content");
-  for (const f of files.filter((f) => /(^|\/)obsidian\.png$/i.test(f))) {
-    if (f !== "mods/vault/obsidian.png" && f !== CONTRACT.compatImage) r.warn(`${f}: unexpected obsidian.png (only the two compatibility copies are allowed)`);
-  }
+  for (const f of files.filter((f) => /(^|\/)obsidian\.png$/i.test(f))) r.warn(`${f}: an Obsidian-named image; name the generic icon by what it shows`);
 }
 
 // ---- 7. Licensing: every vendored third-party file is named in NOTICE ----
@@ -459,7 +452,7 @@ async function selfTest() {
     ["an action floats on a tag", "scripts/ci.workflow.yml", (t) => t.replace(/actions\/setup-node@[0-9a-f]{40}/, "actions/setup-node@v4"), []],
     ["the template runs a script that does not exist", "scripts/ci.workflow.yml", (t) => t.replace("node scripts/check-docs.mjs", "node scripts/nope.mjs"), []],
     ["a placeholder <owner> is left in the docs", "README.md", (t) => `${t}\nSee https://github.com/<owner>/x\n`, ["--release"], /<owner> placeholder is still in 1 file|<owner> placeholder is still in \d+ file.*README\.md/],
-    ["the portrait layout's icon path is gone", "mods/vault/icons/book-open.svg", null, [], /book-open\.svg/],
+    ["the vault.add command is gone", "mods/vault/main.js", (t) => t.replaceAll("vault.add", "vault.pick"), [], /command vault\.add disappeared/],
     ["RECIPE.md puts cmd /c start back", "RECIPE.md", (t) => t.replace("`xdg-open` or `rundll32`", "`xdg-open` or `cmd /c start`"), [], /check-recipe/],
     ["a lz-string licence text is missing", "mods/vault-reader/render/LICENSE-lz-string.txt", null, [], /LICENSE-lz-string/],
   ];

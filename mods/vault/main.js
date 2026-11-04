@@ -7,8 +7,8 @@
 //
 // Shared (persisted): vault.list [{ path, name }], vault.current (path),
 // vault.open { vault, file } (what the floating reader shows; set by the reader),
-// vault.panes (kept reader panes; set by the reader), vault.outside (vaults Obsidian knows that
-// lie beyond the home folder, which Herdr mods cannot read: listed dimmed in the selector).
+// vault.outside (vaults Obsidian knows that lie beyond the home folder, which Herdr mods
+// cannot read: listed dimmed in the selector).
 // Commands: vault.add (pick a folder), vault.import (read Obsidian's vault list again).
 // The same mod draws the selector's menu as a popup (props.menu).
 

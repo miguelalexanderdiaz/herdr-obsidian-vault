@@ -15,7 +15,7 @@ import { pathToFileURL } from "node:url";
 import { ROOT, SELF_ROOT, Report, abs, readText, repoFiles } from "./lib/repo.mjs";
 
 const PLATFORMS = ["macos", "linux", "windows"];
-const FROZEN_KEYS = ["vault.list", "vault.current", "vault.open", "vault.panes"]; // the contract with herdr-portrait-layout
+const FROZEN_KEYS = ["vault.list", "vault.current", "vault.open"]; // the public contract (docs/configuration.html#contract)
 
 // Quoted in RECIPE.md but not a literal in the mods: Herdr's own menu names, product names and the like.
 const UI_NOT_IN_CODE = ["Feature tour", "Keep ▾ then New tab"]; // a sample-vault note name; a click path made of two labels
@@ -188,11 +188,11 @@ export function checkRecipe(recipe, f, keysJson, modJson) {
   for (const k of f.sharedKeys) {
     const at = sharedPara.indexOf(`\`${k}\``);
     if (at < 0) bad("shared", `the code uses the shared key ${k} but the "Shared keys" paragraph does not name it`);
-    else if (FROZEN_KEYS.includes(k) && additiveAt >= 0 && at > additiveAt) bad("shared", `${k} belongs to the frozen four but is listed after "Additive keys"`);
+    else if (FROZEN_KEYS.includes(k) && additiveAt >= 0 && at > additiveAt) bad("shared", `${k} belongs to the frozen three but is listed after "Additive keys"`);
     else if (!FROZEN_KEYS.includes(k) && (additiveAt < 0 || at < additiveAt)) bad("shared", `${k} is not in the contract: list it after "Additive keys"`);
   }
   for (const k of FROZEN_KEYS) if (!f.sharedKeys.has(k)) bad("shared", `the frozen contract key ${k} is no longer used by the code`);
-  if (!/frozen/.test(sharedPara)) bad("shared", "the Shared keys paragraph must say the four contract keys are frozen");
+  if (!/frozen/.test(sharedPara)) bad("shared", "the Shared keys paragraph must say the three contract keys are frozen");
   for (const c of f.commandsRun) if (!has(`\`${c}\``)) bad("commands", `the code runs the command ${c} but RECIPE.md does not name it`);
 
   // 6. herdr and gpui functions, both directions.

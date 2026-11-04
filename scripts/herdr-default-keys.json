@@ -1,9 +1,8 @@
 {
   "herdr": "0.1.12",
-  "about": "ctrl-shift-<letter> chords Herdr binds by default (taken from Herdr's own default keys, Linux and Windows; macOS has none of these) plus the ones the sibling portrait layout binds. keys.json must not take them. A snapshot: check-repo compares the version with the installed herdr-app and warns when they differ.",
+  "about": "ctrl-shift-<letter> chords Herdr binds by default (taken from Herdr's own default keys, Linux and Windows; macOS has none of these). keys.json must not take them. A snapshot: check-repo compares the version with the installed herdr-app and warns when they differ.",
   "chords": [
     "ctrl-shift-b", "ctrl-shift-n", "ctrl-shift-t", "ctrl-shift-k", "ctrl-shift-p", "ctrl-shift-o", "ctrl-shift-e",
-    "ctrl-shift-w", "ctrl-shift-x", "ctrl-shift-z", "ctrl-shift-l", "ctrl-shift-c", "ctrl-shift-v", "ctrl-shift-f",
-    "ctrl-shift-g", "ctrl-shift-y", "ctrl-shift-j"
+    "ctrl-shift-w", "ctrl-shift-x", "ctrl-shift-z", "ctrl-shift-l", "ctrl-shift-c", "ctrl-shift-v", "ctrl-shift-f"
   ]
 }

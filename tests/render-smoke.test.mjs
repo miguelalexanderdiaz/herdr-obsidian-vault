@@ -61,7 +61,7 @@ async function drawReader(vault, file, extra = {}) {
 test("the reader draws every file of the sample vault, in a floating window and as a kept pane", async () => {
   for (const file of ["Feature tour.md", "Other note.md", "projects/a/plan.md", "Board.canvas", "Flow sketch.excalidraw.md", "attachments/photo.png", "attachments/manual.pdf"]) {
     await drawReader(VAULT, file, { overlay: "o1" });
-    await drawReader(VAULT, file, { kept: true, id: "n1" });
+    await drawReader(VAULT, file, { kept: true });
   }
 });
 

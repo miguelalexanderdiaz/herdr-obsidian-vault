@@ -50,7 +50,7 @@ Windows (PowerShell):
 irm https://raw.githubusercontent.com/<owner>/herdr-obsidian-vault/main/install/install.ps1 | iex
 ```
 
-It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies `mods/vault` and `mods/vault-reader` into your Herdr home, adds `ctrl-shift-m` to `keys.json` (asking before it replaces a key you use) and runs `herdr-app check`. The portrait layout's installer adds the Vault panel when it finds these mods. Anything it replaces is backed up first under `community/herdr-obsidian-vault/` in the Herdr home;
+It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies `mods/vault` and `mods/vault-reader` into your Herdr home, adds `ctrl-shift-m` to `keys.json` (asking before it replaces a key you use) and runs `herdr-app check`. Anything it replaces is backed up first under `community/herdr-obsidian-vault/` in the Herdr home;
 running it again updates in place. From a clone: `install/install.sh` (or `.\install\install.ps1`).
 No questions: `sh -s -- --yes` (Windows: `$env:HERDR_YES = 1` first). Another Herdr home: `--home
 <folder>` or `HERDR_APP_HOME`. Merging `keys.json` uses Node, or on macOS the system's own JavaScript;
@@ -95,13 +95,15 @@ mods, then add the Vault panel to my layout.
 
 ### Show the panel
 
-The mods are installed with `"place": "none"`, so nothing shows until you place the panel. Add a block to a column or stack in a layout file:
+The mods are installed with `"place": "none"`, so they do not dock anywhere by themselves. In any layout, Herdr's own included, press Ctrl+Shift+M (the key from `keys.json`): it opens the panel as a 420 by 640 popup, and pressed again closes it. No layout change is needed.
+
+To keep the panel docked instead, add a block to a column or stack of one of your own layout files:
 
 ```json
 { "id": "vault", "type": "block", "content": { "mod": "vault" } }
 ```
 
-For the portrait layout (`herdr-portrait-layout`), append it to the children of the node with id `panel-body`; its bar then shows a Vault button by itself. You can also split a pane with the app command `pane.split` and `mod` set to `vault`, or skip the layout: the optional key Ctrl+Shift+M in `keys.json` opens the panel as a 420 by 640 popup. See the [install page](docs/install.html) for more.
+Herdr's shipped layouts are read-only, so clone one first (`herdr-app do layout.clone '{"name":"main","as":"my-layout"}'`) and edit the clone. You can also split a pane with the app command `pane.split` and `mod` set to `vault`. See the [install page](docs/install.html) for more.
 
 On first run the panel lists the vaults Obsidian already knows. Otherwise use **Add vault** and pick a folder that contains `.obsidian`.
 

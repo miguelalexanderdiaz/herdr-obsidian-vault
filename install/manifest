@@ -1,6 +1,5 @@
 # What install/install.sh and install/install.ps1 install from this repository, one instruction per
-# line: the word, then its values (a mod name has no spaces). The words are described in
-# install/manifest of herdr-portrait-layout, which uses all of them:
+# line: the word, then its values (a mod name has no spaces). The words this repository uses:
 #   mods  mod folders copied from mods/ (an older copy is backed up, then replaced)
 #   keys  the keys.json merged into yours (asks before replacing a key you use)
 #   say   what the person reads before anything is written

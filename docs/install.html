@@ -41,7 +41,7 @@
 <pre><code>curl -fsSL https://raw.githubusercontent.com/&lt;owner&gt;/herdr-obsidian-vault/main/install/install.sh | sh</code></pre>
 <p>Windows (PowerShell):</p>
 <pre><code>irm https://raw.githubusercontent.com/&lt;owner&gt;/herdr-obsidian-vault/main/install/install.ps1 | iex</code></pre>
-<p>It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies <code>mods/vault</code> and <code>mods/vault-reader</code> into your Herdr home, adds <code>ctrl-shift-m</code> to <code>keys.json</code> (asking before it replaces a key you use) and runs <code>herdr-app check</code>. The portrait layout's installer adds the Vault panel when it finds these mods. Anything it replaces is backed up first under <code>community/herdr-obsidian-vault/</code> in the Herdr home, and running it again updates in place. <code>sh -s -- --yes</code> answers every question with yes (Windows: <code>$env:HERDR_YES = 1</code> first); <code>--home &lt;folder&gt;</code> or <code>HERDR_APP_HOME</code> picks another Herdr home; from a clone, run <code>install/install.sh</code> or <code>.\install\install.ps1</code>. Merging <code>keys.json</code> uses Node, or on macOS the system's own JavaScript; without either the script prints the keys to add by hand. To remove it: the same line with <code>sh -s -- --uninstall</code> (Windows: <code>$env:HERDR_UNINSTALL = 1</code> first); it leaves <code>data/vault</code>, the cache and settings, in place.</p>
+<p>It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies <code>mods/vault</code> and <code>mods/vault-reader</code> into your Herdr home, adds <code>ctrl-shift-m</code> to <code>keys.json</code> (asking before it replaces a key you use) and runs <code>herdr-app check</code>. Anything it replaces is backed up first under <code>community/herdr-obsidian-vault/</code> in the Herdr home, and running it again updates in place. <code>sh -s -- --yes</code> answers every question with yes (Windows: <code>$env:HERDR_YES = 1</code> first); <code>--home &lt;folder&gt;</code> or <code>HERDR_APP_HOME</code> picks another Herdr home; from a clone, run <code>install/install.sh</code> or <code>.\install\install.ps1</code>. Merging <code>keys.json</code> uses Node, or on macOS the system's own JavaScript; without either the script prints the keys to add by hand. To remove it: the same line with <code>sh -s -- --uninstall</code> (Windows: <code>$env:HERDR_UNINSTALL = 1</code> first); it leaves <code>data/vault</code>, the cache and settings, in place.</p>
 
 <h2 id="agent">Or ask a Herdr agent</h2>
 <!-- publish: owner. Replace <owner> with the GitHub owner of the published repository here and in the clone line below. -->
@@ -88,13 +88,13 @@ scoop install poppler</code></pre>
 <p>Diagrams and math also need a Chromium-family browser and the Obsidian app; the requirements page says where they are looked for.</p>
 
 <h2 id="show">Show the panel</h2>
-<p>The mods have <code>"place": "none"</code>, so nothing appears until you put the panel somewhere. Pick one:</p>
+<p>The mods have <code>"place": "none"</code>, so they do not dock anywhere by themselves. Pick one:</p>
 <ul>
-<li><strong>In a layout.</strong> Add a block to a column or stack of your layout file in <code>layouts/</code>:
+<li><strong>As a popup, in any layout.</strong> The repository&rsquo;s <code>keys.json</code> binds <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> to <code>mod.open:vault</code>, which opens the panel as a 420 by 640 popup and, pressed again, closes it. The installer merges that key (by hand, see <a href="configuration.html#keys">Configuration</a>). It works in Herdr&rsquo;s own layout and in any other, with no layout change.</li>
+<li><strong>Docked in a layout.</strong> Add a block to a column or stack of one of your own layout files in <code>layouts/</code>:
 <pre><code>{ "id": "vault", "type": "block", "content": { "mod": "vault" } }</code></pre>
-For the <em>herdr-portrait-layout</em> layout, append that object to the children of the node whose id is <code>panel-body</code>. Its bar then shows a Vault button by itself.</li>
+Herdr&rsquo;s shipped layouts are read-only, so clone one first (<code>herdr-app do layout.clone '{"name":"main","as":"my-layout"}'</code>) and edit the clone.</li>
 <li><strong>Split a pane.</strong> Run the Herdr app command <code>pane.split</code> with a direction and <code>mod</code> set to <code>vault</code> (<code>herdr-app commands</code> lists its arguments).</li>
-<li><strong>As a popup.</strong> The repository&rsquo;s <code>keys.json</code> binds <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> to <code>mod.open:vault</code>, which opens the panel as a 420 by 640 popup and, pressed again, closes it. Merge that key (see <a href="configuration.html#keys">Configuration</a>) and no layout change is needed.</li>
 </ul>
 
 <h2 id="first">First run</h2>
@@ -106,7 +106,7 @@ For the <em>herdr-portrait-layout</em> layout, append that object to the childre
 <li>Delete the folders <code>mods/vault</code> and <code>mods/vault-reader</code> from your Herdr home.</li>
 <li>Optional: delete <code>data/vault</code> in the Herdr home. It holds the picture cache, the Mermaid and MathJax copies, the headless browser profile and the reader settings. Nothing else is written outside the mod folders.</li>
 </ol>
-<p>Your vaults are never touched. Herdr keeps a few values in its own <code>shared.json</code> (in the Herdr home) after the mods are gone: <code>vault.list</code> and <code>vault.current</code> hold the paths of your vaults, <code>vault.open</code> the vault and file of the note that was open, <code>vault.panes</code> kept notes, and <code>vault.outside</code> vaults outside your home folder. They are harmless, but to forget them, close Herdr and delete those <code>vault.*</code> keys from <code>shared.json</code>.</p>
+<p>Your vaults are never touched. Herdr keeps a few values in its own <code>shared.json</code> (in the Herdr home) after the mods are gone: <code>vault.list</code> and <code>vault.current</code> hold the paths of your vaults, <code>vault.open</code> the vault and file of the note that was open, and <code>vault.outside</code> vaults outside your home folder. They are harmless, but to forget them, close Herdr and delete those <code>vault.*</code> keys from <code>shared.json</code>.</p>
 <div class="pager"><a href="index.html" rel="prev">&larr; Overview</a><a href="usage.html" rel="next">Usage &rarr;</a></div>
 
 </div>
