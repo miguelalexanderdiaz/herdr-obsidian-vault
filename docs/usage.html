@@ -91,8 +91,19 @@
 <tr><th scope="row">Excalidraw</th><td><code>.excalidraw.md</code> and <code>.excalidraw</code> files, drawn clean by a small renderer of this project. It is not Excalidraw itself.</td></tr>
 <tr><th scope="row">Dataview, Tasks, Bases</th><td>The query text is shown with a &ldquo;shown, not run&rdquo; label. Nothing is executed.</td></tr>
 </tbody></table></div>
-<p>Not supported: editing (the reader is read-only), other Obsidian plugins, and file types not listed above (those open in the system application).</p>
-<p>The sample vault note <code>Feature tour</code> contains one of each; open it to check an install.</p>
+<p>The sample vault note <code>Feature tour</code> contains one of each; open it to check an install, step by step with <a href="verify.html">Check your install</a>.</p>
+
+<h2 id="limits">Limits you may hit</h2>
+<ul>
+<li><strong>Big notes.</strong> Herdr lets a mod read a text file of up to 1 MiB. A note or canvas larger than that cannot be opened in the reader; the messages are on the <a href="troubleshooting.html#missing-target">troubleshooting page</a>.</li>
+<li><strong>Big folders.</strong> A folder lists its first 2000 entries; search finds the rest.</li>
+<li><strong>PDFs.</strong> An opened PDF shows its first 30 pages; a PDF inside a note or canvas shows page 1.</li>
+<li><strong>Pictures.</strong> Vault images over 40 MB are not shown; web images over 20 MB are not downloaded.</li>
+<li><strong>Live refresh on Linux.</strong> Herdr does not watch folders that git ignores, and refuses trees of more than 4096 folders that git does not ignore (see <a href="troubleshooting.html#stale-tree">troubleshooting</a>).</li>
+<li><strong>Excalidraw</strong> drawings are drawn by a small renderer of this project, not by Excalidraw. Dataview, Tasks, Bases and other plugins are never run.</li>
+<li><strong>Read-only.</strong> There is no editing, and file types not listed above open in the system application.</li>
+<li><strong>Vaults outside your home folder</strong> cannot be read, because Herdr mods may only read inside it.</li>
+</ul>
 <div class="pager"><a href="install.html" rel="prev">&larr; Install</a><a href="requirements.html" rel="next">Requirements &rarr;</a></div>
 </div>
 </main>

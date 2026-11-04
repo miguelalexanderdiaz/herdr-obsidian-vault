@@ -37,10 +37,10 @@ Herdr mods are JavaScript that describes native GPUI elements (gpui-kit). There 
 
 Herdr's rule is to tell the person first when a mod reaches the network, runs programs or reads outside its own folder. This one does all three. Say, in your own words:
 
-- **Reads**: the folder of the selected vault (recursively, with a watcher), Obsidian's vault list (`obsidian.json` in Obsidian's config folder), and, for diagrams and math, Obsidian's `obsidian.asar` (only its Mermaid and MathJax files).
-- **Runs** (none bundled): `rg`, `node`, a headless Chrome, Chromium, Edge or Brave, `pdfinfo` and `pdftoppm`, `curl`, the system opener (`open`, `xdg-open`, `rundll32 url.dll,FileProtocolHandler`), `stat` (macOS, Linux) or `powershell` (Windows) for file timestamps, the person's login shell (`command -v`) or `where` to find a program, and, on macOS only as fallbacks, `qlmanage` (page 1 of a PDF without Poppler) and `sips` (the size of AVIF and TIFF images).
+- **Reads**: the folder of the selected vault (recursively, with a watcher), Obsidian's vault list (`obsidian.json` in Obsidian's config folder; on first run and again on every **Import from Obsidian**), and, for diagrams and math, Obsidian's `obsidian.asar` (only its Mermaid and MathJax files). The render script (`node`) also reads, with Node's own file access, the picture files that an Excalidraw drawing embeds by reference from the vault.
+- **Runs** (none bundled): `rg`, `node`, a headless Chrome, Chromium, Edge or Brave (with a loopback-only DevTools port for the length of one render run, and a page served from `127.0.0.1`), `pdfinfo` and `pdftoppm`, `curl`, the system opener (`open`, `xdg-open`, `rundll32 url.dll,FileProtocolHandler`), `stat` (macOS, Linux) or `powershell` (Windows) for file timestamps, the person's login shell (`command -v`) or `where` to find a program, and, on macOS only as fallbacks, `qlmanage` (page 1 of a PDF without Poppler) and `sips` (the size of AVIF and TIFF images).
 - **Downloads**: web images that a note shows, with `curl`, as soon as the note opens (the host sees the IP address; 20 seconds, 20 MB, `http` and `https` only). The **Web images** button in the reader bar, or `remoteImages` set to `false` in `data/vault/settings.json`, stops it.
-- **Writes**: only under `data/vault` in the Herdr home (cache, Mermaid and MathJax copies, a temporary browser profile per render run, settings). Never into the vault. The cache is pruned once per session at 30 days and 200 MB; deleting it is always safe.
+- **Writes**: only under `data/vault` in the Herdr home (cache, Mermaid and MathJax copies, a temporary browser profile per render run, settings). Never into the vault. The cache is pruned once per session at 30 days and 200 MB; deleting it is always safe. Herdr's shared state (`shared.json`) keeps `vault.*` keys, with vault paths and the open note's file, after uninstall; `docs/install.html` says how to clear them.
 - **Opens**: only `http`, `https` and `mailto` links from notes and canvas cards; every other scheme is dropped. Files that start programs (`.exe`, `.bat`, `.sh`, `.app`, `.ps1`, `.jar` and the like, list `PROGRAM_EXT` in `platform.js`) are never opened from a note or from the tree.
 
 The reference version of this list is `docs/privacy.html`. Keep the two in step.
@@ -70,10 +70,36 @@ These come from Herdr and from mistakes already made here.
 - **Slow work goes through `exec` or `fetch`**, not a loop in `render`. `exec` has a 30 second limit and 8 MiB of output per call (`herdr.d.ts`); the renderer batches stay under it.
 - **Images and SVGs** passed to `image()` and `svg()` load only from the Herdr home folder. That is why vault images are copied into `data/vault/cache`.
 - **`mod.json` has `"place": "none"`**; the only fields are those Herdr documents (`place`, `size`, `overlay`, `title`, `focusable`). Do not add a `version` field.
-- **Keep the contract stable**: mod names `vault` and `vault-reader`; shared keys `vault.list`, `vault.current`, `vault.open`, `vault.panes` (same shapes; `vault.outside` was added beside them); commands `vault.add` and `vault.import`; reader props `{ vault, file, anchor?, kept?, id?, overlay? }`; the tab name `obsidian`; the path `mods/vault-reader/obsidian.png`. The portrait layout depends on them. To change one, post on that repository's board first. `scripts/check-repo.mjs` enforces the list.
+- **Keep the contract stable**: mod names `vault` and `vault-reader`; shared keys `vault.list`, `vault.current`, `vault.open`, `vault.panes` (same shapes; `vault.outside` was added beside them); commands `vault.add` and `vault.import`; reader props `{ vault, file, anchor?, kept?, id?, overlay? }`; the tab name `obsidian`; the path `mods/vault/icons/book-open.svg`, which the portrait layout's bar draws. `mods/vault-reader/obsidian.png` and `vault.svg` stay for older copies of the portrait layout until its board confirms they can go. `vault.adding` is internal (a two-minute picker lock), not contract. The portrait layout depends on the rest. To change one, post on that repository's board first. `scripts/check-repo.mjs` enforces the list.
+- **Herdr's runtime is smaller than Node's.** `TextDecoder`, `TextEncoder`, `structuredClone` and `Intl` do not exist in a mod, and `localeCompare` ignores its options (so no `numeric` or `sensitivity`). Node has all of them, which is how code passed the tests and failed in the app. The tests replace those globals for mod code, check method names against `gpui-kit.d.ts`, and scan mod source for these names (`tests/runtime-globals.test.mjs`). See "Herdr facts behind the rules" below.
 - **Do not edit** `herdr.d.ts`, `gpui-kit.d.ts` or `jsconfig.json`; Herdr writes them and `.gitignore` hides them.
 - **Escape hatch**: `ctrl-alt-shift-escape` sets the person's layout and `keys.json` aside. Mention it if you change keys.
 - If an edit leaves a mod invalid, Herdr keeps the last good version and writes `<name>.error` next to it. Read that file.
+
+## Herdr facts behind the rules
+
+Each rule above has a reason. The reasons, with where they come from, so you can tell what is documented from what was probed.
+
+| Fact | Why it matters here | Source |
+| --- | --- | --- |
+| `exec` has a 30 second limit and 8 MiB of output | the renderer draws at most `BATCH` pictures per browser start | `herdr.d.ts` (`exec`) |
+| `readTextFile` reads at most 1 MiB, and gives null for a missing file | a note or canvas over 1 MiB cannot be opened; in round 1 it showed the same text as a missing file | `herdr.d.ts` (`readTextFile`) |
+| `watchFolder` on Linux skips git-ignored folders and rejects above 4096 non-ignored ones; macOS and Windows watch everything | the timer fallback (`POLL_MS`) and the `LIVE_OFF` hint; no live refresh in ignored folders on Linux | `herdr.d.ts` (`watchFolder`) |
+| Mods read under the home folder and write only under the Herdr home; images and SVGs load only from the Herdr home | vault images are copied into `data/vault/cache`; a vault outside the home folder cannot be read | Herdr `AGENTS.md`, `herdr.d.ts` |
+| A Finder launch loads the login shell's PATH, with the usual install folders as a fallback; other environment variables are not carried over | a variable set in a shell profile may not reach the mods, so programs are found by folder and login-shell lookup, and the settings file can name the browser and Obsidian | Herdr `AGENTS.md` (macOS section) |
+| No `setTimeout`/`setInterval`, no top-level `await`; callbacks get their own `cx` | `cx.timer`, `cx.spawn` in `init` | Herdr `AGENTS.md` |
+| A mod reloads when any file in its folder changes | caches live in `data/vault`, never in the mod folder | Herdr `AGENTS.md` |
+| `TextDecoder`, `TextEncoder`, `structuredClone`, `Intl` are missing; `localeCompare` ignores options | own UTF-8 decoder for SVG text, own natural-order comparator for the tree | **Probed, not documented by Herdr**: throw-away mods run with `herdr-app check` in round 2 (procedure in `CONTRIBUTING.md`); re-probe after a Herdr update |
+
+## Not verified
+
+State these plainly; do not write "works on Linux" or "works on Windows" anywhere.
+
+- Linux and Windows have never been seen running in the live Herdr app. The code paths are covered by tests with a fake operating system. The one-sentence support level is in `README.md`, and the per-feature table is on `docs/requirements.html`.
+- The Windows Herdr home folder is the documented default `.config/herdr-app` under the user folder. Nobody has checked it on Windows.
+- The CI workflow in `scripts/ci.workflow.yml` is a template that has not run: the unattended runs had no token scope to install it. No page may say that CI ran.
+- `herdr-app check` loads a mod once and checks its first description. It does not run later states, layout or async work.
+- Placement of the popup (`overlay` in `mods/vault/mod.json` has `width` and `height` only): see `RECIPE.md` for what was verified.
 
 ## Testing
 
@@ -125,4 +151,8 @@ Small, logical commits with a clear subject and a body that says why. Commit onl
 
 ## Documentation upkeep
 
-Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, this file and `CHANGELOG.md`. Then copy `llms.txt` to `docs/llms.txt` and run `node scripts/check-docs.mjs`. The script compares the requirements tables, the keys table, the two `llms.txt` copies and the messages quoted in the troubleshooting page against the code.
+Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), `docs/verify.html` (the check steps), this file and `CHANGELOG.md`. Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
+
+The script compares the requirements tables, the keys table, the two `llms.txt` copies, a freshly built `docs/llms-full.txt`, the one support-level sentence, and the messages quoted in the troubleshooting page, which must be string literals in the code (a quote only found in a comment fails; a short one must be a whole literal). `scripts/doc-claims.json` ties each number, name and phrase in the docs to the constant or string that backs it. When you rename or change one in the code, change the doc and the claim row together; `node scripts/check-docs.mjs` names the row that broke.
+
+Every sentence that changes when the repository is published carries an HTML comment starting with `publish:`; `rg "publish:"` lists them and `node scripts/check-docs.mjs --release` fails until they are resolved. Do not remove a mark yourself: it is the author's step.

@@ -80,7 +80,8 @@
 <p>Shown in the search results area instead of results. Install ripgrep with the command that follows the message, then search again. A program that was missing is looked for again after 30 seconds, so there is no need to restart Herdr. If it is installed and still not found, put its folder on the PATH that your login shell sets, or install it in a common location.</p>
 
 <h3 id="stale-tree"><code class="msg">Live updates are off for this folder</code></h3>
-<p>On Linux, Herdr refuses to watch a tree with more than 4096 folders. The panel then re-lists the vault every 10 seconds, and the reader checks the files of the open note every 10 seconds. Nothing is lost; changes just appear a little later.</p>
+<p>On Linux, Herdr refuses to watch a tree with more than 4096 folders that git does not ignore (<code>herdr.d.ts</code>: &ldquo;4096 non-ignored directories&rdquo;). The panel then re-lists the vault every 10 seconds, and the reader checks the files of the open note every 10 seconds. Nothing is lost; changes just appear a little later.</p>
+<p>Also on Linux, Herdr does not watch folders that git ignores at all, so a vault that is a git repository gets no live refresh for changes inside its ignored folders, and no message says so. On macOS and Windows ignored folders are watched too. Search is not affected: it looks into ignored files as well.</p>
 
 <h3 id="more"><code class="msg">more not listed (search finds them)</code></h3>
 <p>The line reads <code>+N more not listed (search finds them)</code>. The tree lists the first 2000 entries of a folder. Use the search box to reach the others.</p>
@@ -110,7 +111,7 @@
 <p>All pages of a PDF need Poppler. On Linux and Windows the message ends with <code class="msg">Until then PDFs open in your default app.</code>; on macOS page 1 is drawn by Quick Look with no message. A PDF with more than 30 pages shows the first 30 and a row <code class="msg">open all of it in</code> your viewer.</p>
 
 <h3 id="missing-target"><code class="msg">isn't in the vault</code> or <code class="msg">No file</code> &hellip; <code class="msg">in the vault</code></h3>
-<p>The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed). <code class="msg">This file is no longer in the vault</code> means the open note itself was deleted or moved.</p>
+<p>The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed). <code class="msg">This file is no longer in the vault</code> means the open note itself was deleted or moved, <em>or</em> is larger than 1 MiB: Herdr lets a mod read a text file of up to 1 MiB, and a larger note or canvas cannot be opened in the reader. Open it in your editor instead.</p>
 
 <h3 id="anchor"><code class="msg">No heading or block</code></h3>
 <p>The link asks for a heading or a block id (<code>^id</code>) that the note does not have. The reader shows the whole note instead.</p>

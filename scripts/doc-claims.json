@@ -312,5 +312,33 @@
   "docText": "Open in Preview on macOS, Open in the default app elsewhere",
   "code": "mods/vault-reader/platform.js",
   "pattern": "\"Open in Preview\"\\s*:\\s*\"Open in the default app\""
+ },
+ {
+  "id": "adding-internal",
+  "doc": "docs/configuration.html",
+  "docText": "vault.adding is not part of the contract",
+  "code": "mods/vault/main.js",
+  "pattern": "\"vault\\.adding\""
+ },
+ {
+  "id": "adding-two-minutes",
+  "doc": "docs/configuration.html",
+  "docText": "abandoned for two minutes",
+  "code": "mods/vault/main.js",
+  "pattern": "Date\\.now\\(\\)\\s*-\\s*busy\\s*<\\s*120_000"
+ },
+ {
+  "id": "image-limit-usage",
+  "doc": "docs/usage.html",
+  "docText": "Vault images over 40 MB are not shown; web images over 20 MB are not downloaded",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bIMAGE_MAX_BYTES\\s*=\\s*40_000_000\\b"
+ },
+ {
+  "id": "book-open-contract",
+  "doc": "docs/configuration.html",
+  "docText": "mods/vault/icons/book-open.svg file",
+  "code": "mods/vault/icons/book-open.svg",
+  "pattern": "<svg"
  }
 ]

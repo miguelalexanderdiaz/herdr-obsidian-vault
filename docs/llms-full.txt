@@ -92,7 +92,7 @@ On first run the panel lists the vaults Obsidian already knows. Otherwise use **
 - Type two letters or more in the search box. Up and Down move, Enter opens, Esc clears.
 - In the reader: Esc closes, Alt+Left or Backspace (and Cmd+[ on macOS) goes back, links open notes in place, **Web images: on/off** controls downloads, and **Keep** pins a note into a tab named `obsidian`.
 
-Details are on the [usage page](docs/usage.html).
+Details are on the [usage page](docs/usage.html). Notes over 1 MiB cannot be opened in the reader, an opened PDF shows its first 30 pages, and nothing is editable; the [limits](docs/usage.html#limits) list the rest.
 
 ## Requirements
 
@@ -212,10 +212,10 @@ Herdr mods are JavaScript that describes native GPUI elements (gpui-kit). There 
 
 Herdr's rule is to tell the person first when a mod reaches the network, runs programs or reads outside its own folder. This one does all three. Say, in your own words:
 
-- **Reads**: the folder of the selected vault (recursively, with a watcher), Obsidian's vault list (`obsidian.json` in Obsidian's config folder), and, for diagrams and math, Obsidian's `obsidian.asar` (only its Mermaid and MathJax files).
-- **Runs** (none bundled): `rg`, `node`, a headless Chrome, Chromium, Edge or Brave, `pdfinfo` and `pdftoppm`, `curl`, the system opener (`open`, `xdg-open`, `rundll32 url.dll,FileProtocolHandler`), `stat` (macOS, Linux) or `powershell` (Windows) for file timestamps, the person's login shell (`command -v`) or `where` to find a program, and, on macOS only as fallbacks, `qlmanage` (page 1 of a PDF without Poppler) and `sips` (the size of AVIF and TIFF images).
+- **Reads**: the folder of the selected vault (recursively, with a watcher), Obsidian's vault list (`obsidian.json` in Obsidian's config folder; on first run and again on every **Import from Obsidian**), and, for diagrams and math, Obsidian's `obsidian.asar` (only its Mermaid and MathJax files). The render script (`node`) also reads, with Node's own file access, the picture files that an Excalidraw drawing embeds by reference from the vault.
+- **Runs** (none bundled): `rg`, `node`, a headless Chrome, Chromium, Edge or Brave (with a loopback-only DevTools port for the length of one render run, and a page served from `127.0.0.1`), `pdfinfo` and `pdftoppm`, `curl`, the system opener (`open`, `xdg-open`, `rundll32 url.dll,FileProtocolHandler`), `stat` (macOS, Linux) or `powershell` (Windows) for file timestamps, the person's login shell (`command -v`) or `where` to find a program, and, on macOS only as fallbacks, `qlmanage` (page 1 of a PDF without Poppler) and `sips` (the size of AVIF and TIFF images).
 - **Downloads**: web images that a note shows, with `curl`, as soon as the note opens (the host sees the IP address; 20 seconds, 20 MB, `http` and `https` only). The **Web images** button in the reader bar, or `remoteImages` set to `false` in `data/vault/settings.json`, stops it.
-- **Writes**: only under `data/vault` in the Herdr home (cache, Mermaid and MathJax copies, a temporary browser profile per render run, settings). Never into the vault. The cache is pruned once per session at 30 days and 200 MB; deleting it is always safe.
+- **Writes**: only under `data/vault` in the Herdr home (cache, Mermaid and MathJax copies, a temporary browser profile per render run, settings). Never into the vault. The cache is pruned once per session at 30 days and 200 MB; deleting it is always safe. Herdr's shared state (`shared.json`) keeps `vault.*` keys, with vault paths and the open note's file, after uninstall; `docs/install.html` says how to clear them.
 - **Opens**: only `http`, `https` and `mailto` links from notes and canvas cards; every other scheme is dropped. Files that start programs (`.exe`, `.bat`, `.sh`, `.app`, `.ps1`, `.jar` and the like, list `PROGRAM_EXT` in `platform.js`) are never opened from a note or from the tree.
 
 The reference version of this list is `docs/privacy.html`. Keep the two in step.
@@ -245,10 +245,36 @@ These come from Herdr and from mistakes already made here.
 - **Slow work goes through `exec` or `fetch`**, not a loop in `render`. `exec` has a 30 second limit and 8 MiB of output per call (`herdr.d.ts`); the renderer batches stay under it.
 - **Images and SVGs** passed to `image()` and `svg()` load only from the Herdr home folder. That is why vault images are copied into `data/vault/cache`.
 - **`mod.json` has `"place": "none"`**; the only fields are those Herdr documents (`place`, `size`, `overlay`, `title`, `focusable`). Do not add a `version` field.
-- **Keep the contract stable**: mod names `vault` and `vault-reader`; shared keys `vault.list`, `vault.current`, `vault.open`, `vault.panes` (same shapes; `vault.outside` was added beside them); commands `vault.add` and `vault.import`; reader props `{ vault, file, anchor?, kept?, id?, overlay? }`; the tab name `obsidian`; the path `mods/vault-reader/obsidian.png`. The portrait layout depends on them. To change one, post on that repository's board first. `scripts/check-repo.mjs` enforces the list.
+- **Keep the contract stable**: mod names `vault` and `vault-reader`; shared keys `vault.list`, `vault.current`, `vault.open`, `vault.panes` (same shapes; `vault.outside` was added beside them); commands `vault.add` and `vault.import`; reader props `{ vault, file, anchor?, kept?, id?, overlay? }`; the tab name `obsidian`; the path `mods/vault/icons/book-open.svg`, which the portrait layout's bar draws. `mods/vault-reader/obsidian.png` and `vault.svg` stay for older copies of the portrait layout until its board confirms they can go. `vault.adding` is internal (a two-minute picker lock), not contract. The portrait layout depends on the rest. To change one, post on that repository's board first. `scripts/check-repo.mjs` enforces the list.
+- **Herdr's runtime is smaller than Node's.** `TextDecoder`, `TextEncoder`, `structuredClone` and `Intl` do not exist in a mod, and `localeCompare` ignores its options (so no `numeric` or `sensitivity`). Node has all of them, which is how code passed the tests and failed in the app. The tests replace those globals for mod code, check method names against `gpui-kit.d.ts`, and scan mod source for these names (`tests/runtime-globals.test.mjs`). See "Herdr facts behind the rules" below.
 - **Do not edit** `herdr.d.ts`, `gpui-kit.d.ts` or `jsconfig.json`; Herdr writes them and `.gitignore` hides them.
 - **Escape hatch**: `ctrl-alt-shift-escape` sets the person's layout and `keys.json` aside. Mention it if you change keys.
 - If an edit leaves a mod invalid, Herdr keeps the last good version and writes `<name>.error` next to it. Read that file.
+
+## Herdr facts behind the rules
+
+Each rule above has a reason. The reasons, with where they come from, so you can tell what is documented from what was probed.
+
+| Fact | Why it matters here | Source |
+| --- | --- | --- |
+| `exec` has a 30 second limit and 8 MiB of output | the renderer draws at most `BATCH` pictures per browser start | `herdr.d.ts` (`exec`) |
+| `readTextFile` reads at most 1 MiB, and gives null for a missing file | a note or canvas over 1 MiB cannot be opened, and the reader cannot tell it from a missing file by the result alone | `herdr.d.ts` (`readTextFile`) |
+| `watchFolder` on Linux skips git-ignored folders and rejects above 4096 non-ignored ones; macOS and Windows watch everything | the timer fallback (`POLL_MS`) and the `LIVE_OFF` hint; no live refresh in ignored folders on Linux | `herdr.d.ts` (`watchFolder`) |
+| Mods read and write only inside allowed places; images and SVGs load only from the Herdr home | vault images are copied into `data/vault/cache`; a vault outside the home folder cannot be read | Herdr `AGENTS.md`, `herdr.d.ts` |
+| A Finder launch loads the login shell's PATH, with the usual install folders as a fallback; other environment variables are not carried over | a variable set in a shell profile may not reach the mods, so programs are found by folder and login-shell lookup, and the settings file can name the browser and Obsidian | Herdr `AGENTS.md` (macOS section) |
+| No `setTimeout`/`setInterval`, no top-level `await`; callbacks get their own `cx` | `cx.timer`, `cx.spawn` in `init` | Herdr `AGENTS.md` |
+| A mod reloads when any file in its folder changes | caches live in `data/vault`, never in the mod folder | Herdr `AGENTS.md` |
+| `TextDecoder`, `TextEncoder`, `structuredClone`, `Intl` are missing; `localeCompare` ignores options | own UTF-8 decoder for SVG text, own natural-order comparator for the tree | **Probed, not documented by Herdr**: throw-away mods run with `herdr-app check` in round 2 (procedure in `CONTRIBUTING.md`); re-probe after a Herdr update |
+
+## Not verified
+
+State these plainly; do not write "works on Linux" or "works on Windows" anywhere.
+
+- Linux and Windows have never been seen running in the live Herdr app. The code paths are covered by tests with a fake operating system. The one-sentence support level is in `README.md`, and the per-feature table is on `docs/requirements.html`.
+- The Windows Herdr home folder is the documented default `.config/herdr-app` under the user folder. Nobody has checked it on Windows.
+- The CI workflow in `scripts/ci.workflow.yml` is a template that has not run: the unattended runs had no token scope to install it. No page may say that CI ran.
+- `herdr-app check` loads a mod once and checks its first description. It does not run later states, layout or async work.
+- Placement of the popup (`overlay` in `mods/vault/mod.json` has `width` and `height` only): see `RECIPE.md` for what was verified.
 
 ## Testing
 
@@ -300,7 +326,11 @@ Small, logical commits with a clear subject and a body that says why. Commit onl
 
 ## Documentation upkeep
 
-Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, this file and `CHANGELOG.md`. Then copy `llms.txt` to `docs/llms.txt` and run `node scripts/check-docs.mjs`. The script compares the requirements tables, the keys table, the two `llms.txt` copies and the messages quoted in the troubleshooting page against the code.
+Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), `docs/verify.html` (the check steps), this file and `CHANGELOG.md`. Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
+
+The script compares the requirements tables, the keys table, the two `llms.txt` copies, a freshly built `docs/llms-full.txt`, the one support-level sentence, and the messages quoted in the troubleshooting page, which must be string literals in the code (a quote only found in a comment fails; a short one must be a whole literal). `scripts/doc-claims.json` ties each number, name and phrase in the docs to the constant or string that backs it. When you rename or change one in the code, change the doc and the claim row together; `node scripts/check-docs.mjs` names the row that broke.
+
+Every sentence that changes when the repository is published carries an HTML comment starting with `publish:`; `rg "publish:"` lists them and `node scripts/check-docs.mjs --release` fails until they are resolved. Do not remove a mark yourself: it is the author's step.
 
 ---
 
@@ -551,9 +581,25 @@ Excalidraw | .excalidraw.md and .excalidraw files, drawn clean by a small render
 
 Dataview, Tasks, Bases | The query text is shown with a “shown, not run” label. Nothing is executed.
 
-Not supported: editing (the reader is read-only), other Obsidian plugins, and file types not listed above (those open in the system application).
+The sample vault note Feature tour contains one of each; open it to check an install, step by step with Check your install.
 
-The sample vault note Feature tour contains one of each; open it to check an install.
+## Limits you may hit
+
+- Big notes. Herdr lets a mod read a text file of up to 1 MiB. A note or canvas larger than that cannot be opened in the reader; the messages are on the troubleshooting page.
+
+- Big folders. A folder lists its first 2000 entries; search finds the rest.
+
+- PDFs. An opened PDF shows its first 30 pages; a PDF inside a note or canvas shows page 1.
+
+- Pictures. Vault images over 40 MB are not shown; web images over 20 MB are not downloaded.
+
+- Live refresh on Linux. Herdr does not watch folders that git ignores, and refuses trees of more than 4096 folders that git does not ignore (see troubleshooting).
+
+- Excalidraw drawings are drawn by a small renderer of this project, not by Excalidraw. Dataview, Tasks, Bases and other plugins are never run.
+
+- Read-only. There is no editing, and file types not listed above open in the system application.
+
+- Vaults outside your home folder cannot be read, because Herdr mods may only read inside it.
 
 ← InstallRequirements →
 
@@ -695,7 +741,9 @@ vault.import | mod command | Sent to vault by the Import from Obsidian menu item
 
 obsidian | tab name | Kept notes go in a tab with this name. Matched without regard to case.
 
-mods/vault-reader/obsidian.png | file | A small icon that the portrait layout loads. The content is a generic gem, not the Obsidian logo; the path is kept for compatibility. vault.svg beside it is the vector version.
+mods/vault/icons/book-open.svg | file | Drawn by the bar of the portrait layout when the vault mod is installed. Keep the path.
+
+mods/vault-reader/obsidian.png | file | Kept for older copies of the portrait layout; the newer layout no longer loads it, and it may go once that project confirms on its board. The content is a generic gem, not the Obsidian logo. vault.svg beside it is the vector version.
 
 ## Limits in the code
 
@@ -731,7 +779,7 @@ POLL_MS | mods/vault/watch.js, mods/vault-reader/watch.js | 10000 | Refresh inte
 
 - data/vault/settings.json: the settings above.
 
-- Herdr shared state: the keys of the contract table (vault.list, vault.current, vault.outside, vault.open, vault.panes). Herdr’s per-mod storage: open:<vault path>, the open folders of the tree.
+- Herdr shared state (shared.json): the keys of the contract table (vault.list, vault.current, vault.outside, vault.open, vault.panes), and one internal key, vault.adding. vault.adding is not part of the contract: it holds the time at which an Add vault folder picker was opened, so the docked panel and the popup copy do not open two pickers, and a picker abandoned for two minutes no longer blocks. Herdr’s per-mod storage: open:<vault path>, the open folders of the tree.
 
 ← RequirementsPrivacy →
 
@@ -761,11 +809,13 @@ What | Why
 
 The folder of the selected vault, recursively | The tree, search, links, embeds, and live refresh (a folder watcher). Folders starting with a dot are skipped by the tree.
 
-Obsidian’s vault list (obsidian.json, see the requirements) | To start with the vaults you already have. Read once, on first run.
+Obsidian’s vault list (obsidian.json, see the requirements) | To start with the vaults you already have. Read on first run and again each time you choose Import from Obsidian.
 
 Obsidian’s obsidian.asar | To take out Mermaid and MathJax (only lib/mermaid.min.js and lib/mathjax) for the render script.
 
 Herdr only lets mods read inside your home folder, so a vault elsewhere is not readable.
+
+The render script (node, started by the reader) also reads files itself: when a note shows an Excalidraw drawing that embeds pictures by reference, it reads those picture files from the vault with Node’s own file access, to draw them into the picture. That read is by node, not by the mod, and stays inside the vault folder.
 
 ## Runs
 
@@ -775,7 +825,7 @@ rg (ripgrep) | Each search | The vault folder and your query words. It is run wi
 
 node with render.mjs | A note has math, Mermaid or an Excalidraw drawing that is not cached | A temporary job file with the source of the formulas, diagrams and drawings, and your theme colours.
 
-Chrome, Chromium, Edge or Brave, headless | Started by the render script | A page served from 127.0.0.1 on a random port, in a private profile folder, with background networking and sync switched off. It is closed when the batch ends.
+Chrome, Chromium, Edge or Brave, headless | Started by the render script | A page served from 127.0.0.1 on a random port, in a private profile folder, with background networking and sync switched off. The browser is also started with a DevTools debugging port on the loopback address (random port), which the render script uses to control it; it exists only for the length of one render run. It is closed when the batch ends.
 
 pdfinfo, pdftoppm (Poppler) | A PDF is shown | The PDF file; it writes page pictures to the cache.
 
@@ -797,13 +847,13 @@ Dataview, Dataviewjs, Tasks and other plugin queries are never run; their text i
 
 - Links in a note are opened only when you click them, and only http, https and mailto addresses are passed to your system. file:, obsidian:, javascript: and every other scheme are ignored. Files that start programs are never opened from a note or from the tree.
 
-- The render page is local. The headless browser is not told to visit any other address.
+- The render page is local and may load nothing from anywhere else. Its content-security policy allows only its own loopback address, data: and blob:, and the browser is started so that no name but 127.0.0.1 resolves and no proxy is used. A diagram label in a note that points at a web address therefore fetches nothing. This is proven by a test that serves a counting server and checks that a Mermaid label pointing at it gets no request (tests/render-e2e.test.mjs); that test needs a Chromium-family browser and is skipped, with a reason, on a machine without one.
 
 ## Writes
 
 Only under data/vault in the Herdr home: the cache (rendered pictures, copies of vault images, downloaded web images, page images of PDFs), lib (Obsidian’s Mermaid and MathJax), a temporary chrome-… profile folder per render run, and settings.json. Vault images are copied there because Herdr can only show pictures from its own folder. Cached pictures can contain a rendering of your private notes: delete data/vault/cache to wipe them. The cache is pruned by age and size automatically, once per session (see Configuration). A failed download or a missing program is never written to the cache.
 
-Herdr keeps the vault list and the open note in its shared state, and the open folders of the tree in its per-mod storage.
+Herdr keeps the vault list and the open note in its shared state (shared.json in the Herdr home), and the open folders of the tree in its per-mod storage. Shared state holds paths of your vaults and the file of the open note, and it stays after you uninstall; Install: Uninstall says how to clear it.
 
 ## Third-party material
 
@@ -891,7 +941,9 @@ Shown in the search results area instead of results. Install ripgrep with the co
 
 ### Live updates are off for this folder
 
-On Linux, Herdr refuses to watch a tree with more than 4096 folders. The panel then re-lists the vault every 10 seconds, and the reader checks the files of the open note every 10 seconds. Nothing is lost; changes just appear a little later.
+On Linux, Herdr refuses to watch a tree with more than 4096 folders that git does not ignore (herdr.d.ts: “4096 non-ignored directories”). The panel then re-lists the vault every 10 seconds, and the reader checks the files of the open note every 10 seconds. Nothing is lost; changes just appear a little later.
+
+Also on Linux, Herdr does not watch folders that git ignores at all, so a vault that is a git repository gets no live refresh for changes inside its ignored folders, and no message says so. On macOS and Windows ignored folders are watched too. Search is not affected: it looks into ignored files as well.
 
 ### more not listed (search finds them)
 
@@ -931,7 +983,7 @@ All pages of a PDF need Poppler. On Linux and Windows the message ends with Unti
 
 ### isn't in the vault or No file … in the vault
 
-The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed). This file is no longer in the vault means the open note itself was deleted or moved.
+The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed). This file is no longer in the vault means the open note itself was deleted or moved, or is larger than 1 MiB: Herdr lets a mod read a text file of up to 1 MiB, and a larger note or canvas cannot be opened in the reader. Open it in your editor instead.
 
 ### No heading or block
 

@@ -89,7 +89,7 @@ On first run the panel lists the vaults Obsidian already knows. Otherwise use **
 - Type two letters or more in the search box. Up and Down move, Enter opens, Esc clears.
 - In the reader: Esc closes, Alt+Left or Backspace (and Cmd+[ on macOS) goes back, links open notes in place, **Web images: on/off** controls downloads, and **Keep** pins a note into a tab named `obsidian`.
 
-Details are on the [usage page](docs/usage.html).
+Details are on the [usage page](docs/usage.html). Notes over 1 MiB cannot be opened in the reader, an opened PDF shows its first 30 pages, and nothing is editable; the [limits](docs/usage.html#limits) list the rest.
 
 ## Requirements
 

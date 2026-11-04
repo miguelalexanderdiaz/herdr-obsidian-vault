@@ -74,7 +74,8 @@
 <tr><th scope="row"><code>vault.add</code></th><td>mod command</td><td>Sent to <code>vault</code> by its picker menu (and by a key that you bind) to open the add-vault folder picker.</td></tr>
 <tr><th scope="row"><code>vault.import</code></th><td>mod command</td><td>Sent to <code>vault</code> by the <em>Import from Obsidian</em> menu item to read Obsidian&rsquo;s vault list again. Additive.</td></tr>
 <tr><th scope="row"><code>obsidian</code></th><td>tab name</td><td>Kept notes go in a tab with this name. Matched without regard to case.</td></tr>
-<tr><th scope="row"><code>mods/vault-reader/obsidian.png</code></th><td>file</td><td>A small icon that the portrait layout loads. The content is a generic gem, not the Obsidian logo; the path is kept for compatibility. <code>vault.svg</code> beside it is the vector version.</td></tr>
+<tr><th scope="row"><code>mods/vault/icons/book-open.svg</code></th><td>file</td><td>Drawn by the bar of the portrait layout when the vault mod is installed. Keep the path.</td></tr>
+<tr><th scope="row"><code>mods/vault-reader/obsidian.png</code></th><td>file</td><td>Kept for older copies of the portrait layout; the newer layout no longer loads it, and it may go once that project confirms on its board. The content is a generic gem, not the Obsidian logo. <code>vault.svg</code> beside it is the vector version.</td></tr>
 </tbody></table></div>
 
 <h2 id="limits">Limits in the code</h2>
@@ -99,7 +100,7 @@
 <li><code>data/vault/lib</code>: Mermaid and MathJax copied from your Obsidian installation, once per Obsidian version.</li>
 <li><code>data/vault/chrome-&hellip;</code>: a private, temporary profile of the headless browser, one per run, removed when the run ends (leftovers older than an hour are swept).</li>
 <li><code>data/vault/settings.json</code>: the settings above.</li>
-<li>Herdr shared state: the keys of the contract table (<code>vault.list</code>, <code>vault.current</code>, <code>vault.outside</code>, <code>vault.open</code>, <code>vault.panes</code>). Herdr&rsquo;s per-mod storage: <code>open:&lt;vault path&gt;</code>, the open folders of the tree.</li>
+<li>Herdr shared state (<code>shared.json</code>): the keys of the contract table (<code>vault.list</code>, <code>vault.current</code>, <code>vault.outside</code>, <code>vault.open</code>, <code>vault.panes</code>), and one internal key, <code>vault.adding</code>. <code>vault.adding</code> is not part of the contract: it holds the time at which an Add vault folder picker was opened, so the docked panel and the popup copy do not open two pickers, and a picker abandoned for two minutes no longer blocks. Herdr&rsquo;s per-mod storage: <code>open:&lt;vault path&gt;</code>, the open folders of the tree.</li>
 </ul>
 <div class="pager"><a href="requirements.html" rel="prev">&larr; Requirements</a><a href="privacy.html" rel="next">Privacy &rarr;</a></div>
 </div>
