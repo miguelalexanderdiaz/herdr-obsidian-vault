@@ -1,4 +1,24 @@
+# Files Herdr writes into mod folders (never commit)
 gpui-kit.d.ts
+herdr.d.ts
+*.d.ts
 jsconfig.json
-.DS_Store
+
+# Runtime data and caches (the mods write to <Herdr home>/data/vault, not here)
+/data/
 node_modules/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+*.tmp
+.vscode/
+.idea/
+
+# Local, personal word list for scripts/privacy-scan.mjs (never commit)
+scripts/.privacy-words
+
+# Private notes
+/plans/**/*.private
