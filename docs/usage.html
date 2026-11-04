@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage - Herdr Obsidian Vault</title>
+<meta name="description" content="How to use the Vault panel and the Vault reader: tree, search, opening notes, keys, and what is rendered.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to the content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html">Herdr Obsidian Vault</a>
+<nav aria-label="Documentation">
+<ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="usage.html" aria-current="page">Usage</a></li>
+<li><a href="requirements.html">Requirements</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="how-it-works.html">How it works</a></li>
+<li><a href="for-agents.html">For agents</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<main id="content">
+<div class="wrap">
+<h1>Usage</h1>
+<h2 id="panel">The Vault panel</h2>
+<ul>
+<li><strong>Vault picker</strong> (top, with a small gem icon): shows the current vault. Click it for a menu of all vaults with a check mark on the current one. The <kbd>x</kbd> on a row removes the vault from this list only; the folder stays on disk. <strong>Add vault&hellip;</strong> opens the system folder picker and refuses a folder without <code>.obsidian</code>.</li>
+<li><strong>Tree</strong>: folders first, then files, in natural order (note 2 before note 10). Names starting with a dot are hidden. Notes, canvases and drawings are shown without their extension, as Obsidian does. Each folder lists its first 2000 entries. Open folders are remembered per vault. The tree refreshes by itself when files change on disk.</li>
+<li><strong>Click a file</strong>: notes, canvases, drawings, images and PDFs open in the reader. Anything else opens in the application your system uses for that file type.</li>
+</ul>
+
+<h2 id="search">Search</h2>
+<p>Type two letters or more in the box at the top. Results replace the tree after a 160 ms pause.</p>
+<ul>
+<li>Every word you type must match, in any case. A note matches if the words are in its file name, or all in one line of its text.</li>
+<li>Name matches come first, shorter names first, and show their first matching line when they have one. Then text matches, one line each.</li>
+<li>At most 200 results. At most 20 matching lines are read per file.</li>
+<li>Searches <code>.md</code> and <code>.canvas</code> text. Excalidraw drawings match by name only, because their text is packed data. The folders <code>.obsidian</code>, <code>.trash</code> and <code>.git</code> are skipped.</li>
+<li>Needs <code>rg</code> (ripgrep). Without it the panel says so and shows the install command for your system.</li>
+</ul>
+<div class="table-wrap" role="region" aria-label="Search keys" tabindex="0"><table>
+<thead><tr><th scope="col">Key</th><th scope="col">Does</th></tr></thead>
+<tbody>
+<tr><td><kbd>Up</kbd> <kbd>Down</kbd></td><td>Move through the results (wraps around).</td></tr>
+<tr><td><kbd>Enter</kbd></td><td>Open the selected result.</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Clear the search and show the tree again.</td></tr>
+</tbody></table></div>
+
+<h2 id="reader">The reader</h2>
+<p>A click in the panel opens a floating window that fills most of the screen (78% wide, 86% tall). The window has a bar with the vault icon, the note name, its folder, and buttons. It follows your Herdr theme.</p>
+<div class="table-wrap" role="region" aria-label="Reader keys" tabindex="0"><table>
+<thead><tr><th scope="col">Key</th><th scope="col">Does</th></tr></thead>
+<tbody>
+<tr><td><kbd>Esc</kbd></td><td>Close the floating reader.</td></tr>
+<tr><td><kbd>Alt</kbd>+<kbd>Left</kbd> or <kbd>Backspace</kbd></td><td>Go back to the previous note (all systems).</td></tr>
+<tr><td><kbd>Cmd</kbd>+<kbd>[</kbd></td><td>Go back (macOS).</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Links.</strong> A wikilink or a markdown link to a note opens that note in the same reader, with a Back button. Links with a heading or block anchor (<code>[[Note#Heading]]</code>, <code>[[Note#^block]]</code>) show only that section, with a button to show the whole note. A link to another kind of file opens it with the system. Only <code>http</code>, <code>https</code> and <code>mailto</code> addresses are opened; other schemes are ignored.</li>
+<li><strong>Keep.</strong> The Keep menu pins the note into your Herdr space: <em>New tab</em> makes a tab named <code>obsidian</code> with this note, <em>Add to obsidian</em> splits one more pane below the notes of that tab. Kept panes follow edits to the file and are listed in the shared key <code>vault.panes</code>.</li>
+<li><strong>PDFs and images</strong> have a button to open the file in your system viewer.</li>
+<li><strong>Live refresh.</strong> When the note, or a file it embeds, changes on disk, the reader draws it again.</li>
+</ul>
+
+<h2 id="renders">What is drawn</h2>
+<div class="table-wrap" role="region" aria-label="What the reader draws" tabindex="0"><table>
+<thead><tr><th scope="col">Content</th><th scope="col">How</th></tr></thead>
+<tbody>
+<tr><th scope="row">Properties (front matter)</th><td>Scalars, <code>[a, b]</code> lists and <code>- item</code> lists as a table; tags as chips. More complex YAML is shown as written.</td></tr>
+<tr><th scope="row">Markdown</th><td>Headings, emphasis, lists, quotes, code, tables and footnotes (by Herdr&rsquo;s markdown view). <code>==highlight==</code> is shown in bold, tags as code chips, tasks with custom marks (<code>[/]</code>, <code>[-]</code>, <code>[&gt;]</code>, <code>[!]</code>) with their own symbols. <code>%%comments%%</code> are hidden.</td></tr>
+<tr><th scope="row">Callouts</th><td>The 13 Obsidian kinds and their aliases, nested callouts, and <code>+</code> / <code>-</code> fold marks.</td></tr>
+<tr><th scope="row">Links and embeds</th><td>Wikilinks with aliases, headings and block anchors; <code>![[note]]</code> embeds up to two levels deep; images with <code>|size</code>; PDFs; drawings.</td></tr>
+<tr><th scope="row">Images</th><td>Vault images at their pixel size, fitted to the window. Web images when remote images are on.</td></tr>
+<tr><th scope="row">PDFs</th><td>The PDF you open shows up to 30 pages, one after another. A PDF inside a note or a canvas shows its first page. A click on a page opens the PDF in your viewer.</td></tr>
+<tr><th scope="row">Math</th><td>Inline <code>$&hellip;$</code> and block <code>$$&hellip;$$</code> by MathJax.</td></tr>
+<tr><th scope="row">Mermaid</th><td>Diagrams by Obsidian&rsquo;s own Mermaid with a palette taken from your Herdr theme.</td></tr>
+<tr><th scope="row">Canvas</th><td>Groups, edges with labels and arrows, text cards, note and image cards, link cards. A wide canvas scrolls sideways.</td></tr>
+<tr><th scope="row">Excalidraw</th><td><code>.excalidraw.md</code> and <code>.excalidraw</code> files, drawn clean by a small renderer of this project. It is not Excalidraw itself.</td></tr>
+<tr><th scope="row">Dataview, Tasks, Bases</th><td>The query text is shown with a &ldquo;shown, not run&rdquo; label. Nothing is executed.</td></tr>
+</tbody></table></div>
+<p>Not supported: editing (the reader is read-only), other Obsidian plugins, and file types not listed above (those open in the system application).</p>
+<p>The sample vault note <code>Feature tour</code> contains one of each; open it to check an install.</p>
+<div class="pager"><a href="install.html" rel="prev">&larr; Install</a><a href="requirements.html" rel="next">Requirements &rarr;</a></div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
+<p>This site loads nothing from other websites and runs no scripts.</p>
+</div>
+</footer>
+</body>
+</html>

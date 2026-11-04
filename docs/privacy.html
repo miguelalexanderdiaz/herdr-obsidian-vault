@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy and trust - Herdr Obsidian Vault</title>
+<meta name="description" content="Exactly what the Herdr Obsidian Vault mods read, run, download and write on your machine.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to the content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html">Herdr Obsidian Vault</a>
+<nav aria-label="Documentation">
+<ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="usage.html">Usage</a></li>
+<li><a href="requirements.html">Requirements</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="privacy.html" aria-current="page">Privacy</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="how-it-works.html">How it works</a></li>
+<li><a href="for-agents.html">For agents</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<main id="content">
+<div class="wrap">
+<h1>Privacy and trust</h1>
+<p class="lede">Herdr mods are trusted code: they can run programs and reach the network. Here is everything these two do, so you can decide before installing. Nothing from your notes leaves your machine.</p>
+
+<h2 id="summary">In short</h2>
+<ul>
+<li>It reads your vault and Obsidian&rsquo;s vault list. It never writes into your vault.</li>
+<li>It runs programs you installed (see the list below). It bundles none.</li>
+<li>It uses the network for one thing: downloading a web image when a note shows one. You can turn that off.</li>
+<li>It writes only under <code>data/vault</code> in the Herdr home.</li>
+<li>No telemetry, no analytics, no accounts. This documentation site has no scripts, fonts or trackers from anywhere else.</li>
+</ul>
+
+<h2 id="reads">Reads</h2>
+<div class="table-wrap" role="region" aria-label="Files read" tabindex="0"><table>
+<thead><tr><th scope="col">What</th><th scope="col">Why</th></tr></thead>
+<tbody>
+<tr><th scope="row">The folder of the selected vault, recursively</th><td>The tree, search, links, embeds, and live refresh (a folder watcher). Folders starting with a dot are skipped by the tree.</td></tr>
+<tr><th scope="row">Obsidian&rsquo;s vault list (<code>obsidian.json</code>, see the <a href="requirements.html#vault-list">requirements</a>)</th><td>To start with the vaults you already have. Read once, on first run.</td></tr>
+<tr><th scope="row">Obsidian&rsquo;s <code>obsidian.asar</code></th><td>To take out Mermaid and MathJax (only <code>lib/mermaid.min.js</code> and <code>lib/mathjax</code>) for the render script.</td></tr>
+</tbody></table></div>
+<p>Herdr only lets mods read inside your home folder, so a vault elsewhere is not readable.</p>
+
+<h2 id="runs">Runs</h2>
+<div class="table-wrap" role="region" aria-label="Programs run" tabindex="0"><table id="programs-table">
+<thead><tr><th scope="col">Program</th><th scope="col">When</th><th scope="col">What it gets</th></tr></thead>
+<tbody>
+<tr><th scope="row"><code>rg</code> (ripgrep)</th><td>Each search</td><td>The vault folder and your query words.</td></tr>
+<tr><th scope="row"><code>node</code> with <code>render.mjs</code></th><td>A note has math, Mermaid or an Excalidraw drawing that is not cached</td><td>A temporary job file with the source of the formulas, diagrams and drawings, and your theme colours.</td></tr>
+<tr><th scope="row">Chrome, Chromium, Edge or Brave, headless</th><td>Started by the render script</td><td>A page served from <code>127.0.0.1</code> on a random port, in a private profile folder, with background networking and sync switched off. It is closed when the batch ends.</td></tr>
+<tr><th scope="row"><code>pdfinfo</code>, <code>pdftoppm</code> (Poppler)</th><td>A PDF is shown</td><td>The PDF file; it writes page pictures to the cache.</td></tr>
+<tr><th scope="row"><code>curl</code></th><td>A note shows a web image and remote images are on</td><td>The image address from the note.</td></tr>
+<tr><th scope="row">The system opener (<code>open</code>, <code>xdg-open</code>, <code>cmd /c start</code>)</th><td>You click a non-note file, a web link, or the PDF button</td><td>The path or the address.</td></tr>
+<tr><th scope="row"><code>qlmanage</code> (macOS only)</th><td>A PDF is shown on a Mac without Poppler</td><td>The PDF file, to make a picture of page 1.</td></tr>
+</tbody></table></div>
+<p>Dataview, Dataviewjs, Tasks and other plugin queries are never run; their text is displayed. Mermaid runs in its strict security mode.</p>
+
+<h2 id="network">Network</h2>
+<ul>
+<li>When a note shows an image with an <code>http</code> or <code>https</code> address, <code>curl</code> downloads it. The site that hosts the image sees your IP address and the request, as soon as the note is opened. Set <code>remoteImages</code> to <code>false</code> (<a href="configuration.html#settings">Configuration</a>) to stop this.</li>
+<li>Links in a note are opened only when you click them, and only <code>http</code>, <code>https</code> and <code>mailto</code> addresses are passed to your system. <code>file:</code> and <code>obsidian:</code> links are ignored.</li>
+<li>The render page is local. The headless browser is not told to visit any other address.</li>
+</ul>
+
+<h2 id="writes">Writes</h2>
+<p>Only under <code>data/vault</code> in the Herdr home: the <code>cache</code> (rendered pictures, copies of vault images, downloaded web images, page images of PDFs), <code>lib</code>, <code>chrome</code> and <code>settings.json</code>. Vault images are copied there because Herdr can only show pictures from its own folder. Cached pictures can contain a rendering of your private notes: delete <code>data/vault/cache</code> to wipe them. The cache is pruned by age and size automatically (see <a href="configuration.html#stored">Configuration</a>).</p>
+<p>Herdr keeps the vault list and the open note in its shared state, and the open folders of the tree in its per-mod storage.</p>
+
+<h2 id="third-party">Third-party material</h2>
+<p>Mermaid (MIT) and MathJax (Apache-2.0) are not distributed by this project. They are copied from your own Obsidian installation to <code>data/vault/lib</code> on your machine, and stay under their own licenses. Icons: Lucide (ISC). Obsidian is a trademark of its owner; this project is not affiliated with it.</p>
+<div class="pager"><a href="configuration.html" rel="prev">&larr; Configuration</a><a href="troubleshooting.html" rel="next">Troubleshooting &rarr;</a></div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
+<p>This site loads nothing from other websites and runs no scripts.</p>
+</div>
+</footer>
+</body>
+</html>

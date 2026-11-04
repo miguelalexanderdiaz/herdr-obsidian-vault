@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting - Herdr Obsidian Vault</title>
+<meta name="description" content="Messages shown by the Herdr Obsidian Vault mods, what causes them and how to fix them.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to the content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html">Herdr Obsidian Vault</a>
+<nav aria-label="Documentation">
+<ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="usage.html">Usage</a></li>
+<li><a href="requirements.html">Requirements</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+<li><a href="troubleshooting.html" aria-current="page">Troubleshooting</a></li>
+<li><a href="how-it-works.html">How it works</a></li>
+<li><a href="for-agents.html">For agents</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<main id="content">
+<div class="wrap">
+<h1>Troubleshooting</h1>
+<p class="lede">Each entry gives the message as it appears, why, and what to do. Messages are quoted from the code.</p>
+<div class="note">If a mod breaks right after you edit it, Herdr keeps the last good version and writes the reason to <code>&lt;name&gt;.error</code>. <code>herdr-app status</code> shows errors too. If a layout or key makes the window unusable, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Esc</kbd>: it sets the layout and <code>keys.json</code> aside.</div>
+
+<h2 id="panel">Panel</h2>
+
+<h3 id="no-vaults">The panel says <code class="msg">No vault yet</code></h3>
+<p>Obsidian has not been run on this machine, or its list is somewhere the mod does not look (see the <a href="requirements.html#vault-list">file per system</a>). Click <strong>Add vault</strong> and pick the folder that holds <code>.obsidian</code>.</p>
+
+<h3 id="not-vault">Notification <code class="msg">Not an Obsidian vault</code></h3>
+<p>The folder you picked has no <code>.obsidian</code> inside. Pick the vault&rsquo;s own folder. A new vault needs to be opened in Obsidian once so it creates that folder.</p>
+
+<h3 id="folder-gone"><code class="msg">This vault's folder is gone</code></h3>
+<p>The folder was moved or deleted, or sits on a drive that is not connected. Remove it from the picker (the <kbd>x</kbd>) and add it again.</p>
+
+<h3 id="outside-home">My vault is not in the list or cannot be opened</h3>
+<p>Herdr mods can only read inside the home folder. Keep the vault under your home folder (or link it there).</p>
+
+<h3 id="rg-missing"><code class="msg">ripgrep (rg) isn't installed</code></h3>
+<p>Install ripgrep with the command shown for your system (also in the <a href="requirements.html">requirements table</a>), then search again. If it is installed and still not found, Herdr&rsquo;s PATH may not include its folder: start Herdr from a shell that has it, or install it in a common location.</p>
+
+<h3 id="stale-tree">The tree stops updating on a big vault</h3>
+<p>On Linux, Herdr refuses to watch a tree with more than 4096 non-ignored folders. The tree then updates when you switch vaults or reopen the panel. Folders listed in a <code>.gitignore</code> are not watched on Linux either.</p>
+
+<h2 id="reader">Reader</h2>
+
+<h3 id="render-missing">Diagrams, formulas or drawings show their source and a notice</h3>
+<p>One of three things is missing: Node.js 22 or newer, a Chromium-family browser, or the Obsidian application (the source of Mermaid and MathJax). The notice names which one. Install it from the <a href="requirements.html">requirements table</a>, or point the mod at it with an <a href="requirements.html#overrides">environment variable</a>. Then reopen the note.</p>
+<p>The messages begin with <code class="msg">Mermaid:</code> or <code class="msg">Math:</code> followed by the reason.</p>
+
+<h3 id="pdf-first">A PDF shows only one page, or an install hint</h3>
+<p>All pages need Poppler (<code>pdftoppm</code> and <code>pdfinfo</code>). macOS falls back to Quick Look for page 1. A PDF with more than 30 pages shows the first 30 and a row to open the whole file in your viewer.</p>
+
+<h3 id="missing-target"><code class="msg">isn't in the vault</code> or <code class="msg">No file</code> &hellip; <code class="msg">in the vault</code></h3>
+<p>The note embeds or links a file that is not in this vault (a typo, a file outside the vault, or a file that was renamed).</p>
+
+<h3 id="anchor"><code class="msg">No heading or block</code></h3>
+<p>The link asks for a heading or a block id (<code>^id</code>) that the note does not have. The reader shows the whole note instead.</p>
+
+<h3 id="canvas-empty"><code class="msg">This canvas is empty</code></h3>
+<p>The canvas file has no cards. If you expected cards, check that the file is a valid JSON Canvas.</p>
+
+<h3 id="stale-picture">A picture looks old</h3>
+<p>Diagrams and formulas are cached per theme, so a new theme draws new ones. If the picture is wrong for another reason, delete <code>data/vault/cache</code> in the Herdr home.</p>
+
+<h3 id="web-image">A web image does not load</h3>
+<p>It is downloaded with <code>curl</code>. Check that <code>curl</code> exists, that the address works in a browser, and that <code>remoteImages</code> is not <code>false</code>. A failed download is not cached, so reopen the note to try again.</p>
+
+<h3 id="link-nothing">Clicking a link does nothing</h3>
+<p>Only <code>http</code>, <code>https</code> and <code>mailto</code> links are opened. Other files open with the system opener (<code>open</code>, <code>xdg-open</code>, <code>cmd /c start</code>); check that it exists.</p>
+
+<h2 id="report">Still stuck</h2>
+<p>Open an issue in the repository with: your operating system, <code>node --version</code>, the output of <code>herdr-app check</code> on both mods, and the exact text of the message. Do not paste note content or paths that name you.</p>
+<div class="pager"><a href="privacy.html" rel="prev">&larr; Privacy</a><a href="how-it-works.html" rel="next">How it works &rarr;</a></div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
+<p>This site loads nothing from other websites and runs no scripts.</p>
+</div>
+</footer>
+</body>
+</html>
