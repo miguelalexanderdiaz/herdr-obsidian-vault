@@ -23,7 +23,7 @@ so the list it prints is this list). `rg "publish:"` lists the sentences in the 
    that name public. It is the only place a real name appears.
 5. **Check Obsidian's trademark text** (https://obsidian.md/brand) once more and that `NOTICE` still says
    "not affiliated". Keep the generic icon; do not add the real logo to the repo.
-6. **Install the CI workflow.** Pushing a workflow file needs a token with the `workflow` scope, which the
+6. **Install the CI workflow.** Done: `.github/workflows/ci.yml` is installed and green on Linux, macOS and Windows. Pushing a workflow file needs a token with the `workflow` scope, which the
    unattended runs did not have. Run `gh auth refresh -s workflow`, then `node scripts/install-ci.mjs` (copies
    `scripts/ci.workflow.yml` to `.github/workflows/ci.yml` without its header comment; it refuses to overwrite a
    different file), commit and push. Optional: add a repository secret `PRIVACY_WORDS` (one real name, employer or

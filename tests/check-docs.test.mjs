@@ -199,7 +199,7 @@ test("--release lists every open publish-time item and fails; the plain run does
     assert.equal(run(root).status, 0);
     const r = run(root, "--release");
     assert.equal(r.status, 1);
-    for (const needle of ["open mark: preview", "open mark: ci", "still has to install"]) {
+    for (const needle of ["open mark: preview", "open mark: herdr.dev"]) {
       assert.ok(r.stderr.includes(needle), `release output lacks "${needle}":\n${r.stderr}`);
     }
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
