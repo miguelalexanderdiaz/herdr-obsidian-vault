@@ -4,6 +4,16 @@ All notable changes to this project are written here. The format follows [Keep a
 
 Releases are written here by [release-please](https://github.com/googleapis/release-please) from the titles of the pull requests merged since the last release (Conventional Commits, see CONTRIBUTING.md), newest first, and tagged `vX.Y.Z` on GitHub. Below them is the hand-written history from before the first release.
 
+## 0.1.0 (2026-11-04)
+
+
+### Documentation
+
+* a short install page, the details folded ([#12](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/12)) ([a86de6c](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/commit/a86de6cf8ce4480bbb791774a8412a9df39e2e91))
+* add a documentation button to the README ([#5](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/5)) ([00e76a8](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/commit/00e76a85507b7f801a46351d40b52619694e24f0))
+* fewer pages, shorter privacy and requirements, real owner ([#13](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/13)) ([3db0474](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/commit/3db047486b209c22b953a43dfee2f4ca8ffaca79))
+* restyle the documentation site with the Dragon design system ([#6](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/6)) ([4de8198](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/commit/4de8198715d46d045416d8970d8d6434f614229d))
+
 ## [Before the first release]
 
 ### Added
