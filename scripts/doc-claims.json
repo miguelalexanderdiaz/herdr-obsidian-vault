@@ -340,5 +340,75 @@
   "docText": "mods/vault/icons/book-open.svg file",
   "code": "mods/vault/icons/book-open.svg",
   "pattern": "<svg"
+ },
+ {
+  "id": "rows-max",
+  "doc": "docs/configuration.html",
+  "docText": "ROWS_MAX mods/vault/main.js 3000",
+  "code": "mods/vault/main.js",
+  "pattern": "\\bROWS_MAX\\s*=\\s*3000\\b"
+ },
+ {
+  "id": "rows-max-usage",
+  "doc": "docs/usage.html",
+  "docText": "at most 3000 rows are drawn",
+  "code": "mods/vault/main.js",
+  "pattern": "\\bROWS_MAX\\s*=\\s*3000\\b"
+ },
+ {
+  "id": "fetch-concurrency",
+  "doc": "docs/configuration.html",
+  "docText": "FETCH_CONCURRENCY mods/vault-reader/assets-core.js 4",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bFETCH_CONCURRENCY\\s*=\\s*4\\b"
+ },
+ {
+  "id": "relist",
+  "doc": "docs/configuration.html",
+  "docText": "RELIST_MIN_MS mods/vault-reader/main.js 1000",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\\bRELIST_MIN_MS\\s*=\\s*1000\\b"
+ },
+ {
+  "id": "stamp-ttl",
+  "doc": "docs/configuration.html",
+  "docText": "STAMP_TTL_MS mods/vault-reader/main.js 30000",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\\bSTAMP_TTL_MS\\s*=\\s*30_000\\b"
+ },
+ {
+  "id": "touch-after",
+  "doc": "docs/configuration.html",
+  "docText": "TOUCH_AFTER_MS mods/vault-reader/assets-core.js 7 days",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bTOUCH_AFTER_MS\\s*=\\s*7\\s*\\*\\s*86_400_000\\b"
+ },
+ {
+  "id": "canary-test",
+  "doc": "docs/privacy.html",
+  "docText": "tests/render-e2e.test.mjs",
+  "code": "tests/render-e2e.test.mjs",
+  "pattern": "canary:"
+ },
+ {
+  "id": "csp-flag",
+  "doc": "docs/privacy.html",
+  "docText": "no name but 127.0.0.1 resolves",
+  "code": "mods/vault-reader/render/lib.mjs",
+  "pattern": "--host-resolver-rules=MAP \\* ~NOTFOUND\\s*,\\s*EXCLUDE 127\\.0\\.0\\.1"
+ },
+ {
+  "id": "csp-no-proxy",
+  "doc": "docs/privacy.html",
+  "docText": "no proxy is used",
+  "code": "mods/vault-reader/render/lib.mjs",
+  "pattern": "\"--no-proxy-server\""
+ },
+ {
+  "id": "devtools-port",
+  "doc": "docs/privacy.html",
+  "docText": "DevTools debugging port on the loopback address",
+  "code": "mods/vault-reader/render/lib.mjs",
+  "pattern": "\"--remote-debugging-port=0\""
  }
 ]

@@ -95,12 +95,17 @@
 <tr><th scope="row"><code>BATCH</code></th><td><code>mods/vault-reader/assets-core.js</code></td><td>6</td><td>Diagrams or formulas rendered per browser start (a cold start must fit Herdr&rsquo;s 30 second limit).</td></tr>
 <tr><th scope="row"><code>CACHE_MAX_AGE_DAYS</code>, <code>CACHE_MAX_MB</code></th><td><code>mods/vault-reader/assets-core.js</code></td><td>30, 200</td><td>Cache pruning limits.</td></tr>
 <tr><th scope="row"><code>REMOTE_MAX_BYTES</code>, <code>IMAGE_MAX_BYTES</code></th><td><code>mods/vault-reader/assets-core.js</code></td><td>20 MB, 40 MB</td><td>Largest web image downloaded; largest image shown.</td></tr>
+<tr><th scope="row"><code>ROWS_MAX</code></th><td><code>mods/vault/main.js</code></td><td>3000</td><td>Rows drawn over all open folders together.</td></tr>
+<tr><th scope="row"><code>FETCH_CONCURRENCY</code></th><td><code>mods/vault-reader/assets-core.js</code></td><td>4</td><td>Pictures (vault images, PDF first pages, web images) fetched at the same time for one note. Render jobs run one batch at a time.</td></tr>
+<tr><th scope="row"><code>RELIST_MIN_MS</code></th><td><code>mods/vault-reader/main.js</code></td><td>1000</td><td>The reader walks the vault again at most this often while files change.</td></tr>
+<tr><th scope="row"><code>STAMP_TTL_MS</code></th><td><code>mods/vault-reader/main.js</code></td><td>30000</td><td>How long a file&rsquo;s change stamp is trusted when the watcher has not reported that file.</td></tr>
+<tr><th scope="row"><code>TOUCH_AFTER_MS</code></th><td><code>mods/vault-reader/assets-core.js</code></td><td>7 days</td><td>A cache hit older than this is marked as used again, so the 30 day prune keeps pictures you still look at.</td></tr>
 <tr><th scope="row"><code>POLL_MS</code></th><td><code>mods/vault/watch.js</code>, <code>mods/vault-reader/watch.js</code></td><td>10000</td><td>Refresh interval when the folder cannot be watched.</td></tr>
 </tbody></table></div>
 
 <h2 id="stored">What is stored</h2>
 <ul>
-<li><code>data/vault/cache</code> in the Herdr home: pictures and their size files. Once per session, about 8 seconds after the first reader opens, entries older than 30 days are removed, then the oldest until the folder is under 200 MB. You can delete the folder at any time; it is rebuilt on demand.</li>
+<li><code>data/vault/cache</code> in the Herdr home: pictures and their size files. Once per session, about 8 seconds after the first reader opens, entries that have not been used for 30 days are removed (a hit older than 7 days counts as a use), then the oldest until the folder is under 200 MB. You can delete the folder at any time; it is rebuilt on demand.</li>
 <li><code>data/vault/lib</code>: Mermaid and MathJax copied from your Obsidian installation, once per Obsidian version.</li>
 <li><code>data/vault/chrome-&hellip;</code>: a private, temporary profile of the headless browser, one per run, removed when the run ends (leftovers older than an hour are swept).</li>
 <li><code>data/vault/settings.json</code>: the settings above.</li>

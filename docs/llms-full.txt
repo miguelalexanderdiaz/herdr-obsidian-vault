@@ -514,7 +514,7 @@ Your vaults are never touched. Herdr keeps a few values in its own shared.json (
 
 - Vault picker (top, with a small gem icon): shows the current vault. Click it for a menu of all vaults with a check mark on the current one. The x on a row removes the vault from this list only; the folder stays on disk. Add vault… opens the system folder picker and refuses a folder without .obsidian. Import from Obsidian reads Obsidian’s own list again and adds the vaults that are missing. A vault that Obsidian knows but that lies outside your home folder is shown dimmed with Outside your home folder: Herdr can’t read it.
 
-- Tree: folders first, then files, in natural order (note 2 before note 10). Names starting with a dot are hidden. Notes, canvases and drawings are shown without their extension, as Obsidian does. A folder with more than 2000 entries lists the first 2000 and ends with a line +N more not listed (search finds them). Open folders are remembered per vault. The tree refreshes by itself when files change on disk (on Linux, a very large tree is checked every 10 seconds instead, and the panel says so).
+- Tree: folders first, then files, in natural order (note 2 before note 10). Names starting with a dot are hidden. Notes, canvases and drawings are shown without their extension, as Obsidian does. A folder with more than 2000 entries lists the first 2000 and ends with a line +N more not listed (search finds them). Across all open folders together at most 3000 rows are drawn; past that the last row reads Only the first 3000 rows are drawn (close a folder, or search). Open folders are remembered per vault. The tree refreshes by itself when files change on disk (on Linux, a very large tree is checked every 10 seconds instead, and the panel says so).
 
 - Click a file: notes, canvases, drawings, images and PDFs open in the reader. Anything else opens in the application your system uses for that file type, except files that start programs (.app, .exe, .bat, .sh, .ps1, .jar and similar): those are never launched from the panel and a notice says so.
 
@@ -819,11 +819,21 @@ CACHE_MAX_AGE_DAYS, CACHE_MAX_MB | mods/vault-reader/assets-core.js | 30, 200 | 
 
 REMOTE_MAX_BYTES, IMAGE_MAX_BYTES | mods/vault-reader/assets-core.js | 20 MB, 40 MB | Largest web image downloaded; largest image shown.
 
+ROWS_MAX | mods/vault/main.js | 3000 | Rows drawn over all open folders together.
+
+FETCH_CONCURRENCY | mods/vault-reader/assets-core.js | 4 | Pictures (vault images, PDF first pages, web images) fetched at the same time for one note. Render jobs run one batch at a time.
+
+RELIST_MIN_MS | mods/vault-reader/main.js | 1000 | The reader walks the vault again at most this often while files change.
+
+STAMP_TTL_MS | mods/vault-reader/main.js | 30000 | How long a file’s change stamp is trusted when the watcher has not reported that file.
+
+TOUCH_AFTER_MS | mods/vault-reader/assets-core.js | 7 days | A cache hit older than this is marked as used again, so the 30 day prune keeps pictures you still look at.
+
 POLL_MS | mods/vault/watch.js, mods/vault-reader/watch.js | 10000 | Refresh interval when the folder cannot be watched.
 
 ## What is stored
 
-- data/vault/cache in the Herdr home: pictures and their size files. Once per session, about 8 seconds after the first reader opens, entries older than 30 days are removed, then the oldest until the folder is under 200 MB. You can delete the folder at any time; it is rebuilt on demand.
+- data/vault/cache in the Herdr home: pictures and their size files. Once per session, about 8 seconds after the first reader opens, entries that have not been used for 30 days are removed (a hit older than 7 days counts as a use), then the oldest until the folder is under 200 MB. You can delete the folder at any time; it is rebuilt on demand.
 
 - data/vault/lib: Mermaid and MathJax copied from your Obsidian installation, once per Obsidian version.
 
@@ -1008,6 +1018,10 @@ Also on Linux, Herdr does not watch folders that git ignores at all, so a vault 
 ### more not listed (search finds them)
 
 The line reads +N more not listed (search finds them). The tree lists the first 2000 entries of a folder. Use the search box to reach the others.
+
+### rows are drawn (close a folder, or search)
+
+The whole line reads Only the first 3000 rows are drawn (close a folder, or search). The panel draws at most 3000 rows over all open folders together, because every row is an element and a very long list makes the panel slow. Close a folder you do not need, or use the search box.
 
 ### is a program, not a document.
 
