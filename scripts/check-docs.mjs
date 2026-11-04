@@ -5,6 +5,11 @@
 //   node scripts/check-docs.mjs              check this repository
 //   node scripts/check-docs.mjs --root DIR   check another copy (for example a temp copy
 //                                            with a broken link, to see it fail)
+//   node scripts/check-docs.mjs --release    also fail while anything that must change when the
+//                                            repository is published is still open (the owner
+//                                            placeholder, "not published yet", "still has to
+//                                            install", and every publish: mark). Used by
+//                                            check-repo.mjs --release.
 //
 // What it checks, and why:
 //   - every page in docs/ has lang, title, meta description and exactly one h1;
@@ -15,19 +20,30 @@
 //   - llms.txt equals docs/llms.txt, and its links point at files that exist;
 //   - the requirements table is the same in README.md and docs/requirements.html;
 //   - the keys table in docs/configuration.html equals keys.json;
-//   - messages quoted in docs/troubleshooting.html (class="msg") exist in the code;
+//   - messages quoted in docs/troubleshooting.html (class="msg") exist in the code as string
+//     literals (comments do not count; short quotes must be a whole literal or a whole segment of one);
+//   - the claims table scripts/doc-claims.json: a number, name or phrase in a doc against the
+//     constant, string or key that backs it in the code;
+//   - the one support-level sentence is identical in the README, both llms.txt copies and the pages;
+//   - docs/verify.html names only files that exist in the sample vault;
+//   - the CI template runs only commands that exist (npm scripts, files in scripts/);
+//   - docs/llms-full.txt equals a fresh build (scripts/build-llms-full.mjs);
 //   - commands in AGENTS.md and CONTRIBUTING.md name scripts and test folders that exist.
 // Exit code 0 when everything passes, 1 otherwise.
 
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { buildLlmsFull } from "./build-llms-full.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const argRoot = process.argv.indexOf("--root");
 const ROOT = path.resolve(argRoot > 0 ? process.argv[argRoot + 1] : path.join(here, ".."));
 const DOCS = path.join(ROOT, "docs");
 const REPO = "herdr-obsidian-vault";
+const RELEASE = process.argv.includes("--release");
+// The one sentence about what has been run where. Quoted verbatim in the places listed in checkSupportSentence().
+const SUPPORT = "macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.";
 
 const errors = [];
 const fail = (where, msg) => errors.push(`${where}: ${msg}`);
@@ -101,11 +117,11 @@ function checkLink(from, target) {
 
 const mdFiles = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "RECIPE.md", "scripts/PUBLISH.md", "scripts/PREVIEW.md"]
   .map((f) => path.join(ROOT, f)).filter(exists);
-const mustHave = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "llms.txt", "docs/llms.txt", "docs/.nojekyll", "docs/index.html", "docs/assets/style.css"];
+const mustHave = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "llms.txt", "docs/llms.txt", "docs/llms-full.txt", "docs/.nojekyll", "docs/index.html", "docs/assets/style.css", "docs/assets/layout.svg", "docs/assets/favicon.svg", "scripts/doc-claims.json"];
 for (const f of mustHave) if (!exists(path.join(ROOT, f))) fail(f, "missing");
 
 const pages = exists(DOCS) ? fs.readdirSync(DOCS).filter((f) => f.endsWith(".html")).sort() : [];
-const required = ["index", "install", "usage", "requirements", "configuration", "privacy", "troubleshooting"];
+const required = ["index", "install", "usage", "requirements", "configuration", "privacy", "troubleshooting", "verify", "how-it-works", "for-agents"];
 for (const r of required) if (!pages.includes(`${r}.html`)) fail(`docs/${r}.html`, "missing");
 
 // ---------------------------------------------------------------- HTML pages
@@ -126,7 +142,8 @@ for (const name of pages) {
   if (!/<main[\s>]/.test(html)) fail(where, "no <main> landmark");
   if (!/class="skip"/.test(html)) fail(where, "no skip link");
   if (/<script[\s>]/i.test(html)) fail(where, "<script> found: the site needs none");
-  if (/\sstyle="/i.test(html) && /url\(\s*['"]?https?:/i.test(html)) fail(where, "inline style loads an external URL");
+  if (/url\(\s*['"]?(https?:|\/\/)|@import/i.test(html)) fail(where, "inline style loads something from another site");
+  if (name !== "404.html" && !/<link[^>]*rel="icon"/i.test(html)) fail(where, 'no <link rel="icon"> (every page would ask for /favicon.ico)');
   // Headings must not skip a level.
   let last = 1;
   for (const m of html.matchAll(/<h([1-6])[\s>]/g)) {
@@ -150,7 +167,15 @@ for (const name of pages) {
       continue;
     }
     if (/^\/\//.test(target)) { fail(where, `protocol-relative URL: ${target}`); continue; }
-    if (target.startsWith("/") && !target.startsWith("//")) { fail(where, `absolute path breaks under /${REPO}/: ${target}`); continue; }
+    if (target.startsWith("/") && !target.startsWith("//")) {
+      // 404.html is served for a missing page at any depth, so relative links would break there: it uses
+      // links that start at the site root of a project site (/<repo>/...), which must lead to a page.
+      if (name === "404.html" && target.startsWith(`/${REPO}/`)) {
+        const t = target.slice(REPO.length + 2).split("#")[0] || "index.html";
+        if (!exists(path.join(DOCS, t))) fail(where, `root link to a page that does not exist: ${target}`);
+      } else fail(where, `absolute path breaks under /${REPO}/: ${target}`);
+      continue;
+    }
     const err = checkLink(file, target);
     if (err) fail(where, err);
   }
@@ -194,7 +219,7 @@ for (const file of [...mdFiles, path.join(ROOT, "llms.txt"), path.join(DOCS, "ll
 // ---------------------------------------------------------------- personal data
 
 const docFiles = [...mdFiles, path.join(ROOT, "llms.txt"), path.join(ROOT, "scripts/check-docs.mjs"),
-  ...pages.map((p) => path.join(DOCS, p)), path.join(DOCS, "llms.txt"), path.join(DOCS, "assets/style.css")].filter(exists);
+  ...pages.map((p) => path.join(DOCS, p)), path.join(DOCS, "llms.txt"), path.join(DOCS, "llms-full.txt"), path.join(DOCS, "assets/style.css")].filter(exists);
 const leaks = [
   [/\/Users\/[^\s/<>"'`)]+/, "a macOS home path"],
   [/\/home\/(?!<|\$|\.\.\.|user\b|name\b|me\b)[A-Za-z0-9._-]+/, "a Linux home path"],
@@ -209,7 +234,8 @@ for (const file of docFiles) {
     const m = src.match(re);
     if (m) fail(rel(file), `looks like ${what}: ${m[0]}`);
   }
-  if (!file.endsWith("check-docs.mjs") && /github\.com\/(?!<owner>|anthropics\/|orgs\/)[A-Za-z0-9-]+\/herdr-/i.test(src)) {
+  // In --release mode the owner is meant to be real (the author has replaced <owner>), so the rule is off.
+  if (!RELEASE && !file.endsWith("check-docs.mjs") && /github\.com\/(?!<owner>|anthropics\/|orgs\/)[A-Za-z0-9-]+\/herdr-/i.test(src)) {
     fail(rel(file), "a real GitHub owner in a repository URL: write <owner>");
   }
 }
@@ -307,35 +333,299 @@ const reqPage = exists(path.join(DOCS, "requirements.html")) ? read(path.join(DO
   }
 }
 
-// ---------------------------------------------------------------- quoted messages exist in the code
+// ---------------------------------------------------------------- code as data: literals and comment-free source
 
+// Splits JavaScript into its code with comments removed and the list of string-literal segments (a template
+// literal gives one segment per piece between ${...}). Good enough for this repository's style: it knows
+// strings, templates with nested code, regular expressions and both comment forms. It is not a parser.
+export function scanJs(src) {
+  const lits = [];
+  let i = 0;
+  const KEYWORDS = new Set(["return", "typeof", "case", "in", "of", "delete", "void", "throw", "new", "else", "do", "yield", "await"]);
+  const cook = (q, from) => {
+    let j = from, buf = "";
+    while (j < src.length) {
+      const c = src[j];
+      if (c === "\\") {
+        const n = src[j + 1];
+        if (n === "u" && /^[0-9a-fA-F]{4}/.test(src.slice(j + 2, j + 6))) { buf += String.fromCharCode(parseInt(src.slice(j + 2, j + 6), 16)); j += 6; continue; }
+        if (n === "u" && src[j + 2] === "{") { const e = src.indexOf("}", j); buf += String.fromCodePoint(parseInt(src.slice(j + 3, e), 16)); j = e + 1; continue; }
+        if (n === "x" && /^[0-9a-fA-F]{2}/.test(src.slice(j + 2, j + 4))) { buf += String.fromCharCode(parseInt(src.slice(j + 2, j + 4), 16)); j += 4; continue; }
+        buf += n === "n" ? "\n" : n === "t" ? "\t" : n === "r" ? "\r" : n === "\n" ? "" : n;
+        j += 2;
+        continue;
+      }
+      if (c === q) return { text: buf, end: j + 1 };
+      if (q === "`" && c === "$" && src[j + 1] === "{") return { text: buf, end: j, hole: true };
+      if (c === "\n" && q !== "`") return { text: buf, end: j };
+      buf += c;
+      j++;
+    }
+    return { text: buf, end: j };
+  };
+  // Scans code from i until the closing brace of a ${...} (stopAtBrace) or the end. Returns the code text.
+  function code(stopAtBrace) {
+    let out = "", depth = 0, prev = "", word = "";
+    while (i < src.length) {
+      const c = src[i];
+      if (/\s/.test(c)) { out += c; i++; continue; }
+      if (c === "/" && src[i + 1] === "/") { while (i < src.length && src[i] !== "\n") i++; continue; }
+      if (c === "/" && src[i + 1] === "*") { const e = src.indexOf("*/", i + 2); i = e < 0 ? src.length : e + 2; out += " "; continue; }
+      if (c === '"' || c === "'") {
+        const r = cook(c, i + 1);
+        lits.push(r.text);
+        out += src.slice(i, r.end);
+        i = r.end; prev = c; word = "";
+        continue;
+      }
+      if (c === "`") {
+        out += "`";
+        i++;
+        for (;;) {
+          const r = cook("`", i);
+          lits.push(r.text);
+          out += src.slice(i, r.end);
+          i = r.end;
+          if (r.hole) { out += "${"; i += 2; out += code(true); out += "}"; continue; }
+          break;
+        }
+        prev = "`"; word = "";
+        continue;
+      }
+      if (c === "/" && (prev === "" || "(,=:[!&|?{};+-*%<>~^".includes(prev) || KEYWORDS.has(word))) {
+        let j = i + 1, inClass = false;
+        while (j < src.length && src[j] !== "\n") {
+          if (src[j] === "\\") { j += 2; continue; }
+          if (src[j] === "[") inClass = true;
+          else if (src[j] === "]") inClass = false;
+          else if (src[j] === "/" && !inClass) break;
+          j++;
+        }
+        j++;
+        while (/[a-z]/i.test(src[j] ?? "")) j++;
+        out += src.slice(i, j);
+        i = j; prev = "/"; word = "";
+        continue;
+      }
+      if (c === "{") depth++;
+      if (c === "}") { if (stopAtBrace && depth === 0) { i++; return out; } depth--; }
+      if (/[A-Za-z0-9_$]/.test(c)) word = /[A-Za-z0-9_$]/.test(prev) ? word + c : c; else word = "";
+      out += c; prev = c; i++;
+    }
+    return out;
+  }
+  const stripped = code(false);
+  return { code: stripped, literals: lits };
+}
+
+// What the code of one file says, for the claims and the quoted messages.
+function scanFile(file) {
+  const src = read(file);
+  if (/\.m?js$/.test(file)) return scanJs(src);
+  if (/\.html?$/.test(file)) {
+    const noComments = src.replace(/<!--[\s\S]*?-->/g, "");
+    const scripts = [...noComments.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => scanJs(m[1]));
+    return { code: noComments, literals: [noComments, ...scripts.flatMap((x) => x.literals)] };
+  }
+  return { code: src, literals: [src] };
+}
+
+const modSources = [];
 {
-  const modsDir = path.join(ROOT, "mods");
-  const sources = [];
   const walk = (d) => {
+    if (!exists(d)) return;
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
       const p = path.join(d, e.name);
       if (e.isDirectory()) walk(p);
-      else if (/\.(m?js|html)$/.test(e.name)) sources.push(read(p));
+      else if (/\.(m?js|html)$/.test(e.name)) modSources.push(p);
     }
   };
-  if (exists(modsDir)) walk(modsDir);
-  const code = sources.join("\n");
-  const flat = (s) => s.replace(/\\(['"`])/g, "$1");
+  walk(path.join(ROOT, "mods"));
+}
+const scanCache = new Map();
+const scanned = (file) => { if (!scanCache.has(file)) scanCache.set(file, scanFile(file)); return scanCache.get(file); };
+
+// ---------------------------------------------------------------- quoted messages exist in the code
+
+{
+  const literals = modSources.flatMap((f) => scanned(f).literals);
+  const segments = new Set(literals.map((l) => l.trim()));
   // Some messages are built from parts ("<name> isn't installed: <hint>"): ask the pure module.
   const built = [];
   try {
-    const mod = await import(pathToFileURL(path.join(modsDir, "vault-reader", "platform.js")).href);
+    const mod = await import(pathToFileURL(path.join(ROOT, "mods", "vault-reader", "platform.js")).href);
     for (const what of ["rg", "poppler", "node", "curl", "browser", "obsidian"]) {
       for (const os of ["macos", "linux", "windows"]) built.push(mod.missingMessage(os, what));
     }
   } catch { /* no platform.js yet: only literal messages can match */ }
   const trouble = exists(path.join(DOCS, "troubleshooting.html")) ? read(path.join(DOCS, "troubleshooting.html")) : "";
+  let count = 0;
   for (const m of trouble.matchAll(/<code class="msg">([\s\S]*?)<\/code>/g)) {
-    const msg = text(m[1]);
-    if (!flat(code).includes(msg) && !code.includes(msg) && !built.some((b) => b.includes(msg))) {
-      fail("docs/troubleshooting.html", `message not found in mods/: "${msg}"`);
+    const msg = text(m[1]).replace(/’/g, "'");
+    count++;
+    // Short quotes ("No file", "Mermaid:") would match anywhere as a substring, so they must be a whole
+    // literal, or the whole text between two ${...} holes of a template. Longer ones may be part of one.
+    const ok = msg.length >= 12
+      ? literals.some((l) => l.includes(msg)) || built.some((b) => b.includes(msg))
+      : segments.has(msg) || built.includes(msg);
+    if (!ok) fail("docs/troubleshooting.html", `message is not a string literal in mods/: "${msg}"`);
+  }
+  if (!count) fail("docs/troubleshooting.html", 'no <code class="msg"> quotes found');
+}
+
+// ---------------------------------------------------------------- claims table: docs against code
+
+const claimsFile = path.join(ROOT, "scripts", "doc-claims.json");
+const flatDoc = (file) => {
+  const src = read(file);
+  const body = /\.html?$/.test(file) ? decode(src.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]*>/g, " ")) : src.replace(/<!--[\s\S]*?-->/g, "").replace(/[`*]/g, "");
+  return body.replace(/’/g, "'").replace(/\s+/g, " ");
+};
+let claimCount = 0;
+if (exists(claimsFile)) {
+  let claims = [];
+  try { claims = JSON.parse(read(claimsFile)); } catch (e) { fail("scripts/doc-claims.json", `invalid JSON: ${e.message}`); }
+  const seen = new Set();
+  for (const c of claims) {
+    claimCount++;
+    const where = `claim ${c.id ?? "(no id)"}`;
+    if (!c.id || seen.has(c.id)) { fail(where, "missing or duplicate id"); continue; }
+    seen.add(c.id);
+    if (!c.docText || !c.code || !c.pattern) { fail(where, "needs docText, code and pattern"); continue; }
+    for (const doc of [].concat(c.doc ?? [])) {
+      const dp = path.join(ROOT, doc);
+      if (!exists(dp)) { fail(where, `doc not found: ${doc}`); continue; }
+      if (!flatDoc(dp).includes(c.docText)) fail(where, `${doc} no longer says: "${c.docText}"`);
     }
+    for (const cf of [].concat(c.code)) {
+      const cp = path.join(ROOT, cf);
+      if (!exists(cp)) { fail(where, `code file not found: ${cf}`); continue; }
+      let re;
+      try { re = new RegExp(c.pattern, c.flags ?? ""); } catch (e) { fail(where, `bad pattern: ${e.message}`); continue; }
+      if (!re.test(scanned(cp).code)) fail(where, `${cf} no longer has /${c.pattern}/ (outside comments)`);
+    }
+  }
+} else {
+  fail("scripts/doc-claims.json", "missing");
+}
+
+// ---------------------------------------------------------------- the support-level sentence
+
+{
+  const where = [
+    ["README.md", () => flatDoc(path.join(ROOT, "README.md"))],
+    ["llms.txt", () => read(path.join(ROOT, "llms.txt")).replace(/\s+/g, " ")],
+    ["docs/llms.txt", () => read(path.join(DOCS, "llms.txt")).replace(/\s+/g, " ")],
+    ["docs/index.html", () => flatDoc(path.join(DOCS, "index.html"))],
+    ["docs/requirements.html", () => flatDoc(path.join(DOCS, "requirements.html"))],
+  ];
+  for (const [name, get] of where) {
+    if (!exists(path.join(ROOT, name))) continue;
+    if (!get().includes(SUPPORT)) fail(name, "the support-level sentence is missing or reworded (see SUPPORT in scripts/check-docs.mjs)");
+  }
+  for (const page of ["index", "requirements"]) {
+    const file = path.join(DOCS, `${page}.html`);
+    if (!exists(file)) continue;
+    const desc = decode((read(file).match(/<meta[^>]*name="description"[^>]*content="([^"]*)"/i) || [])[1] ?? "");
+    if (!desc.includes(SUPPORT)) fail(`docs/${page}.html`, "the meta description does not carry the support-level sentence");
+  }
+  const bad = /\b(?:runs|works) on macOS, Linux (?:and|,) Windows\b|\bthree[- ]OS\b/i;
+  for (const file of docFiles) {
+    if (file.endsWith("check-docs.mjs")) continue;
+    const m = read(file).match(bad);
+    if (m) fail(rel(file), `an unconditional support claim: "${m[0]}" (say only what has run, see SUPPORT)`);
+  }
+}
+
+// ---------------------------------------------------------------- SVG pictures
+
+{
+  const dir = path.join(DOCS, "assets");
+  const svgs = exists(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith(".svg")) : [];
+  for (const name of svgs) {
+    const file = path.join(dir, name);
+    const where = `docs/assets/${name}`;
+    const svg = read(file);
+    if (/<script[\s>]|\son\w+="/i.test(svg)) fail(where, "script or event handler in an SVG");
+    if (/(?:href|src)="(?:https?:)?\/\//i.test(svg) || /url\(\s*['"]?https?:/i.test(svg) || /@import/.test(svg)) fail(where, "loads something from another site");
+    if (name === "layout.svg") {
+      if (!/role="img"/.test(svg) || !/<title\b/.test(svg) || !/<desc\b/.test(svg)) fail(where, "needs role=img, a <title> and a <desc>");
+      if (!/not a screenshot/i.test(svg)) fail(where, 'must say "not a screenshot" in its text');
+      const sizes = [...svg.matchAll(/font-size="(\d+)"/g)].map((m) => Number(m[1]));
+      if (sizes.some((n) => n < 12)) fail(where, "text smaller than 12");
+      const rootBlock = (svg.match(/:root\s*\{([^}]*)\}/) || [])[1] ?? "";
+      const darkBlock = (svg.match(/prefers-color-scheme:\s*dark\)\s*\{\s*:root\s*\{([^}]*)\}/) || [])[1] ?? "";
+      const light = tokens(rootBlock);
+      const dark = { ...light, ...tokens(darkBlock) };
+      // The text colours used (fg, muted, accent-fg) and the backgrounds they can sit on.
+      const textOn = [["fg", "bg"], ["fg", "surface"], ["fg", "code-bg"], ["muted", "bg"], ["muted", "surface"], ["muted", "code-bg"], ["accent-fg", "accent"]];
+      for (const [mode, set] of [["light", light], ["dark", dark]]) {
+        for (const [a, b] of textOn) {
+          if (!set[a] || !set[b]) { fail(where, `token --${set[a] ? b : a} missing (${mode})`); continue; }
+          const r = ratio(set[a], set[b]);
+          if (r < 4.5) fail(where, `${mode}: --${a} on --${b} has contrast ${r.toFixed(2)}, needs 4.5`);
+        }
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------- docs/verify.html names files of the sample vault
+
+{
+  const file = path.join(DOCS, "verify.html");
+  if (exists(file)) {
+    const vault = path.join(ROOT, "examples", "sample-vault");
+    const html = read(file);
+    const names = [...html.matchAll(/<code class="sv">([\s\S]*?)<\/code>/g)].map((m) => text(m[1]));
+    if (names.length < 8) fail("docs/verify.html", `only ${names.length} <code class="sv"> names; every step must name its file`);
+    for (const n of names) {
+      const candidates = [path.join(vault, n), path.join(ROOT, n)];
+      if (!candidates.some(exists)) fail("docs/verify.html", `names "${n}", which is not in examples/sample-vault`);
+    }
+    const steps = (html.match(/<table id="verify-table">[\s\S]*?<\/table>/) || [""])[0].match(/<tr><th scope="row">\d+\./g) || [];
+    const claimed = (html.match(/\b(Fifteen|Fourteen|Sixteen|Twelve|Ten) short steps\b/) || [])[1];
+    const words = { Ten: 10, Twelve: 12, Fourteen: 14, Fifteen: 15, Sixteen: 16 };
+    if (claimed && words[claimed] !== steps.length) fail("docs/verify.html", `says ${claimed} steps but has ${steps.length}`);
+  }
+}
+
+// ---------------------------------------------------------------- the CI template runs only commands that exist
+
+{
+  const ci = path.join(ROOT, "scripts", "ci.workflow.yml");
+  if (exists(ci)) {
+    const src = read(ci);
+    const pkg = exists(path.join(ROOT, "package.json")) ? JSON.parse(read(path.join(ROOT, "package.json"))) : { scripts: {} };
+    if (/node --test tests\/?(\s|$)/.test(src)) fail("scripts/ci.workflow.yml", "runs `node --test tests/`, which fails (a bare folder is read as a module): use `npm test`");
+    if (!/\brun:\s*npm test\b/.test(src)) fail("scripts/ci.workflow.yml", "does not run `npm test`");
+    const cmds = [];
+    const lines = src.split("\n");
+    for (let k = 0; k < lines.length; k++) {
+      const m = lines[k].match(/^(\s*)(?:- )?run:\s*(.*)$/);
+      if (!m) continue;
+      if (/^[|>][+-]?$/.test(m[2].trim())) {
+        const indent = lines[k + 1]?.match(/^(\s*)/)[1].length ?? 0;
+        for (let q = k + 1; q < lines.length && indent > m[1].length && (lines[q].trim() === "" || lines[q].match(/^(\s*)/)[1].length >= indent); q++) if (lines[q].trim()) cmds.push(lines[q].trim());
+      } else cmds.push(m[2].trim());
+    }
+    for (const c of cmds) {
+      const n = c.match(/^node\s+(scripts\/[\w./-]+)/);
+      if (n && !exists(path.join(ROOT, n[1]))) fail("scripts/ci.workflow.yml", `runs ${n[1]}, which does not exist`);
+      const p = c.match(/^npm\s+(?:run\s+)?([\w:-]+)/);
+      if (p && !["install", "ci"].includes(p[1]) && !pkg.scripts?.[p[1]]) fail("scripts/ci.workflow.yml", `runs npm ${p[1]}, which package.json does not define`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------- docs/llms-full.txt is current
+
+{
+  const out = path.join(DOCS, "llms-full.txt");
+  if (exists(out)) {
+    try {
+      if (read(out) !== buildLlmsFull(ROOT)) fail("docs/llms-full.txt", "is stale (run: node scripts/build-llms-full.mjs)");
+    } catch (e) { fail("docs/llms-full.txt", `cannot be rebuilt: ${e.message}`); }
   }
 }
 
@@ -364,11 +654,32 @@ const reqPage = exists(path.join(DOCS, "requirements.html")) ? read(path.join(DO
   }
 }
 
+// ---------------------------------------------------------------- publish-time text (--release)
+
+// Everything that must change when the repository is published is marked with an HTML comment that starts
+// with "publish:" (list: rg "publish:"). Plain runs only count them; --release fails while any is open.
+const marks = [];
+const releaseFiles = [...docFiles, path.join(ROOT, "README.md"), path.join(DOCS, "404.html")].filter((f, i, a) => a.indexOf(f) === i && exists(f) && !f.endsWith("check-docs.mjs") && !/style\.css$/.test(f) && !rel(f).startsWith("scripts/") && rel(f) !== "RECIPE.md");
+for (const file of releaseFiles) {
+  const src = read(file);
+  const lineOf = (idx) => src.slice(0, idx).split("\n").length;
+  for (const m of src.matchAll(/<!--\s*publish:([\s\S]*?)-->/g)) marks.push([rel(file), lineOf(m.index), "open mark: " + m[1].trim().split(/\.\s|\n/)[0].slice(0, 60)]);
+  if (!file.endsWith("llms-full.txt")) {
+    for (const [re, what] of [[/<owner>|&lt;owner&gt;/g, "the <owner> placeholder"], [/not published yet/gi, '"not published yet"'], [/still has to install/gi, '"still has to install"']]) {
+      const hits = [...src.matchAll(re)];
+      if (hits.length) marks.push([rel(file), lineOf(hits[0].index), `${what}${hits.length > 1 ? ` (${hits.length} times)` : ""}`]);
+    }
+  }
+}
+if (RELEASE) {
+  for (const [file, line, what] of marks) errors.push(`release: ${file}:${line}: ${what}`);
+}
+
 // ---------------------------------------------------------------- result
 
 if (errors.length) {
-  console.error(`check-docs: ${errors.length} problem${errors.length === 1 ? "" : "s"}`);
+  console.error(`check-docs: ${errors.length} problem${errors.length === 1 ? "" : "s"}${RELEASE ? " (release mode)" : ""}`);
   for (const e of errors) console.error(`  ${e}`);
   process.exit(1);
 }
-console.log(`check-docs: ok (${pages.length} pages, ${mdFiles.length + 2} text files)`);
+console.log(`check-docs: ok (${pages.length} pages, ${mdFiles.length + 2} text files, ${claimCount} claims, ${marks.length} publish-time items open; --release lists them)`);
