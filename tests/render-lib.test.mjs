@@ -1,0 +1,127 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import path from "node:path";
+import { expandCandidate, findAsar, findBrowser, safeJoin, findNear, profileName, DEADLINE_MS } from "../mods/vault-reader/render/lib.mjs";
+import * as P from "../mods/vault-reader/platform.js";
+
+const existsIn = (set) => (p) => set.has(p);
+
+test("candidates expand ~ and %VAR% (case-insensitive), and skip unset variables", () => {
+  const env = { LOCALAPPDATA: "C:\\Users\\me\\AppData\\Local" };
+  assert.deepEqual(expandCandidate("~/Applications/x", { home: "/Users/me", pathMod: path.posix }), ["/Users/me/Applications/x"]);
+  assert.deepEqual(expandCandidate("%localappdata%/Programs/Obsidian/resources/obsidian.asar", { env, pathMod: path.win32 }),
+    ["C:\\Users\\me\\AppData\\Local\\Programs\\Obsidian\\resources\\obsidian.asar"]);
+  assert.deepEqual(expandCandidate("%ProgramW6432%/Obsidian/x", { env, pathMod: path.win32 }), []);
+});
+
+test("a * segment matches one folder (flatpak versions)", () => {
+  const dirs = { "/var/lib/flatpak/app/md.obsidian.Obsidian": ["x86_64"], "/var/lib/flatpak/app/md.obsidian.Obsidian/x86_64": ["stable"] };
+  const readdirSync = (d) => { if (!(d in dirs)) throw new Error("ENOENT"); return dirs[d]; };
+  const got = expandCandidate("/var/lib/flatpak/app/md.obsidian.Obsidian/*/*/files/obsidian.asar", { readdirSync, pathMod: path.posix });
+  assert.deepEqual(got, ["/var/lib/flatpak/app/md.obsidian.Obsidian/x86_64/stable/files/obsidian.asar"]);
+});
+
+test("asar: the override first, then each OS's candidates", () => {
+  const exists = existsIn(new Set(["/opt/Obsidian/resources/obsidian.asar"]));
+  const candidates = P.obsidianAsarCandidates("linux");
+  assert.equal(findAsar({ env: {}, home: "/h", candidates, exists, pathMod: path.posix }), "/opt/Obsidian/resources/obsidian.asar");
+  assert.equal(findAsar({ env: { HERDR_VAULT_ASAR: "/custom/obsidian.asar" }, home: "/h", candidates, exists: existsIn(new Set(["/custom/obsidian.asar", "/opt/Obsidian/resources/obsidian.asar"])), pathMod: path.posix }), "/custom/obsidian.asar");
+  assert.equal(findAsar({ env: {}, home: "/h", candidates, exists: () => false, pathMod: path.posix }), null);
+  const win = findAsar({ env: { LOCALAPPDATA: "C:\\U\\me\\AppData\\Local" }, home: "C:\\U\\me", candidates: P.obsidianAsarCandidates("windows"),
+    exists: existsIn(new Set(["C:\\U\\me\\AppData\\Local\\Programs\\Obsidian\\resources\\obsidian.asar"])), pathMod: path.win32 });
+  assert.equal(win, "C:\\U\\me\\AppData\\Local\\Programs\\Obsidian\\resources\\obsidian.asar");
+});
+
+test("browser: env overrides, install folders, then PATH names", () => {
+  const mac = P.browserCandidates("macos");
+  const chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  assert.equal(findBrowser({ env: {}, home: "/h", candidates: mac, names: [], exists: existsIn(new Set([chrome])), pathMod: path.posix }), chrome);
+  assert.equal(findBrowser({ env: { HERDR_VAULT_BROWSER: "/mine/chrome" }, home: "/h", candidates: mac, names: [], exists: existsIn(new Set(["/mine/chrome", chrome])), pathMod: path.posix }), "/mine/chrome");
+  assert.equal(findBrowser({ env: { CHROME_PATH: "/c/chrome" }, home: "/h", candidates: [], names: [], exists: existsIn(new Set(["/c/chrome"])), pathMod: path.posix }), "/c/chrome");
+  // Linux: nothing in install folders, found by name on PATH
+  assert.equal(findBrowser({ env: { PATH: "/usr/local/bin:/usr/bin" }, home: "/h", candidates: [], names: P.browserNames("linux"), exists: existsIn(new Set(["/usr/bin/chromium"])), pathMod: path.posix }), "/usr/bin/chromium");
+  // Windows: Edge is always there
+  const edge = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+  assert.equal(findBrowser({ env: { "ProgramFiles(x86)": "C:\\Program Files (x86)", ProgramFiles: "C:\\Program Files" }, home: "C:\\U\\me", candidates: P.browserCandidates("windows"), names: [], exists: existsIn(new Set([edge])), pathMod: path.win32 }), edge);
+  assert.equal(findBrowser({ env: {}, home: "/h", candidates: mac, names: [], exists: () => false, pathMod: path.posix }), null);
+});
+
+test("PATH lookup adds .exe on Windows", () => {
+  const found = findBrowser({ env: { Path: "C:\\tools" }, home: "C:\\h", candidates: [], names: ["chrome"], exists: existsIn(new Set(["C:\\tools\\chrome.exe"])), pathMod: path.win32, win: true });
+  assert.equal(found, "C:\\tools\\chrome.exe");
+});
+
+test("safeJoin stays inside the root, also against a sibling folder and bad escapes (CR-1-6)", () => {
+  const root = "/data/render";
+  assert.equal(safeJoin(root, "/page.html", path.posix), "/data/render/page.html");
+  assert.equal(safeJoin(root, "/a/b.js", path.posix), "/data/render/a/b.js");
+  assert.equal(safeJoin(root, "/../render-x/secret", path.posix), null);
+  assert.equal(safeJoin(root, "/%2e%2e/render-x/secret", path.posix), null);
+  assert.equal(safeJoin(root, "/..%2f..%2fetc/passwd", path.posix), null);
+  assert.equal(safeJoin(root, "/%E0%A4%A", path.posix), null, "malformed % does not throw");
+  assert.equal(safeJoin(root, "/a%00b", path.posix), null);
+  assert.equal(safeJoin("C:\\data\\render", "/..\\render-x\\s", path.win32), null);
+});
+
+test("findNear ends at the filesystem root on POSIX and on a Windows-style root (CR-1-5)", () => {
+  const tree = (files, dirs = []) => ({
+    existsSync: (p) => files.includes(p) || dirs.includes(p),
+    readdirSync: (d) => {
+      const names = new Map();
+      for (const f of files) if (path.posix.dirname(f) === d) names.set(path.posix.basename(f), false);
+      for (const x of dirs) if (path.posix.dirname(x) === d) names.set(path.posix.basename(x), true);
+      return [...names].map(([name, dir]) => ({ name, isDirectory: () => dir }));
+    },
+  });
+  const t = tree(["/v/pics/a.png", "/v/notes/d.excalidraw.md"], ["/v/.obsidian", "/v/pics", "/v/notes"]);
+  assert.equal(findNear("/v/notes/d.excalidraw.md", "a.png", { ...t, pathMod: path.posix }), "/v/pics/a.png");
+  assert.equal(findNear("/v/notes/d.excalidraw.md", "missing.png", { ...t, pathMod: path.posix }), null);
+  // no .obsidian anywhere: must stop at "/" instead of looping
+  const bare = tree(["/x/y/d.md"], []);
+  assert.equal(findNear("/x/y/d.md", "a.png", { ...bare, pathMod: path.posix }), null);
+
+  // Windows: path.win32.dirname("C:\\") === "C:\\", the old loop condition never ended
+  let n = 0;
+  const win = {
+    existsSync: () => { if (++n > 1000) throw new Error("did not terminate"); return false; },
+    readdirSync: () => [],
+    pathMod: path.win32,
+  };
+  assert.equal(findNear("C:\\Users\\me\\notes\\d.md", "a.png", win), null);
+  assert.ok(n < 100, "bounded number of probes");
+});
+
+test("two parallel runs get distinct browser profile folders (CR-1-6)", () => {
+  const a = profileName(1000, 5), b = profileName(1001, 5), c = profileName(1000, 5, 0.123), d = profileName(1000, 5, 0.456);
+  assert.equal(new Set([a, b, c, d]).size, 4);
+  assert.match(a, /^chrome-1000-/);
+  assert.ok(DEADLINE_MS < 30_000, "under the 30 s exec limit");
+});
+
+// ---- render.mjs itself: the machine problems it can report without any browser -------------------
+
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import { fileURLToPath } from "node:url";
+
+const RENDER = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "mods", "vault-reader", "render", "render.mjs");
+function runRender(spec, env) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "herdr-render-test-"));
+  const file = path.join(dir, "jobs.json");
+  fs.writeFileSync(file, JSON.stringify({ theme: {}, jobs: [], ...spec }));
+  const clean = { ...process.env, HERDR_VAULT_BROWSER: "", HERDR_VAULT_ASAR: "", CHROME_PATH: "", PATH: "" };
+  const r = spawnSync(process.execPath, [RENDER, dir, file], { env: { ...clean, ...env }, encoding: "utf8", timeout: 20000 });
+  return { out: JSON.parse(r.stdout || "null"), code: r.status, stderr: r.stderr };
+}
+
+test("render.mjs: no browser anywhere is a structured no-browser, exit 0, nothing thrown", () => {
+  const r = runRender({ discover: { asar: [], browsers: [], names: [] } }, {});
+  assert.deepEqual(r.out, [{ error: "no-browser" }]);
+  assert.equal(r.code, 0);
+});
+
+test("render.mjs: a browser but no Obsidian app is a structured no-obsidian", () => {
+  const r = runRender({ discover: { asar: ["/nonexistent/obsidian.asar"], browsers: [], names: [] } }, { HERDR_VAULT_BROWSER: process.execPath });
+  assert.deepEqual(r.out, [{ error: "no-obsidian" }]);
+});

@@ -1,6 +1,6 @@
 // node make-fixture.mjs <out.js> <vault> <file>... : documents for the check harness.
 import fs from "fs"; import path from "path";
-import { buildDoc } from "../doc.js"; import { makeResolver } from "../parse.js";
+import { buildDoc } from "../../mods/vault-reader/doc.js"; import { makeResolver } from "../../mods/vault-reader/parse.js";
 const [out, ...rest] = process.argv.slice(2);
 const docs = [];
 for (const spec of rest) {

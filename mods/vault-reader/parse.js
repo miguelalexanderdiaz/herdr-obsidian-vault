@@ -25,6 +25,20 @@ export function splitFrontmatter(text) {
 
 const unquote = (s) => s.trim().replace(/^(['"])(.*)\1$/, "$2");
 
+// "a, 'b, c', d" → ["a", "'b, c'", "d"]: commas inside quotes stay.
+function splitList(s) {
+  const out = [];
+  let cur = "", quote = null;
+  for (const ch of s) {
+    if (quote) { cur += ch; if (ch === quote) quote = null; }
+    else if (ch === '"' || ch === "'") { quote = ch; cur += ch; }
+    else if (ch === ",") { out.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
 // The YAML Obsidian writes in properties: scalars, [a, b] and "- item" lists.
 // Anything fancier is shown as written.
 export function parseYaml(src) {
@@ -44,7 +58,7 @@ export function parseYaml(src) {
       if (value === "|" || value === ">") out.push([key, items.join(value === "|" ? "\n" : " ")]);
       else out.push([key, items.map(unquote)]);
     } else if (/^\[.*\]$/.test(value)) {
-      out.push([key, value.slice(1, -1).split(",").map(unquote).filter(Boolean)]);
+      out.push([key, splitList(value.slice(1, -1)).map(unquote).filter(Boolean)]);
     } else out.push([key, unquote(value)]);
   }
   return out;
@@ -58,11 +72,18 @@ const norm = (s) => s.toLowerCase().replace(/[\s\-_]+/g, " ").replace(/[^\p{L}\p
 function fenced(lines) {
   let fence = null;
   return lines.map((l) => {
-    const m = l.match(/^\s*(`{3,}|~{3,})/);
-    if (fence) { if (m && m[1][0] === fence[0] && m[1].length >= fence.length) fence = null; return true; }
+    const m = l.match(/^\s*(`{3,}|~{3,})(.*)$/);
+    // A closing fence is the same character, at least as long, and has no info string.
+    if (fence) { if (m && m[1][0] === fence[0] && m[1].length >= fence.length && m[2].trim() === "") fence = null; return true; }
     if (m) { fence = m[1]; return true; }
     return false;
   });
+}
+
+// "text ^id" at the end of a line (the id is compared as text, never as a pattern).
+function endsWithBlockId(line, id) {
+  const t = line.trimEnd(), tail = "^" + id;
+  return t.length > tail.length && t.endsWith(tail) && /\s/.test(t[t.length - tail.length - 1]);
 }
 
 // The part of a note a link points into: a heading's section (to the next
@@ -74,7 +95,7 @@ export function section(body, anchor) {
   const inFence = fenced(lines);
   if (anchor.startsWith("^")) {
     const id = anchor.slice(1);
-    const at = lines.findIndex((l, i) => !inFence[i] && new RegExp(`\\s\\^${id.replace(/[-]/g, "\\-")}\\s*$`).test(l));
+    const at = lines.findIndex((l, i) => !inFence[i] && endsWithBlockId(l, id));
     if (at < 0) {
       // "^id" on a line of its own names the block above it.
       const alone = lines.findIndex((l, i) => !inFence[i] && l.trim() === `^${id}`);
@@ -234,11 +255,11 @@ function wiki(raw, ctx) {
 }
 
 // $…$ as Obsidian reads it: no space just inside, not followed by a digit.
-const INLINE_MATH = /(?<![\\$])\$(?=[^\s$])((?:\\\$|[^$\n])+?)(?<=[^\s\\])\$(?![\d$])/g;
+const INLINE_MATH_SRC = String.raw`(?<![\\$])\$(?=[^\s$])((?:\\\$|[^$\n])+?)(?<=[^\s\\])\$(?![\d$])`;
+const INLINE_MATH_ONCE = new RegExp(INLINE_MATH_SRC); // no g flag: no lastIndex to leave behind
 
 export function hasInlineMath(text) {
-  INLINE_MATH.lastIndex = 0;
-  return outsideCode(text, (s) => (INLINE_MATH.test(s) ? "\u0001" : "")).includes("\u0001");
+  return outsideCode(text, (s) => (INLINE_MATH_ONCE.test(s) ? "\u0001" : "")).includes("\u0001");
 }
 
 // A paragraph with inline math as tokens for a wrapping row:
@@ -249,8 +270,7 @@ export function flowTokens(text, ctx) {
   pieces.forEach((piece, i) => {
     if (i % 2) { out.push({ kind: "text", text: piece.slice(1, -1), code: true }); return; }
     let last = 0;
-    INLINE_MATH.lastIndex = 0;
-    for (const m of piece.matchAll(INLINE_MATH)) {
+    for (const m of piece.matchAll(new RegExp(INLINE_MATH_SRC, "g"))) {
       styled(piece.slice(last, m.index), out, ctx);
       out.push({ kind: "math", src: m[1] });
       last = m.index + m[0].length;
@@ -299,9 +319,20 @@ export function parseBlocks(body, ctx, depth = 0) {
     const endPara = () => {
       if (!para.length) return;
       const text = para.join("\n");
-      if (hasInlineMath(text) && !/^\s*\|/.test(para[0])) {
+      const flow = (lines) => {
         pushMd();
-        blocks.push({ type: "flow", tokens: flowTokens(para.map((l) => l.replace(/^(\s*)([-*+])\s+/, "$1• ").replace(/^#{1,6}\s+/, "")).join(" "), ctx), heading: (para[0].match(/^(#{1,6})\s/) || [])[1]?.length ?? 0 });
+        blocks.push({ type: "flow", tokens: flowTokens(lines.map((l) => l.replace(/^(\s*)([-*+])\s+/, "$1• ").replace(/^#{1,6}\s+/, "")).join(" "), ctx), heading: (lines[0].match(/^(#{1,6})\s/) || [])[1]?.length ?? 0 });
+      };
+      if (hasInlineMath(text) && !/^\s*\|/.test(para[0])) {
+        // Wrapped prose is one paragraph; list items, headings and quotes each keep their own line.
+        if (para.length > 1 && para.some((l) => /^\s*(?:[-*+]|\d+\.)\s|^#{1,6}\s|^\s*>/.test(l))) {
+          let prose = [];
+          const endProse = () => { if (prose.length) { hasInlineMath(prose.join("\n")) ? flow(prose) : md.push(...prose.map((l) => inline(l, ctx))); prose = []; } };
+          for (const l of para) {
+            if (/^\s*(?:[-*+]|\d+\.)\s|^#{1,6}\s|^\s*>/.test(l)) { endProse(); prose = [l]; } else prose.push(l);
+          }
+          endProse();
+        } else flow(para);
       } else md.push(...para.map((l) => inline(l, ctx)));
       para = [];
     };
@@ -409,3 +440,13 @@ export function parseSize(s) {
 
 // The Excalidraw plugin's drawings are .md files with this front matter.
 export const isExcalidraw = (path, text) => /\.excalidraw(\.md)?$/i.test(path) || /^---[\s\S]*?excalidraw-plugin:/m.test(text?.slice(0, 600) ?? "");
+
+// A link the reader may hand to the system's opener: http, https or mailto only. Anything else
+// (file:, obsidian:, javascript:, a bare path, an option-looking string) is dropped. → the URL | null
+export function safeUrl(u) {
+  const s = String(u ?? "").trim();
+  if (!s || s.startsWith("-") || /[\u0000-\u001f\u007f]/.test(s)) return null;
+  let url;
+  try { url = new URL(s); } catch { return null; }
+  return ["http:", "https:", "mailto:"].includes(url.protocol) ? url.href : null;
+}

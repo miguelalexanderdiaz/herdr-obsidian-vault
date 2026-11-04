@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Development tooling for the Herdr Obsidian vault mods. Not part of either mod: never copy this file into a mod folder.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test --test-timeout=60000 \"tests/**/*.test.mjs\""
+  }
+}
