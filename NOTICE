@@ -21,6 +21,9 @@ Third-party material included in this repository
    Source: https://lucide.dev
    License text: mods/vault/icons/LICENSE-lucide.txt and
    mods/vault-reader/icons/LICENSE-lucide.txt
+   The same icon files (and the gem icon of item 3) are drawn into the
+   documentation pictures docs/assets/layout.svg and docs/assets/feature-*.svg
+   by scripts/make-pictures.mjs.
 
 2. lz-string, decompressFromBase64 (MIT License)
    File: mods/vault-reader/render/lzstring.js (a port of the decompressor)

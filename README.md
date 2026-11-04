@@ -4,9 +4,9 @@
 
 Browse an [Obsidian](https://obsidian.md) vault from a side panel in the [Herdr](https://herdr.dev) desktop app, and read its notes in a floating window that draws them the way Obsidian does. Read-only: it never writes into your vault.
 
-![Schematic of the Vault panel on the left and the floating Vault reader on the right. A drawing, not a screenshot.](docs/assets/layout.svg)
+![Drawing of the Vault panel on the left and the floating Vault reader on the right, on the sample vault. Drawn from the mods, not a screenshot.](docs/assets/layout.svg)
 
-*The picture above is a schematic of the layout, not a screenshot.*
+*The picture above is a drawing made from the mods' own layout code, icons and Herdr's default theme, not a screenshot.*
 
 <!-- publish: preview. Take preview.png (scripts/PREVIEW.md), copy it to docs/assets/, then delete this comment's first and last lines so the picture below shows, and delete the schematic caption above.
 ![Screenshot of the Vault panel next to the Vault reader, showing the sample vault](docs/assets/preview.png)
@@ -21,6 +21,18 @@ Two Herdr mods live in this repository:
 
 Install both, under these exact names. A sample vault to try them on is in `examples/sample-vault`.
 
+**The panel** (`vault`): the vault picker open, and a search.
+
+![Drawing of the Vault panel with the vault picker open, and searching for tour. Not a screenshot.](docs/assets/feature-panel.svg)
+
+**The reader** (`vault-reader`): the top of the sample note Feature tour, with its properties, links, callouts, tasks and table.
+
+![Drawing of the Vault reader showing the sample note Feature tour. Not a screenshot.](docs/assets/feature-reader.svg)
+
+**The sample vault**, every folder open in the panel:
+
+![Drawing of the Vault panel on the sample vault with every folder open. Not a screenshot.](docs/assets/feature-sample-vault.svg)
+
 Documentation for people and agents: [docs site](docs/index.html) (GitHub Pages from `/docs`), [AGENTS.md](AGENTS.md), [llms.txt](llms.txt), [RECIPE.md](RECIPE.md), [CHANGELOG.md](CHANGELOG.md), [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Support level
@@ -29,8 +41,7 @@ macOS is the only OS the author uses; Linux and Windows code paths are implement
 
 The mods look for every external program in the places used by macOS, Linux and Windows, and say in the panel which one is missing. Reports from Linux and Windows are welcome: [docs/verify.html](docs/verify.html) is a short checklist on the sample vault with a report template.
 
-<!-- publish: ci. Install the workflow (scripts/PUBLISH.md), wait for a green run, then replace this sentence with the systems that ran. -->
-A CI workflow template is in `scripts/ci.workflow.yml`. It has not run yet because the author still has to install it, so no system is claimed to be checked by it.
+Since 2026-11-04 the CI workflow (`.github/workflows/ci.yml`) runs the unit tests and the repository, recipe, install, privacy and docs checks on Linux, macOS and Windows, on every push and pull request. It does not start the Herdr app: the live app is still only used on macOS.
 
 ## Install
 

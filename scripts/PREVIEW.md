@@ -3,8 +3,13 @@
 Agents may not drive the running Herdr app, so the screenshot is a one-time author step. Save it as
 `preview.png` at the repo root, copy it to `docs/assets/preview.png`, and open the blocks marked
 `<!-- publish: preview -->` (`rg "publish: preview"`: RECIPE.md, README.md, docs/index.html) by deleting the first and
-last line of each comment. Until then the repository shows a labelled schematic (`docs/assets/layout.svg`), not a
+last line of each comment. Until then the repository shows a labelled drawing (`docs/assets/layout.svg`), not a
 screenshot, and `check-repo --release` keeps failing on the missing file.
+
+The drawings beside it (`docs/assets/layout.svg` and `docs/assets/feature-*.svg`, one per feature in the docs and the
+README) are generated, not taken: `node scripts/make-pictures.mjs` draws them from the mods' layout code, their icons,
+Herdr's default graphite theme and the sample vault, and `--check` says when one is out of date. Run it after a change
+to the panel's or the reader's look. The screenshot step above stays as it is.
 
 - **Content:** only `examples/sample-vault`. Never a real vault, a real window title, a real space or agent name,
   or a terminal with your prompt. Add the sample vault with the panel's "Add vault" item (it has a
