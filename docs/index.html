@@ -54,8 +54,7 @@
 <h2 id="support">Support level</h2>
 <p>macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.</p>
 <p>The code looks for every external program in the places that each operating system uses, and says in the panel which one is missing. The <a href="requirements.html#support">requirements</a> list each program. To report what you see on Linux or Windows, file a <a href="https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/new?template=platform-report.yml">Platform report</a>.</p>
-<!-- publish: ci. Install the workflow (scripts/PUBLISH.md), wait for a green run, then replace this sentence with the systems that ran. -->
-<p>A CI workflow template is in the repository (<code>scripts/ci.workflow.yml</code>). It has not run yet because the author still has to install it, so no system is claimed to be checked by it.</p>
+<p>CI (<code>.github/workflows/ci.yml</code>) runs the checks and unit tests on Linux, macOS and Windows with Node 22. That covers the code, not the mods running inside Herdr.</p>
 
 <h2 id="start">Where to go next</h2>
 <ul class="cards">

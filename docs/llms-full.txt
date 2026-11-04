@@ -33,7 +33,7 @@ macOS is the only OS the author uses; Linux and Windows code paths are implement
 
 The mods look for every external program in the places used by macOS, Linux and Windows, and say in the panel which one is missing. Reports from Linux and Windows are welcome: the [Platform report](https://github.com/miguelalexanderdiaz/herdr-obsidian-vault/issues/new?template=platform-report.yml) issue form has a short checklist on the sample vault.
 
-A CI workflow template is in `scripts/ci.workflow.yml`. It has not run yet because the author still has to install it, so no system is claimed to be checked by it.
+CI (`.github/workflows/ci.yml`) runs the checks and unit tests on Linux, macOS and Windows with Node 22. That covers the code, not the mods running inside Herdr.
 
 ## Install
 
@@ -345,7 +345,7 @@ macOS is the only OS the author uses; Linux and Windows code paths are implement
 
 The code looks for every external program in the places that each operating system uses, and says in the panel which one is missing. The requirements list each program. To report what you see on Linux or Windows, file a Platform report.
 
-A CI workflow template is in the repository (scripts/ci.workflow.yml). It has not run yet because the author still has to install it, so no system is claimed to be checked by it.
+CI (.github/workflows/ci.yml) runs the checks and unit tests on Linux, macOS and Windows with Node 22. That covers the code, not the mods running inside Herdr.
 
 ## Where to go next
 
