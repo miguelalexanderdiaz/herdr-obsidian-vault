@@ -1,5 +1,7 @@
 # Herdr Obsidian Vault
 
+<a href="https://miguelalexanderdiaz.github.io/herdr-obsidian-vault/"><img src="docs/assets/docs-button.svg" alt="Read the documentation" width="196" height="44"></a>
+
 Browse an [Obsidian](https://obsidian.md) vault from a side panel in the [Herdr](https://herdr.dev) desktop app, and read its notes in a floating window that draws them the way Obsidian does. Read-only: it never writes into your vault.
 
 ![Drawing of the Vault panel on the left and the floating Vault reader on the right, on the sample vault. Drawn from the mods, not a screenshot.](docs/assets/layout.svg)
@@ -200,7 +202,6 @@ By hand: Remove the block from your layout and the keys you merged, delete `mods
 | `tests/` | the `npm test` suite, fixtures and helper tools |
 | `scripts/` | repository checks (`check-docs.mjs`, `check-repo.mjs`, `check-recipe.mjs`, `install-sim.mjs`, `privacy-scan.mjs`, `typecheck.mjs`), the CI workflow template and the publish checklists |
 | `AGENTS.md`, `llms.txt` | instructions for AI agents |
-| `plans/` | the plans and logs of each improvement round |
 
 ## Credits, license and trademarks
 

@@ -203,7 +203,8 @@ async function main() {
   const server = await serve();
   let b = null;
   try {
-    b = await cdp(await browser.launch(bin));
+    // The browser may use the time left before the deadline to start (at least 5 s, and 2 s are kept for a job).
+    b = await cdp(await browser.launch(bin, Math.max(5_000, DEADLINE_MS - (Date.now() - started) - 2_000)));
     const { targetId } = await b.send("Target.createTarget", { url: "about:blank" });
     const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true });
     const s = (m, p) => b.send(m, p, sessionId);

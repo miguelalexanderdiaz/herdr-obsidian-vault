@@ -2,7 +2,9 @@
 
 All notable changes to this project are written here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows [Semantic Versioning](https://semver.org/). The mods have no version field in `mod.json` (it is not part of the Herdr manifest), so the version is the one in this file and in git tags.
 
-## [Unreleased]
+Releases are written here by [release-please](https://github.com/googleapis/release-please) from the titles of the pull requests merged since the last release (Conventional Commits, see CONTRIBUTING.md), newest first, and tagged `vX.Y.Z` on GitHub. Below them is the hand-written history from before the first release.
+
+## [Before the first release]
 
 ### Added
 
@@ -62,14 +64,10 @@ All notable changes to this project are written here. The format follows [Keep a
 - Every argument that comes from a note (a web address) is passed to `curl` as one argument after `--`, only for `http` and `https` addresses; no shell string is built.
 - The render page can no longer reach the network: a diagram label with an `<img>` that pointed at a web address used to make the headless browser fetch it even with Web images off. The page has a content-security policy and the browser resolves no name but `127.0.0.1` and uses no proxy; a canary test proves that such a label makes no request.
 
-## [0.1.0] - Initial import
+## [Initial import]
 
 First version, as imported from a working Herdr setup (macOS only). This baseline has no git tag.
 
 - `vault` mod: vault picker fed by Obsidian's vault list, file tree, full-text search with ripgrep.
 - `vault-reader` mod: floating note reader with front matter, callouts, wikilinks, embeds, images, tasks, tags, tables, math, Mermaid, Excalidraw, Canvas and PDFs.
 - A sample vault in `examples/sample-vault`.
-
-<!-- publish: tags. Replace <owner>, and create the tag v0.1.0 (or drop the compare links) when you publish. The 0.1.0 baseline has no tag yet. -->
-[Unreleased]: https://github.com/<owner>/herdr-obsidian-vault/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/<owner>/herdr-obsidian-vault/releases/tag/v0.1.0
