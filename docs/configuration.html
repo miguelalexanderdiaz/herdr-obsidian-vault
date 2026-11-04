@@ -60,7 +60,7 @@
 </tbody></table></div>
 
 <h2 id="contract">Public contract</h2>
-<p>Other layouts and mods (the <em>herdr-portrait-layout</em> layout, for one) rely on these names. They do not change without a note on that project&rsquo;s board. Do not rename them in a fork you want to stay compatible with.</p>
+<p>Other layouts and mods (the <em>herdr-portrait-layout</em> layout, for one) rely on these names. They do not change without a note on that project&rsquo;s board. Do not rename them in a fork you want to stay compatible with. Today that layout reads the shared key <code>vault.panes</code>, treats a pane of the mod <code>vault-reader</code> as a note, and draws <code>mods/vault/icons/book-open.svg</code>; it does not read <code>vault.list</code>, <code>vault.current</code> or <code>vault.open</code>, which stay for other layouts.</p>
 <div class="table-wrap" role="region" aria-label="Public contract" tabindex="0"><table id="contract-table">
 <thead><tr><th scope="col">Name</th><th scope="col">Kind</th><th scope="col">Shape and meaning</th></tr></thead>
 <tbody>
@@ -75,7 +75,7 @@
 <tr><th scope="row"><code>vault.import</code></th><td>mod command</td><td>Sent to <code>vault</code> by the <em>Import from Obsidian</em> menu item to read Obsidian&rsquo;s vault list again. Additive.</td></tr>
 <tr><th scope="row"><code>obsidian</code></th><td>tab name</td><td>Kept notes go in a tab with this name. Matched without regard to case.</td></tr>
 <tr><th scope="row"><code>mods/vault/icons/book-open.svg</code></th><td>file</td><td>Drawn by the bar of the portrait layout when the vault mod is installed. Keep the path.</td></tr>
-<tr><th scope="row"><code>mods/vault-reader/obsidian.png</code></th><td>file</td><td>Kept for older copies of the portrait layout; the newer layout no longer loads it, and it may go once that project confirms on its board. The content is a generic gem, not the Obsidian logo. <code>vault.svg</code> beside it is the vector version.</td></tr>
+<tr><th scope="row"><code>mods/vault-reader/obsidian.png</code></th><td>file</td><td>Kept for older copies of the portrait layout. That project&rsquo;s board has confirmed that its current layout uses neither this file nor <code>vault.svg</code>, so they may be removed in a later cleanup. The content is a generic gem, not the Obsidian logo. <code>vault.svg</code> beside it is the vector version.</td></tr>
 </tbody></table></div>
 
 <h2 id="limits">Limits in the code</h2>
