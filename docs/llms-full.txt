@@ -1148,7 +1148,6 @@ Copy this into a new issue in the repository (there is a “Platform report” f
 ```
 Operating system and version:
 Herdr version (herdr-app --version):
-Herdr home folder default kept (yes/no):
 Programs found (yes/no and version):
   rg:
   node (node --version):
@@ -1160,7 +1159,7 @@ herdr-app check on vault and vault-reader (pass/fail):
 Steps 1 to 15 (pass / fail / message shown):
   1:
   2:
-Anything else you noticed:
+Anything else you noticed (on Windows, the Home line that herdr-app --help prints):
 ```
 
 If a step fails, add the exact text of the message. Do not add note content, screenshots of your own vault, or paths that name you.
