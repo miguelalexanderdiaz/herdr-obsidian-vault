@@ -18,7 +18,8 @@ so the list it prints is this list). `rg "publish:"` lists the sentences in the 
    copy it to `docs/assets/preview.png` and open the `<!-- publish: preview -->` blocks (`rg "publish: preview"`:
    RECIPE.md, README.md, docs/index.html) by deleting the comment's first and last lines.
 4. **Replace the `<owner>` placeholder** that README, CHANGELOG, CONTRIBUTING, AGENTS.md, `llms.txt` and `docs/` use
-   for the GitHub owner (agents may not write usernames), then rerun `node scripts/check-docs.mjs --release`.
+   for the GitHub owner (agents may not write usernames), then run `node scripts/build-llms-full.mjs` (it rebuilds
+   `docs/llms-full.txt`, which holds copies of README and AGENTS.md) and `node scripts/check-docs.mjs --release`.
    **Confirm the copyright name** in `LICENSE` and `NOTICE` (currently the git author name) and that you want
    that name public. It is the only place a real name appears.
 5. **Check Obsidian's trademark text** (https://obsidian.md/brand) once more and that `NOTICE` still says
