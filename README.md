@@ -1,5 +1,7 @@
 # Herdr Obsidian Vault
 
+<a href="https://miguelalexanderdiaz.github.io/herdr-obsidian-vault/"><img src="docs/assets/docs-button.svg" alt="Read the documentation" width="196" height="44"></a>
+
 Browse an [Obsidian](https://obsidian.md) vault from a side panel in the [Herdr](https://herdr.dev) desktop app, and read its notes in a floating window that draws them the way Obsidian does. Read-only: it never writes into your vault.
 
 ![Schematic of the Vault panel on the left and the floating Vault reader on the right. A drawing, not a screenshot.](docs/assets/layout.svg)
