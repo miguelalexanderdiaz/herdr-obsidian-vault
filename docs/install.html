@@ -6,6 +6,7 @@
 <title>Install - Herdr Obsidian Vault</title>
 <meta name="description" content="Install the Vault panel and Vault reader mods in Herdr, with an agent or by hand, and show the panel.">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -22,6 +23,7 @@
 <li><a href="configuration.html">Configuration</a></li>
 <li><a href="privacy.html">Privacy</a></li>
 <li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="verify.html">Check your install</a></li>
 <li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
@@ -34,6 +36,8 @@
 <p class="lede">Both mods are needed. The panel opens notes in the reader, and the reader is opened by the panel. Install them under exactly the names <code>vault</code> and <code>vault-reader</code>.</p>
 
 <h2 id="agent">Option 1: ask a Herdr agent</h2>
+<!-- publish: owner. Replace <owner> with the GitHub owner of the published repository here and in the clone line below. -->
+<!-- publish: herdr.dev. Once the repository is listed on herdr.dev, add that site's own install form next to this prompt. -->
 <p>Herdr agents know how to install shared mods. Paste this into an agent running in Herdr, with the repository address filled in:</p>
 <pre><code>Install the Herdr mods from https://github.com/&lt;owner&gt;/herdr-obsidian-vault .
 It has two mods, mods/vault and mods/vault-reader, and a keys.json.
@@ -46,19 +50,34 @@ mods, then add the Vault panel to my layout.</code></pre>
 <h2 id="manual">Option 2: copy the folders yourself</h2>
 <ol>
 <li>Get the repository: <code>git clone https://github.com/&lt;owner&gt;/herdr-obsidian-vault.git</code> (or download the zip).</li>
-<li>Find your Herdr home folder. It is <code>~/.config/herdr-app</code> on macOS and Linux unless the variable <code>HERDR_APP_HOME</code> points elsewhere. <code>herdr-app --help</code> prints the path for your machine; use that on Windows.</li>
+<li>Find your Herdr home folder. <code>herdr-app --help</code> ends with a line <code>Home: ~/.config/herdr-app (HERDR_APP_HOME picks another)</code>. Here <code>~</code> is your user folder, and the default is <code>.config/herdr-app</code> inside it unless the variable <code>HERDR_APP_HOME</code> is set. That default is quoted from Herdr&rsquo;s help and has not been checked on Windows. Below, <code>$HERDR_HOME</code> stands for that folder.</li>
 <li>Copy <code>mods/vault</code> and <code>mods/vault-reader</code> into the <code>mods</code> folder inside that home. Do not overwrite a mod of the same name; if you already have one, rename the new folder and read the <a href="how-it-works.html#rename">rename note</a>.
-<pre><code># macOS and Linux
-cp -R mods/vault mods/vault-reader ~/.config/herdr-app/mods/
+<pre><code># macOS and Linux (HERDR_HOME defaults to ~/.config/herdr-app)
+HERDR_HOME="${HERDR_APP_HOME:-$HOME/.config/herdr-app}"
+cp -R mods/vault mods/vault-reader "$HERDR_HOME/mods/"
 
-# Windows PowerShell (replace the target with your Herdr home)
+# Windows PowerShell
+$HERDR_HOME = if ($env:HERDR_APP_HOME) { $env:HERDR_APP_HOME } else { "$HOME\.config\herdr-app" }
 Copy-Item -Recurse mods\vault, mods\vault-reader "$HERDR_HOME\mods"</code></pre></li>
 <li>Merge the key from <code>keys.json</code> in the repository into your own <code>keys.json</code> (add its section and key; keep any key you already use). It is optional; see <a href="configuration.html#keys">Configuration</a>.</li>
 <li>Check both mods:
-<pre><code>herdr-app check ~/.config/herdr-app/mods/vault
-herdr-app check ~/.config/herdr-app/mods/vault-reader</code></pre>
+<pre><code>herdr-app check "$HERDR_HOME/mods/vault"
+herdr-app check "$HERDR_HOME/mods/vault-reader"</code></pre>
 Both must pass. Herdr reloads mods as soon as their files change, so there is no restart.</li>
 </ol>
+
+<h2 id="programs">Optional programs</h2>
+<p>Only Herdr is required. These commands install the rest in one go; skip any of them and you only lose that feature (see <a href="requirements.html">Requirements</a>).</p>
+<pre><code># macOS (Homebrew)
+brew install ripgrep node poppler
+
+# Linux (Debian and Ubuntu names; use your package manager&rsquo;s)
+sudo apt install ripgrep poppler-utils curl
+
+# Windows
+winget install BurntSushi.ripgrep.MSVC OpenJS.NodeJS
+scoop install poppler</code></pre>
+<p>Diagrams and math also need a Chromium-family browser and the Obsidian app; the requirements page says where they are looked for.</p>
 
 <h2 id="show">Show the panel</h2>
 <p>The mods have <code>"place": "none"</code>, so nothing appears until you put the panel somewhere. Pick one:</p>
@@ -71,7 +90,7 @@ For the <em>herdr-portrait-layout</em> layout, append that object to the childre
 </ul>
 
 <h2 id="first">First run</h2>
-<p>The panel starts with the vaults that Obsidian already lists on this machine, most recently opened first. If Obsidian has never been run, or the vault lives outside your home folder, use <strong>Add vault</strong> and pick a folder that contains <code>.obsidian</code>. To try the mod without a vault of your own, add <code>examples/sample-vault</code> from the repository.</p>
+<p>The panel starts with the vaults that Obsidian already lists on this machine, most recently opened first. If Obsidian has never been run, or the vault lives outside your home folder, use <strong>Add vault</strong> and pick a folder that contains <code>.obsidian</code>. To try the mod without a vault of your own, add <code>examples/sample-vault</code> from the repository, then follow <a href="verify.html">Check your install</a>.</p>
 
 <h2 id="uninstall">Uninstall</h2>
 <ol>
@@ -79,11 +98,9 @@ For the <em>herdr-portrait-layout</em> layout, append that object to the childre
 <li>Delete the folders <code>mods/vault</code> and <code>mods/vault-reader</code> from your Herdr home.</li>
 <li>Optional: delete <code>data/vault</code> in the Herdr home. It holds the picture cache, the Mermaid and MathJax copies, the headless browser profile and the reader settings. Nothing else is written outside the mod folders.</li>
 </ol>
-<p>Your vaults are never touched. Herdr keeps the vault list in its own shared state (<code>vault.list</code>); it is harmless once the mods are gone.</p>
-
-<h2 id="publish">For the author: publishing</h2>
-<p>These pages are served by GitHub Pages from the <code>main</code> branch and <code>/docs</code> folder. Turning that on, adding the <code>herdr-mod</code> topic and making the repository public are steps only the owner can take; they are listed in <code>scripts/PUBLISH.md</code>. Private repositories need a paid GitHub plan for Pages.</p>
+<p>Your vaults are never touched. Herdr keeps a few values in its own <code>shared.json</code> (in the Herdr home) after the mods are gone: <code>vault.list</code> and <code>vault.current</code> hold the paths of your vaults, <code>vault.open</code> the vault and file of the note that was open, <code>vault.panes</code> kept notes, and <code>vault.outside</code> vaults outside your home folder. They are harmless, but to forget them, close Herdr and delete those <code>vault.*</code> keys from <code>shared.json</code>.</p>
 <div class="pager"><a href="index.html" rel="prev">&larr; Overview</a><a href="usage.html" rel="next">Usage &rarr;</a></div>
+
 </div>
 </main>
 <footer class="site-footer">

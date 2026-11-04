@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Herdr Obsidian Vault</title>
-<meta name="description" content="Two Herdr mods that browse an Obsidian vault and read its notes rendered, on macOS, Linux and Windows.">
+<meta name="description" content="Two Herdr mods that browse an Obsidian vault and read its notes rendered. macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -22,6 +23,7 @@
 <li><a href="configuration.html">Configuration</a></li>
 <li><a href="privacy.html">Privacy</a></li>
 <li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="verify.html">Check your install</a></li>
 <li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
@@ -33,9 +35,16 @@
 <h1>Obsidian vault panel and reader for Herdr</h1>
 <p class="lede">Two small mods for the Herdr desktop app. One is a side panel that lists an Obsidian vault and searches it. The other is a floating reader that draws a note the way Obsidian shows it. Read-only: nothing ever writes into your vault.</p>
 
-<div class="placeholder" role="img" aria-label="Screenshot not published yet">
-Screenshot not published yet. The author adds <code>preview.png</code> before the first release.
-</div>
+<figure>
+<img src="assets/layout.svg" width="760" height="450" alt="Schematic of the Vault panel on the left, with a vault picker, search box and file tree, and the floating Vault reader on the right, showing a note with a callout, a Mermaid diagram and a formula. A drawing, not a screenshot.">
+<figcaption>A schematic of the layout, not a screenshot.</figcaption>
+</figure>
+<!-- publish: preview. Take preview.png (scripts/PREVIEW.md), copy it to docs/assets/, delete the first and last line of this comment so the picture shows, and delete the schematic above.
+<figure>
+<img src="assets/preview.png" alt="Screenshot of the Vault panel next to the Vault reader, showing the sample vault">
+<figcaption>The panel and the reader on the sample vault.</figcaption>
+</figure>
+-->
 
 <h2 id="what">What you get</h2>
 <ul>
@@ -45,8 +54,10 @@ Screenshot not published yet. The author adds <code>preview.png</code> before th
 </ul>
 
 <h2 id="support">Support level</h2>
-<p>The code looks for every external program in the places that each operating system uses, and says in the panel which one is missing. Read the <a href="requirements.html">requirements table</a> for the exact list per OS.</p>
-<div class="note"><strong>Honest status.</strong> The author runs it on macOS. Linux and Windows support is implemented and covered by unit tests with a fake operating system and by a three-OS continuous integration workflow (a template that the author still has to install), but nobody has watched the mods run inside the live Herdr app on those systems yet. Please report what you see.</div>
+<p>macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.</p>
+<p>The code looks for every external program in the places that each operating system uses, and says in the panel which one is missing. The <a href="requirements.html#matrix">support table</a> lists each feature per system. To report what you see on Linux or Windows, follow <a href="verify.html">Check your install</a>.</p>
+<!-- publish: ci. Install the workflow (scripts/PUBLISH.md), wait for a green run, then replace this sentence with the systems that ran. -->
+<p>A CI workflow template is in the repository (<code>scripts/ci.workflow.yml</code>). It has not run yet because the author still has to install it, so no system is claimed to be checked by it.</p>
 
 <h2 id="start">Where to go next</h2>
 <ul class="cards">
@@ -56,6 +67,7 @@ Screenshot not published yet. The author adds <code>preview.png</code> before th
 <li><a href="configuration.html">Configuration</a><br>Settings, shared keys, limits, environment variables.</li>
 <li><a href="privacy.html">Privacy and trust</a><br>What it reads, runs, fetches and writes.</li>
 <li><a href="troubleshooting.html">Troubleshooting</a><br>Messages you may see and what fixes them.</li>
+<li><a href="verify.html">Check your install</a><br>A short checklist on the sample vault, and a report to send back.</li>
 <li><a href="how-it-works.html">How it works</a><br>The pieces and how they talk.</li>
 <li><a href="for-agents.html">For agents</a><br>AGENTS.md and llms.txt.</li>
 </ul>

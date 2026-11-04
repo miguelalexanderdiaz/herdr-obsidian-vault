@@ -1,0 +1,414 @@
+[
+ {
+  "id": "per-folder",
+  "doc": "docs/configuration.html",
+  "docText": "PER_FOLDER mods/vault/main.js 2000",
+  "code": "mods/vault/main.js",
+  "pattern": "\\bPER_FOLDER\\s*=\\s*2000\\b"
+ },
+ {
+  "id": "per-folder-usage",
+  "doc": "docs/usage.html",
+  "docText": "lists the first 2000",
+  "code": "mods/vault/main.js",
+  "pattern": "\\bPER_FOLDER\\s*=\\s*2000\\b"
+ },
+ {
+  "id": "search-max",
+  "doc": "docs/configuration.html",
+  "docText": "MAX mods/vault/search-core.js 200",
+  "code": "mods/vault/search-core.js",
+  "pattern": "\\bMAX\\s*=\\s*200\\b"
+ },
+ {
+  "id": "search-max-usage",
+  "doc": "docs/usage.html",
+  "docText": "At most 200 results",
+  "code": "mods/vault/search-core.js",
+  "pattern": "\\bMAX\\s*=\\s*200\\b"
+ },
+ {
+  "id": "search-lines-per-file",
+  "doc": "docs/usage.html",
+  "docText": "At most 20 matching lines are read per file",
+  "code": "mods/vault/search-core.js",
+  "pattern": "\"--max-count\",\\s*\"20\""
+ },
+ {
+  "id": "search-min-letters",
+  "doc": "docs/usage.html",
+  "docText": "Type two letters or more",
+  "code": "mods/vault/main.js",
+  "pattern": "q\\.length\\s*<\\s*2\\b"
+ },
+ {
+  "id": "search-pause",
+  "doc": "docs/usage.html",
+  "docText": "after a 160 ms pause",
+  "code": "mods/vault/main.js",
+  "pattern": "timer\\.after\\(\\s*160\\b"
+ },
+ {
+  "id": "reader-size",
+  "doc": "docs/usage.html",
+  "docText": "78% wide, 86% tall",
+  "code": "mods/vault/main.js",
+  "pattern": "width:\\s*0\\.78,\\s*height:\\s*0\\.86"
+ },
+ {
+  "id": "pdf-pages",
+  "doc": "docs/configuration.html",
+  "docText": "PDF_PAGES mods/vault-reader/main.js 30",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\\bPDF_PAGES\\s*=\\s*30\\b"
+ },
+ {
+  "id": "pdf-pages-usage",
+  "doc": "docs/usage.html",
+  "docText": "shows up to 30 pages",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\\bPDF_PAGES\\s*=\\s*30\\b"
+ },
+ {
+  "id": "column",
+  "doc": "docs/configuration.html",
+  "docText": "1040, 15",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\\bCOLUMN\\s*=\\s*1040\\b"
+ },
+ {
+  "id": "text-size",
+  "doc": "docs/configuration.html",
+  "docText": "1040, 15",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\\bTEXT\\s*=\\s*15\\b"
+ },
+ {
+  "id": "render-version",
+  "doc": "docs/configuration.html",
+  "docText": "RENDER_VERSION mods/vault-reader/main.js 3",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\\bRENDER_VERSION\\s*=\\s*3\\b"
+ },
+ {
+  "id": "batch",
+  "doc": "docs/configuration.html",
+  "docText": "BATCH mods/vault-reader/assets-core.js 6",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bBATCH\\s*=\\s*6\\b"
+ },
+ {
+  "id": "cache-age",
+  "doc": "docs/configuration.html",
+  "docText": "30, 200",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bCACHE_MAX_AGE_DAYS\\s*=\\s*30\\b"
+ },
+ {
+  "id": "cache-mb",
+  "doc": "docs/configuration.html",
+  "docText": "30, 200",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bCACHE_MAX_MB\\s*=\\s*200\\b"
+ },
+ {
+  "id": "remote-bytes",
+  "doc": "docs/configuration.html",
+  "docText": "20 MB, 40 MB",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bREMOTE_MAX_BYTES\\s*=\\s*20_000_000\\b"
+ },
+ {
+  "id": "image-bytes",
+  "doc": "docs/configuration.html",
+  "docText": "20 MB, 40 MB",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bIMAGE_MAX_BYTES\\s*=\\s*40_000_000\\b"
+ },
+ {
+  "id": "poll",
+  "doc": "docs/configuration.html",
+  "docText": "POLL_MS mods/vault/watch.js , mods/vault-reader/watch.js 10000",
+  "code": [
+   "mods/vault/watch.js",
+   "mods/vault-reader/watch.js"
+  ],
+  "pattern": "\\bPOLL_MS\\s*=\\s*10_000\\b"
+ },
+ {
+  "id": "prune-delay",
+  "doc": "docs/configuration.html",
+  "docText": "about 8 seconds after the first reader opens",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "timer\\.after\\(\\s*8000\\b"
+ },
+ {
+  "id": "curl-limits",
+  "doc": "docs/privacy.html",
+  "docText": "20 seconds, 20 MB, at most 5 redirects",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\"--max-redirs\",\\s*\"5\",\\s*\"--max-time\",\\s*\"20\""
+ },
+ {
+  "id": "remote-retry",
+  "doc": "docs/troubleshooting.html",
+  "docText": "tried again after 5 minutes",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bREMOTE_RETRY_MS\\s*=\\s*5\\s*\\*\\s*60_000\\b"
+ },
+ {
+  "id": "tool-retry",
+  "doc": "docs/requirements.html",
+  "docText": "looked for again after 30 seconds",
+  "code": [
+   "mods/vault/platform.js",
+   "mods/vault-reader/platform.js"
+  ],
+  "pattern": "\\bmissTtl\\s*=\\s*30_000\\b"
+ },
+ {
+  "id": "env-browser",
+  "doc": [
+   "docs/configuration.html",
+   "docs/requirements.html"
+  ],
+  "docText": "HERDR_VAULT_BROWSER",
+  "code": "mods/vault-reader/render/lib.mjs",
+  "pattern": "env\\.HERDR_VAULT_BROWSER\\b"
+ },
+ {
+  "id": "env-chrome-path",
+  "doc": [
+   "docs/configuration.html",
+   "docs/requirements.html"
+  ],
+  "docText": "CHROME_PATH",
+  "code": "mods/vault-reader/render/lib.mjs",
+  "pattern": "env\\.CHROME_PATH\\b"
+ },
+ {
+  "id": "env-asar",
+  "doc": [
+   "docs/configuration.html",
+   "docs/requirements.html"
+  ],
+  "docText": "HERDR_VAULT_ASAR",
+  "code": "mods/vault-reader/render/lib.mjs",
+  "pattern": "env\\.HERDR_VAULT_ASAR\\b"
+ },
+ {
+  "id": "contract-vault.list",
+  "doc": "docs/configuration.html",
+  "docText": "vault.list shared key",
+  "code": [
+   "mods/vault/main.js"
+  ],
+  "pattern": "\"vault\\.list\""
+ },
+ {
+  "id": "contract-vault.current",
+  "doc": "docs/configuration.html",
+  "docText": "vault.current shared key",
+  "code": [
+   "mods/vault/main.js"
+  ],
+  "pattern": "\"vault\\.current\""
+ },
+ {
+  "id": "contract-vault.open",
+  "doc": "docs/configuration.html",
+  "docText": "vault.open shared key",
+  "code": [
+   "mods/vault/main.js"
+  ],
+  "pattern": "\"vault\\.open\""
+ },
+ {
+  "id": "contract-vault.outside",
+  "doc": "docs/configuration.html",
+  "docText": "vault.outside shared key",
+  "code": [
+   "mods/vault/main.js"
+  ],
+  "pattern": "\"vault\\.outside\""
+ },
+ {
+  "id": "contract-vault.add",
+  "doc": "docs/configuration.html",
+  "docText": "vault.add mod command",
+  "code": [
+   "mods/vault/main.js"
+  ],
+  "pattern": "\"vault\\.add\""
+ },
+ {
+  "id": "contract-vault.import",
+  "doc": "docs/configuration.html",
+  "docText": "vault.import mod command",
+  "code": [
+   "mods/vault/main.js"
+  ],
+  "pattern": "\"vault\\.import\""
+ },
+ {
+  "id": "contract-vault.panes",
+  "doc": "docs/configuration.html",
+  "docText": "vault.panes shared key",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\"vault\\.panes\""
+ },
+ {
+  "id": "contract-tab",
+  "doc": "docs/configuration.html",
+  "docText": "obsidian tab name",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\"obsidian\""
+ },
+ {
+  "id": "contract-mod-vault",
+  "doc": "docs/configuration.html",
+  "docText": "vault mod",
+  "code": "mods/vault/mod-name.js",
+  "pattern": "MOD\\s*=\\s*\"vault\""
+ },
+ {
+  "id": "contract-mod-reader",
+  "doc": "docs/configuration.html",
+  "docText": "vault-reader mod",
+  "code": "mods/vault/mod-name.js",
+  "pattern": "READER\\s*=\\s*\"vault-reader\""
+ },
+ {
+  "id": "key-binding",
+  "doc": "docs/configuration.html",
+  "docText": "ctrl-shift-m mod.open:vault",
+  "code": "keys.json",
+  "pattern": "\"ctrl-shift-m\"\\s*:\\s*\"mod\\.open:vault\""
+ },
+ {
+  "id": "popup-size",
+  "doc": "docs/install.html",
+  "docText": "420 by 640",
+  "code": "mods/vault/mod.json",
+  "pattern": "\"width\"\\s*:\\s*420[\\s\\S]*\"height\"\\s*:\\s*640|\"height\"\\s*:\\s*640[\\s\\S]*\"width\"\\s*:\\s*420"
+ },
+ {
+  "id": "web-images-label",
+  "doc": "docs/usage.html",
+  "docText": "Web images: on",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\"Web images: off\"\\s*:\\s*\"Web images: on\""
+ },
+ {
+  "id": "opener-windows",
+  "doc": "docs/requirements.html",
+  "docText": "rundll32 url.dll,FileProtocolHandler",
+  "code": "mods/vault-reader/platform.js",
+  "pattern": "\\[\"rundll32\",\\s*\\[\"url\\.dll,FileProtocolHandler\""
+ },
+ {
+  "id": "preview-label",
+  "doc": "docs/usage.html",
+  "docText": "Open in Preview on macOS, Open in the default app elsewhere",
+  "code": "mods/vault-reader/platform.js",
+  "pattern": "\"Open in Preview\"\\s*:\\s*\"Open in the default app\""
+ },
+ {
+  "id": "adding-internal",
+  "doc": "docs/configuration.html",
+  "docText": "vault.adding is not part of the contract",
+  "code": "mods/vault/main.js",
+  "pattern": "\"vault\\.adding\""
+ },
+ {
+  "id": "adding-two-minutes",
+  "doc": "docs/configuration.html",
+  "docText": "abandoned for two minutes",
+  "code": "mods/vault/main.js",
+  "pattern": "Date\\.now\\(\\)\\s*-\\s*busy\\s*<\\s*120_000"
+ },
+ {
+  "id": "image-limit-usage",
+  "doc": "docs/usage.html",
+  "docText": "Vault images over 40 MB are not shown; web images over 20 MB are not downloaded",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bIMAGE_MAX_BYTES\\s*=\\s*40_000_000\\b"
+ },
+ {
+  "id": "book-open-contract",
+  "doc": "docs/configuration.html",
+  "docText": "mods/vault/icons/book-open.svg file",
+  "code": "mods/vault/icons/book-open.svg",
+  "pattern": "<svg"
+ },
+ {
+  "id": "rows-max",
+  "doc": "docs/configuration.html",
+  "docText": "ROWS_MAX mods/vault/main.js 3000",
+  "code": "mods/vault/main.js",
+  "pattern": "\\bROWS_MAX\\s*=\\s*3000\\b"
+ },
+ {
+  "id": "rows-max-usage",
+  "doc": "docs/usage.html",
+  "docText": "at most 3000 rows are drawn",
+  "code": "mods/vault/main.js",
+  "pattern": "\\bROWS_MAX\\s*=\\s*3000\\b"
+ },
+ {
+  "id": "fetch-concurrency",
+  "doc": "docs/configuration.html",
+  "docText": "FETCH_CONCURRENCY mods/vault-reader/assets-core.js 4",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bFETCH_CONCURRENCY\\s*=\\s*4\\b"
+ },
+ {
+  "id": "relist",
+  "doc": "docs/configuration.html",
+  "docText": "RELIST_MIN_MS mods/vault-reader/main.js 1000",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\\bRELIST_MIN_MS\\s*=\\s*1000\\b"
+ },
+ {
+  "id": "stamp-ttl",
+  "doc": "docs/configuration.html",
+  "docText": "STAMP_TTL_MS mods/vault-reader/main.js 30000",
+  "code": "mods/vault-reader/main.js",
+  "pattern": "\\bSTAMP_TTL_MS\\s*=\\s*30_000\\b"
+ },
+ {
+  "id": "touch-after",
+  "doc": "docs/configuration.html",
+  "docText": "TOUCH_AFTER_MS mods/vault-reader/assets-core.js 7 days",
+  "code": "mods/vault-reader/assets-core.js",
+  "pattern": "\\bTOUCH_AFTER_MS\\s*=\\s*7\\s*\\*\\s*86_400_000\\b"
+ },
+ {
+  "id": "canary-test",
+  "doc": "docs/privacy.html",
+  "docText": "tests/render-e2e.test.mjs",
+  "code": "tests/render-e2e.test.mjs",
+  "pattern": "canary:"
+ },
+ {
+  "id": "csp-flag",
+  "doc": "docs/privacy.html",
+  "docText": "no name but 127.0.0.1 resolves",
+  "code": "mods/vault-reader/render/lib.mjs",
+  "pattern": "--host-resolver-rules=MAP \\* ~NOTFOUND\\s*,\\s*EXCLUDE 127\\.0\\.0\\.1"
+ },
+ {
+  "id": "csp-no-proxy",
+  "doc": "docs/privacy.html",
+  "docText": "no proxy is used",
+  "code": "mods/vault-reader/render/lib.mjs",
+  "pattern": "\"--no-proxy-server\""
+ },
+ {
+  "id": "devtools-port",
+  "doc": "docs/privacy.html",
+  "docText": "DevTools debugging port on the loopback address",
+  "code": "mods/vault-reader/render/lib.mjs",
+  "pattern": "\"--remote-debugging-port=0\""
+ }
+]
