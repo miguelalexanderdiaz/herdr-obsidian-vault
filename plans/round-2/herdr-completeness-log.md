@@ -25,9 +25,46 @@ were the only calls to the app, and the official example repo was cloned into a 
 
 Also: NOTICE lists every program the mods start (curl, stat, PowerShell, where, sh, qlmanage, sips).
 
-## Final pass
+## Final pass (R2-HC-12)
 
-(filled in at the end of the run; see the bottom of this file)
+Order: code-review's last waves (CR-10, 11, 12, 15, 16 landed after my first RECIPE pass) were read in a throw-away merge
+of the three role branches (clone of the repo outside the worktrees, nothing pushed from it). RECIPE.md was updated for the
+3000-row cap and its message, curl limits, the 40 MB picture limit, the automated canary test and the real status-line text;
+check-recipe now also checks every quoted UI text of RECIPE.md as a string literal of the mods, the sample-vault names of
+the Done-when list, the optional constants and the "automated test" claim (needs `tests/render-e2e.test.mjs`).
+The SPDX/copyright and lz-string pointer rules in `check-repo` are errors now (`HEADERS_ERROR = true`).
+
+**Important for the integration:** the branch alone is not green. `check-recipe` (6 findings) and `check-repo` (which runs it and
+checks the SPDX headers) read code-review's mods: they list the quoted messages, the licence headers and the test file that only
+exist on `feat/round-2-runtime-truth--code-review`. They are green on the merge of the three role branches (below). That is
+by design (the checks follow the code), and it means these two scripts and `check-repo --self-test` fail on a checkout of
+this branch alone.
+
+## Checks run
+
+On the throw-away merge of `--code-review`, `--documentation` and this branch (Node 26.5, macOS):
+
+| Command | Result |
+| --- | --- |
+| `npm test` | 232 pass, 0 fail, 0 skipped (the end-to-end render test ran: a browser exists here) |
+| `node scripts/check-docs.mjs` | ok (45 claims, 18 publish-time items open) |
+| `node scripts/check-repo.mjs` | 0 errors, 1 warning (workflow not installed: author step) |
+| `node scripts/check-repo.mjs --self-test` | 9 seeded faults caught, unmodified copy passes |
+| `node scripts/check-recipe.mjs` (+ `--self-test`) | 0 findings; 15 seeded wrong sentences caught |
+| `node scripts/install-sim.mjs` (+ `--self-test`) | 0 findings; 5 seeded breaks caught; `herdr-app check` passes on both copies |
+| `node scripts/privacy-scan.mjs` (+ `--self-test`) | 0 findings (plans/ included) |
+| `node scripts/syntax-check.mjs` | 66 files parsed |
+| `node scripts/typecheck.mjs` | `skipped: TypeScript's tsc was not found ...`, exit 0 |
+| `node scripts/build-llms-full.mjs --check` | current |
+| `herdr-app check <abs>/mods/vault`, `.../mods/vault-reader` | `check passed` (also in this worktree) |
+| `node scripts/check-repo.mjs --release` | red only for: `.github/workflows/ci.yml` not installed, `preview.png`, RECIPE image still in its publish mark, `<owner>` in 8 files, `check-docs --release` marks, the logo blob in history. All author-only. |
+
+On this branch alone: `npm test` 154 pass; `privacy-scan`, `syntax-check`, `install-sim`, `typecheck`, `privacy-scan --self-test`,
+`install-sim --self-test` green; `check-recipe` and `check-repo` as described above. JSON files parse (`keys.json`, both
+`mod.json`, `scripts/herdr-default-keys.json`).
+
+Not run (cannot be run here): the CI template on GitHub, anything on Linux or Windows, `tsc` through `typecheck.mjs`, the popup
+on a small window.
 
 ## Deferred, and why
 
