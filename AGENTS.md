@@ -140,7 +140,7 @@ The test vault is `examples/sample-vault`. Open `Feature tour` in the reader to 
 Only when a name is taken. Rename the folder, then search the whole repository for the old name and change each hit:
 
 1. The folder name, and the constants in `mod-name.js` of that mod: `MOD` and `MOD_DIR` in both, plus `READER` in `mods/vault/mod-name.js` (the name the panel opens the reader as). All paths of the mod's own icons, scripts and cache are built from `MOD_DIR`, and the overlay, `tab.new` and `pane.split` calls use `MOD` or `READER`, so nothing else spells the name in code.
-2. If you rename `vault-reader`, also its name in `plans/`, `RECIPE.md` and `docs/` text, and in the portrait layout if it uses it.
+2. If you rename `vault-reader`, also its name in `RECIPE.md` and `docs/` text, and in the portrait layout if it uses it.
 3. The `mod` name in the layout block and in `keys.json` (`mod:<name>` sections, `mod.open:<name>`).
 4. The shared keys (`vault.*`) and the command `vault.add`: change them only if the person wants the two copies kept apart, and then everywhere, including the other layouts that read them.
 5. The data folder `data/vault`: keep it shared unless the two copies must not share a cache.
@@ -160,7 +160,7 @@ Small, logical commits with a clear subject and a body that says why. Commit onl
 
 ## Documentation upkeep
 
-Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), `docs/verify.html` (the check steps), this file and `CHANGELOG.md`. Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
+Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, `docs/usage.html` (the limits), `docs/verify.html` (the check steps), and this file (`CHANGELOG.md` is written by release-please from the pull request title, so make that a Conventional Commit: see CONTRIBUTING.md). Then copy `llms.txt` to `docs/llms.txt`, run `node scripts/build-llms-full.mjs` and `node scripts/check-docs.mjs`.
 
 The script compares the requirements tables, the keys table, the two `llms.txt` copies, a freshly built `docs/llms-full.txt`, the one support-level sentence, and the messages quoted in the troubleshooting page, which must be string literals in the code (a quote only found in a comment fails; a short one must be a whole literal). `scripts/doc-claims.json` ties each number, name and phrase in the docs to the constant or string that backs it. When you rename or change one in the code, change the doc and the claim row together; `node scripts/check-docs.mjs` names the row that broke.
 

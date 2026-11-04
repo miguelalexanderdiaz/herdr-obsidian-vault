@@ -26,7 +26,7 @@ Desktop.ini
 # Local, personal word list for scripts/privacy-scan.mjs (never commit)
 scripts/.privacy-words
 
-# Private notes
-/plans/**/*.private
+# Round plans, audits and logs of the improvement agents: kept locally, not published.
+/plans/
 
 # Not ignored on purpose: examples/sample-vault/.obsidian (a vault needs its .obsidian folder to be one)
