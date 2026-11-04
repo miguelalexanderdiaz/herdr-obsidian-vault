@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 the herdr-obsidian-vault authors (holder named in LICENSE and NOTICE)
 // A read-only Obsidian note, rendered as Obsidian shows it: properties,
 // callouts, links, embeds, images, PDFs, tags, tasks, Mermaid, math,
 // Excalidraw and Canvas. Opened by the Vault panel (mods/vault) as a floating

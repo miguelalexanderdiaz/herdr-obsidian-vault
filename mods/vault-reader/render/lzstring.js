@@ -1,4 +1,5 @@
 // lz-string's decompressFromBase64 (MIT, pieroxy), as the Excalidraw plugin stores drawings.
+// The licence text is in LICENSE-lz-string.txt next to this file (and credited in NOTICE).
 window.lzDecompressFromBase64 = function (input) {
   const keys = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
   if (input == null) return "";

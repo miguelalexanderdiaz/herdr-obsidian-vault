@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 the herdr-obsidian-vault authors (holder named in LICENSE and NOTICE)
 // The Vault panel (right side, beside Files and Changes, or as a popup): an Obsidian vault's
 // whole file list. The vault selector on top switches vaults; + Add vault picks a folder
 // (it must hold a .obsidian folder). Clicking a note, canvas, drawing, image or PDF opens it
