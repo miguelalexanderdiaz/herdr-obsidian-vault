@@ -1,0 +1,5 @@
+{
+  "global": {
+    "ctrl-shift-e": "mod.open:vault"
+  }
+}

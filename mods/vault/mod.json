@@ -1,1 +1,1 @@
-{ "place": "none", "title": "Vault" }
+{ "place": "none", "title": "Vault", "overlay": { "width": 420, "height": 640 } }
