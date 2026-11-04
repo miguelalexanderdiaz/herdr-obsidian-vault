@@ -106,11 +106,17 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 
 const RENDER = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "mods", "vault-reader", "render", "render.mjs");
+export function envWithout(env, lowerKey) {
+  const out = {};
+  for (const [k, v] of Object.entries(env)) if (k.toLowerCase() !== lowerKey) out[k] = v;
+  return out;
+}
 function runRender(spec, env) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "herdr-render-test-"));
   const file = path.join(dir, "jobs.json");
   fs.writeFileSync(file, JSON.stringify({ theme: {}, jobs: [], ...spec }));
-  const clean = { ...process.env, HERDR_VAULT_BROWSER: "", HERDR_VAULT_ASAR: "", CHROME_PATH: "", PATH: "" };
+  const clean = envWithout(process.env, "path"); // "Path" on Windows: drop the key in any letter case
+  Object.assign(clean, { HERDR_VAULT_BROWSER: "", HERDR_VAULT_ASAR: "", CHROME_PATH: "", PATH: "" });
   const r = spawnSync(process.execPath, [RENDER, dir, file], { env: { ...clean, ...env }, encoding: "utf8", timeout: 20000 });
   return { out: JSON.parse(r.stdout || "null"), code: r.status, stderr: r.stderr };
 }
@@ -124,4 +130,9 @@ test("render.mjs: no browser anywhere is a structured no-browser, exit 0, nothin
 test("render.mjs: a browser but no Obsidian app is a structured no-obsidian", () => {
   const r = runRender({ discover: { asar: ["/nonexistent/obsidian.asar"], browsers: [], names: [] } }, { HERDR_VAULT_BROWSER: process.execPath });
   assert.deepEqual(r.out, [{ error: "no-obsidian" }]);
+});
+
+test("envWithout drops PATH in any letter case, so a Windows Path cannot survive (CR-2-5)", () => {
+  const win = { Path: "C:\\Windows", PATH: "x", HOME: "h", pAtH: "y" };
+  assert.deepEqual(envWithout(win, "path"), { HOME: "h" });
 });

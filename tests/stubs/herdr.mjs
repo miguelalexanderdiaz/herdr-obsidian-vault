@@ -1,8 +1,10 @@
 // Just enough of the `herdr` module for tests. Tests set state through `herdrTest`.
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 export const herdrTest = {
-  props: {}, platform: "linux", home: "/home/user", appHome: "/tmp/herdr-test-app",
+  props: {}, platform: "linux", home: "/home/user", appHome: path.join(os.tmpdir(), "herdr-test-app"),
   exec: async () => { throw new Error("spawn ENOENT"); },
   shared: new Map(), overlays: [], notices: [], runs: [],
   pickFolder: async () => null,

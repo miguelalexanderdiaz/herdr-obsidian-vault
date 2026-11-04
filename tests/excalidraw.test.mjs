@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
 // excalidraw.js is a browser script that sets window.excalidrawSvg.
 globalThis.window = {};
-await import(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "mods", "vault-reader", "render", "excalidraw.js"));
+await import(pathToFileURL(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "mods", "vault-reader", "render", "excalidraw.js")).href);
 const draw = (elements, files) => window.excalidrawSvg({ json: JSON.stringify({ elements, files }) }, false);
 
 // Anything that is not tag markup the generator itself wrote: attribute values must not close their quote.
