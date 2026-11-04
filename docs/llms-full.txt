@@ -200,12 +200,12 @@ Herdr mods are JavaScript that describes native GPUI elements (gpui-kit). There 
 | `mods/vault-reader/assets.js`, `assets-core.js`, `vault-files.js` | pictures (images, PDF pages, web images, render jobs, cache) and the vault file walk: glue in Herdr, logic without Herdr imports | Herdr / plain Node |
 | `mods/*/watch.js`, `mods/*/mod-name.js` | restartable folder watcher with timer fallback (identical in both mods); the mod folder name constants | Herdr and plain Node |
 | `mods/*/platform.js` | every operating-system specific literal: tool lookup, install hints, openers, config paths, file stamps, image headers | Herdr and plain Node |
-| `mods/vault-reader/render/` | `render.mjs` and `lib.mjs` (plain Node), `page.html`, `page.js`, `excalidraw.js`, `lzstring.js` (browser) | Node and the headless browser |
+| `mods/vault-reader/render/` | `render.mjs`, `lib.mjs` and `browser.mjs` (plain Node: the script, its helpers, and the browser process of one run), `page.html`, `page.js`, `excalidraw.js`, `lzstring.js` (browser) | Node and the headless browser |
 | `mods/*/mod.json`, `mods/*/icons/` | mod manifest, Lucide icons | Herdr |
 | `examples/sample-vault/` | test vault: one file per feature | tests and manual checks |
-| `tests/` | `npm test` suite, `fixtures/`, `tools/` | plain Node |
+| `tests/` | `npm test` suite, `fixtures/`, `stubs/` (strict stand-ins for Herdr's modules), `tools/` | plain Node |
 | `docs/` | the GitHub Pages site (plain HTML and CSS) | browsers |
-| `scripts/` | `check-docs.mjs`, `check-repo.mjs`, `privacy-scan.mjs`, `syntax-check.mjs`, `ci.workflow.yml` (CI template), publish checklists | plain Node |
+| `scripts/` | `check-docs.mjs`, `check-repo.mjs`, `check-recipe.mjs`, `privacy-scan.mjs`, `syntax-check.mjs`, `install-sim.mjs`, `typecheck.mjs`, `build-llms-full.mjs`, `doc-claims.json`, `ci.workflow.yml` (CI template), publish checklists | plain Node |
 | `RECIPE.md`, `NOTICE`, `LICENSE`, `keys.json` | brief to rebuild, third-party credits, license, optional keys | |
 
 ## Tell the person before you install
@@ -244,7 +244,7 @@ These come from Herdr and from mistakes already made here.
 - **No top-level side effects, no `setTimeout`/`setInterval`** (use `cx.timer`), no top-level `await` (use `cx.spawn` in `init`). Never keep a `cx` and use it later; every callback gets its own.
 - **Slow work goes through `exec` or `fetch`**, not a loop in `render`. `exec` has a 30 second limit and 8 MiB of output per call (`herdr.d.ts`); the renderer batches stay under it.
 - **Images and SVGs** passed to `image()` and `svg()` load only from the Herdr home folder. That is why vault images are copied into `data/vault/cache`.
-- **`mod.json` has `"place": "none"`**; the only fields are those Herdr documents (`place`, `size`, `overlay`, `title`, `focusable`). Do not add a `version` field.
+- **`mod.json` has `"place": "none"`**; the only fields are those Herdr documents (`place`, `size`, `overlay`, `title`, `focusable`). Do not add a `version` field. The panel's `overlay` carries `width` and `height` and also `kind`, `at` and `offset`, which come from Herdr's shipped picker mods and official examples (see `RECIPE.md`); do not add more placement fields without a source.
 - **Keep the contract stable**: mod names `vault` and `vault-reader`; shared keys `vault.list`, `vault.current`, `vault.open`, `vault.panes` (same shapes; `vault.outside` was added beside them); commands `vault.add` and `vault.import`; reader props `{ vault, file, anchor?, kept?, id?, overlay? }`; the tab name `obsidian`; the path `mods/vault/icons/book-open.svg`, which the portrait layout's bar draws. `mods/vault-reader/obsidian.png` and `vault.svg` stay for older copies of the portrait layout (its board confirmed its current layout does not use them, so a later cleanup may remove them). `vault.adding` is internal (a two-minute picker lock), not contract. The portrait layout depends on the rest. To change one, post on that repository's board first. `scripts/check-repo.mjs` enforces the list.
 - **Herdr's runtime is smaller than Node's.** `TextDecoder`, `TextEncoder`, `structuredClone` and `Intl` do not exist in a mod, and `localeCompare` ignores its options (so no `numeric` or `sensitivity`). Node has all of them, which is how code passed the tests and failed in the app. The tests replace those globals for mod code, check method names against `gpui-kit.d.ts`, and scan mod source for these names (`tests/runtime-globals.test.mjs`). See "Herdr facts behind the rules" below.
 - **Do not edit** `herdr.d.ts`, `gpui-kit.d.ts` or `jsconfig.json`; Herdr writes them and `.gitignore` hides them.
@@ -274,7 +274,32 @@ State these plainly; do not write "works on Linux" or "works on Windows" anywher
 - The Windows Herdr home folder is the documented default `.config/herdr-app` under the user folder. Nobody has checked it on Windows.
 - The CI workflow in `scripts/ci.workflow.yml` is a template that has not run: the unattended runs had no token scope to install it. No page may say that CI ran.
 - `herdr-app check` loads a mod once and checks its first description. It does not run later states, layout or async work.
-- Placement of the popup (`overlay` in `mods/vault/mod.json` has `width` and `height` only): see `RECIPE.md` for what was verified.
+- The popup's placement (`kind`, `at` and `offset` in the `overlay` of `mods/vault/mod.json`) was taken from Herdr's picker mods and official examples and has not been checked on a small window; the popup is 640 pixels tall.
+
+## Testing
+
+Run from the repository root. Node 22.4 or newer; no dependencies. The suite needs no Chrome, Obsidian, ripgrep or Poppler: a test that wants one of them (the end-to-end render test needs a Chromium-family browser) skips with a stated reason when it is absent, never silently. `npm test` is `node --test` with a quoted glob (`tests/**/*.test.mjs`); a bare directory argument (`node --test tests/`) is read as a module path and fails, so use `npm test` or plain `node --test`.
+
+```sh
+npm test                                                 # unit tests on the pure modules and the sample vault, strict stubs, seeded-fault tests of the checkers
+node scripts/syntax-check.mjs                            # every .js and .mjs parses
+node scripts/check-repo.mjs                              # manifests, keys, contract, third-party notices
+node scripts/check-recipe.mjs                            # RECIPE.md against the code
+node scripts/install-sim.mjs                             # each mod copied alone into a temp Herdr home
+node scripts/privacy-scan.mjs                            # personal data and operating-system literals
+node scripts/check-docs.mjs                              # links, anchors, contrast, tables, messages, claims
+node scripts/build-llms-full.mjs --check                 # docs/llms-full.txt is current
+node scripts/typecheck.mjs                               # local only: needs tsc and Herdr's .d.ts files, else prints "skipped"
+herdr-app check /absolute/path/to/mods/vault             # Herdr loads the mod once
+herdr-app check /absolute/path/to/mods/vault-reader
+```
+
+The CI template (`scripts/ci.workflow.yml`, not run yet) lists the first seven and the privacy and checker self-tests; `typecheck` and `herdr-app check` are local only. `node scripts/check-repo.mjs --release` and `node scripts/check-docs.mjs --release` are the publish gate: they fail by design until the author's steps in `scripts/PUBLISH.md` are done, so do not try to make them pass.
+
+Strict stubs: the test stand-ins for gpui-kit elements allow only method names that exist in `gpui-kit.d.ts` (read from the Herdr home when present, else from `tests/stubs/gpui-methods.json`; regenerate it with `node tests/tools/gen-gpui-methods.mjs`), and the `fs/promises` stand-in only the surface Herdr declares. A misspelt method or a `TextDecoder` in mod code fails a test. To find out whether Herdr itself has some global or method, use the throw-away probe mod procedure in `CONTRIBUTING.md`, not a live window.
+
+`herdr-app check` loads a mod once and checks its first description. It does not run later states, layout or async work.
+- The popup's placement (`kind`, `at` and `offset` in the `overlay` of `mods/vault/mod.json`) was taken from Herdr's picker mods and official examples and has not been checked on a small window; the popup is 640 pixels tall.
 
 ## Testing
 
