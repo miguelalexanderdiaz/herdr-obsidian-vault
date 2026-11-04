@@ -21,14 +21,13 @@ import path from "path";
 import http from "http";
 import { spawn, spawnSync } from "child_process";
 import { fileURLToPath } from "url";
-import { findAsar, findBrowser, findNear, safeJoin, profileName, browserArgs, DEADLINE_MS } from "./lib.mjs";
+import { findAsar, findBrowser, findNear, safeJoin, DEADLINE_MS } from "./lib.mjs";
+import { createBrowser, Known } from "./browser.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const started = Date.now();
 const results = [];
 const say = (list) => process.stdout.write(JSON.stringify(list));
-
-class Known extends Error {}
 
 // WebSocket is global (unflagged) from Node 22.4; that, not the version number, is what is needed.
 if (typeof WebSocket !== "function") {
@@ -127,17 +126,7 @@ function serve() {
 
 // ---- the browser --------------------------------------------------------------------------
 
-let proc = null, profile = null;
-
-function killBrowser() {
-  if (proc && proc.exitCode === null) {
-    try {
-      if (process.platform === "win32") spawnSync("taskkill", ["/pid", String(proc.pid), "/T", "/F"], { stdio: "ignore" });
-      else proc.kill("SIGKILL");
-    } catch { /* already gone */ }
-  }
-  if (profile) { try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* best effort */ } }
-}
+const browser = createBrowser({ spawn, spawnSync, fs, path, dataDir: DATA, pid: process.pid, platform: process.platform });
 
 // Profiles of runs that were killed before they could clean up.
 function sweepOldProfiles() {
@@ -148,24 +137,6 @@ function sweepOldProfiles() {
       if (Date.now() - fs.statSync(p).mtimeMs > 3_600_000) fs.rmSync(p, { recursive: true, force: true });
     }
   } catch { /* nothing to sweep */ }
-}
-
-function launch(bin) {
-  // One profile per run: two readers drawing at once must not share one.
-  profile = path.join(DATA, profileName(process.pid));
-  fs.mkdirSync(profile, { recursive: true });
-  proc = spawn(bin, browserArgs(profile), { stdio: ["ignore", "ignore", "pipe"], detached: false });
-  return new Promise((ok, fail) => {
-    let err = "";
-    const t = setTimeout(() => fail(new Known("no-browser")), 15000);
-    proc.on("error", () => { clearTimeout(t); fail(new Known("no-browser")); });
-    proc.stderr.on("data", (d) => {
-      err += d;
-      const m = err.match(/DevTools listening on (ws:\/\/\S+)/);
-      if (m) { clearTimeout(t); ok(m[1]); }
-    });
-    proc.on("exit", () => { clearTimeout(t); fail(new Known("no-browser")); });
-  });
 }
 
 function cdp(url) {
@@ -230,9 +201,9 @@ async function main() {
   if (!asar) throw new Known(discover.asarPath ? "no-obsidian-setting" : "no-obsidian");
   await ensureLib(asar);
   const server = await serve();
-  const wsUrl = await launch(bin);
-  const b = await cdp(wsUrl);
+  let b = null;
   try {
+    b = await cdp(await browser.launch(bin));
     const { targetId } = await b.send("Target.createTarget", { url: "about:blank" });
     const { sessionId } = await b.send("Target.attachToTarget", { targetId, flatten: true });
     const s = (m, p) => b.send(m, p, sessionId);
@@ -279,19 +250,28 @@ async function main() {
       }
     }
   } finally {
-    try { b.close(); } catch { /* closed */ }
+    // Ask the browser to close, wait for it, kill what is left, remove the profile: in that order, so a
+    // helper process cannot recreate files in a profile that was just deleted (it did, on macOS).
+    await browser.stop(b ? () => b.send("Browser.close") : null);
+    try { b?.close(); } catch { /* closed */ }
     server.close();
   }
 }
 
 // Whatever happens (a signal, the exec limit, a crash), the browser goes and the results so far are printed.
-const finish = (code = 0) => { killBrowser(); say(results); process.exit(code); };
+let finished = false;
+const finish = (code = 0) => {
+  if (finished) return;
+  finished = true;
+  browser.stopNow();
+  say(results);
+  process.exit(code);
+};
 process.on("SIGTERM", () => finish(0));
 process.on("SIGINT", () => finish(0));
 setTimeout(() => finish(0), DEADLINE_MS + 3_500).unref();
 
 main().then(() => finish(0), (e) => {
-  killBrowser();
-  say([...results, { error: e instanceof Known ? e.message : String(e?.message ?? e) }]);
-  process.exit(0);
+  results.push({ error: e instanceof Known ? e.message : String(e?.message ?? e) });
+  finish(0);
 });
