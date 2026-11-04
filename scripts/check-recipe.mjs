@@ -273,7 +273,7 @@ async function run() {
   const keys = JSON.parse(readText("keys.json"));
   const modJson = {};
   for (const m of ["vault", "vault-reader"]) modJson[m] = JSON.parse(readText(`mods/${m}/mod.json`));
-  const findings = checkRecipe(readText("RECIPE.md"), f, keys, modJson);
+  const findings = checkRecipe(readText("RECIPE.md").replace(/\r\n/g, "\n"), f, keys, modJson);
   for (const x of findings) rep.error(`[${x.id}] ${x.msg}`);
   if (!findings.length) rep.ok(`RECIPE.md agrees with the code: ${f.programs.length} programs, ${f.sharedKeys.size} shared keys, ${f.commandsRun.size} commands, ${f.callouts.length} callouts, ${f.herdrImports.size + f.gpuiImports.size} API names, ${f.dataFolders.size} data folders`);
   rep.finish();
@@ -284,7 +284,7 @@ async function selfTest() {
   const f = await loadFacts();
   const keys = JSON.parse(readText("keys.json"));
   const modJson = Object.fromEntries(["vault", "vault-reader"].map((m) => [m, JSON.parse(readText(`mods/${m}/mod.json`))]));
-  const base = readText("RECIPE.md");
+  const base = readText("RECIPE.md").replace(/\r\n/g, "\n"); // a CRLF checkout must not change the result
   // Findings of the real RECIPE.md are the baseline (there are none once every role's branch is merged); a seeded
   // fault counts as caught only when it adds a finding the baseline does not have.
   const baseline = checkRecipe(base, f, keys, modJson);
