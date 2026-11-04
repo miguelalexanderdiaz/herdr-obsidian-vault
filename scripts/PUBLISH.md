@@ -43,7 +43,7 @@ so the list it prints is this list). `rg "publish:"` lists the sentences in the 
    herdr-app check <path to this repo>/mods/vault
    herdr-app check <path to this repo>/mods/vault-reader
    ```
-8. **Try a clean install** into a scratch Herdr home (`HERDR_APP_HOME=<empty folder>`), as a user would:
+8. **Try a clean install** into an empty Herdr home (`HERDR_APP_HOME=<empty folder>`), as a user would:
    copy `mods/vault` and `mods/vault-reader`, merge `keys.json`, press the key, add `examples/sample-vault`.
    (`node scripts/install-sim.mjs` already rehearses the file part; this is the part that needs the app.) On a small
    window, also check that the 640 px popup (placed at the top with `kind`, `at`, `offset`) is not clipped.
