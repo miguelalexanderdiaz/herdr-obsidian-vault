@@ -74,5 +74,7 @@ Programs started on the user's machine (not included)
 -----------------------------------------------------
 Depending on the operating system and the feature used, the mods start
 ripgrep, Node.js, a Chromium-family browser in headless mode, Poppler's
-pdftoppm and pdfinfo, and the system's file opener. None of them is bundled;
-each keeps its own license.
+pdftoppm and pdfinfo, curl, the system's file opener, and the system's own
+tools to read file stamps and to find a program (stat, PowerShell, where, sh;
+on macOS also qlmanage and sips). None of them is bundled; each keeps its own
+license.
