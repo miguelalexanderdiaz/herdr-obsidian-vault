@@ -1,12 +1,15 @@
 // install/install.sh (macOS, Linux) and install/install.ps1 (Windows, both PowerShells) against a
 // scratch Herdr home: install, install again, the piped download, uninstall. What to expect comes
 // from install/manifest, so the same file tests all three repositories.
+// Slow on Windows by nature: every case starts Windows PowerShell 5.1 and pwsh several times (about 20 s
+// for one case on a CI runner, 38 s for the file on a good day), so the cases carry their own 150 s limit
+// and package.json gives each test file 180 s instead of 60.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
+import { join, dirname, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -48,8 +51,14 @@ const freshHome = () => {
 const readKeys = (h) => JSON.parse(readFileSync(join(h, "keys.json"), "utf8"));
 const yesArgs = (h, ...more) => (win ? ["-Yes", "-Home", h, ...more] : ["--yes", "--home", h, ...more]);
 
+const SLOW = { timeout: 150_000 };
+// What the installers read from a download: install/, the mods, the layouts, the keys file and the panel
+// snippet (install.sh and install.ps1 open nothing else). The download test zips only these, not the whole
+// checkout: Compress-Archive in Windows PowerShell is slow on the docs, fonts and fixtures it would never read.
+const INPUTS = ["install", "mods", "layouts", field("keys"), PANEL[1]].filter((p) => p && existsSync(join(root, p)));
+
 for (const shell of shells) {
-  test(`${shell[0]}: install, install again, uninstall`, () => {
+  test(`${shell[0]}: install, install again, uninstall`, SLOW, () => {
     const { h, clash } = freshHome();
     const out = run(shell, yesArgs(h));
     for (const m of [...MODS, ...BUNDLED]) assert.ok(existsSync(join(h, "mods", m, "main.js")), `mods/${m}`);
@@ -82,11 +91,13 @@ for (const shell of shells) {
     rmSync(h, { recursive: true, force: true });
   });
 
-  test(`${shell[0]}: the one-liner (the script from stdin, the repository downloaded)`, () => {
+  test(`${shell[0]}: the one-liner (the script from stdin, the repository downloaded)`, SLOW, () => {
     const { h } = freshHome();
     const work = mkdtempSync(join(tmpdir(), "herdr-dl-"));
     const copy = join(work, `${slug}-main`);
-    cpSync(root, copy, { recursive: true, filter: (p) => !/[\\/](\.git|node_modules|\.wt)([\\/]|$)/.test(p) });
+    // The filter looks at the path inside the checkout: a checkout that itself lives under .wt/ (a worktree)
+    // must not filter itself out.
+    for (const p of INPUTS) cpSync(join(root, p), join(copy, p), { recursive: true, filter: (f) => !/(^|[\\/])(\.git|node_modules|\.wt)([\\/]|$)/.test(relative(root, f)) });
     let r;
     if (win) {
       const zip = join(work, "repo.zip");
