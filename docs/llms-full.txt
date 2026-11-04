@@ -717,7 +717,7 @@ global | ctrl-shift-m | mod.open:vault
 
 ## Public contract
 
-Other layouts and mods (the herdr-portrait-layout layout, for one) rely on these names. They do not change without a note on that project’s board. Do not rename them in a fork you want to stay compatible with. Today that layout reads the shared key vault.panes, treats a pane of the mod vault-reader as a note, looks for the tab name obsidian, and draws mods/vault/icons/book-open.svg; it does not read vault.list, vault.current or vault.open, which stay for other layouts.
+Other layouts and mods (the herdr-portrait-layout layout, for one) rely on these names. They do not change without a note on that project’s board. Do not rename them in a fork you want to stay compatible with. Today that layout reads the shared key vault.panes, treats a pane of the mod vault-reader as a note, and draws mods/vault/icons/book-open.svg; it does not read vault.list, vault.current or vault.open, which stay for other layouts.
 
 Name | Kind | Shape and meaning
 
@@ -1071,7 +1071,7 @@ Step | Do | Expect
 
 13. Code and queries | Scroll to the end of the tour. | The Python block is shown as code. The Dataview block is shown with a shown, not run label.
 
-14. Keep and Esc | Press Keep and choose New tab, then close the reader with Esc where it is still floating. | A tab named obsidian holds the note. Esc closes the floating reader.
+14. Keep and Esc | Press Keep and choose New tab. Then open any note from the panel and press Esc. | A tab named obsidian holds the kept note. Esc closes the floating reader.
 
 15. Web images (optional) | Add a line ![](https://example.com/x.png) to a scratch copy of the vault, never to your own. | The reader bar gets Web images: on and the picture downloads, or says why not. The sample vault itself has no web image, so this step is skipped there.
 
