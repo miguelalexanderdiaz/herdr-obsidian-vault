@@ -26,13 +26,13 @@ jobs:
 let base;
 before(() => {
   base = fs.mkdtempSync(path.join(os.tmpdir(), "check-docs-base-"));
-  const keep = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "RECIPE.md", "LICENSE", "NOTICE", "llms.txt", "keys.json", "package.json", "docs", "mods", "examples",
-    "scripts/check-docs.mjs", "scripts/build-llms-full.mjs", "scripts/doc-claims.json", "scripts/PUBLISH.md", "scripts/PREVIEW.md", "scripts/check-repo.mjs", "scripts/privacy-scan.mjs", "scripts/syntax-check.mjs"];
+  // `scripts` is copied whole: the agent docs name several of its files and check-docs checks that they exist.
+  const keep = ["README.md", "AGENTS.md", "CONTRIBUTING.md", "CHANGELOG.md", "RECIPE.md", "LICENSE", "NOTICE", "llms.txt", "keys.json", "package.json", "docs", "mods", "examples", "scripts"];
   for (const k of keep) {
     const from = path.join(repo, k);
     if (!fs.existsSync(from)) continue;
     fs.mkdirSync(path.dirname(path.join(base, k)), { recursive: true });
-    fs.cpSync(from, path.join(base, k), { recursive: true });
+    fs.cpSync(from, path.join(base, k), { recursive: true, filter: (src) => !path.basename(src).startsWith(".privacy-words") });
   }
   fs.writeFileSync(path.join(base, "scripts", "ci.workflow.yml"), GOOD_CI);
 });
