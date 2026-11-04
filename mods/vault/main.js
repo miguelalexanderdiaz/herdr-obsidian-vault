@@ -16,7 +16,7 @@ import { theme, props, shared, setShared, pickFolder, readTextFile, watchFolder,
 import * as fs from "fs/promises";
 import { searchVault, forgetFiles } from "./search.js";
 import { nameOf, normPath, tilde as tildeOf, openCommand, canOpen, obsidianConfigCandidates, missingMessage } from "./platform.js";
-import { readVaultList } from "./obsidian-config.js";
+import { readVaultList, insideHome } from "./obsidian-config.js";
 import { visibleChanges, folderEntries } from "./tree.js";
 import { Watcher, POLL_MS, LIVE_OFF } from "./watch.js";
 import { MOD, MOD_DIR, READER } from "./mod-name.js";
@@ -155,7 +155,10 @@ export default class Vault extends View {
         this.more = more;
         this.error = null;
       } catch (e) {
-        if (root === this.root) this.error = /ENOENT|No such/i.test(String(e)) ? "This vault's folder is gone" : String(e?.message ?? e);
+        if (root === this.root) {
+          this.error = !insideHome(root, home(), window().platform === "windows") ? "This vault is outside your home folder, which Herdr mods can't read"
+            : /ENOENT|No such/i.test(String(e)) ? "This vault's folder is gone" : String(e?.message ?? e);
+        }
       }
       cx.notify();
     });
@@ -301,6 +304,13 @@ export default class Vault extends View {
       const folder = await pickFolder({ prompt: "Add vault" });
       if (!folder) return;
       const path = normPath(folder);
+      // Beyond the home folder fs.exists says "no" (or fails), which used to read as "has no .obsidian folder".
+      if (!insideHome(path, home(), window().platform === "windows")) {
+        notify({ title: "Vault outside your home folder", body: `Herdr mods can only read inside your home folder, so ${nameOf(path)} can't be added. A link to it from inside your home folder may work.`, level: "warning" });
+        const out = shared("vault.outside") ?? [];
+        if (!out.some((o) => o.path === path)) setShared("vault.outside", [...out, { path, name: nameOf(path) }]);
+        return;
+      }
       if (!(await fs.exists(`${path}/.obsidian`).catch(() => false))) {
         notify({ title: "Not an Obsidian vault", body: `${tilde(path)} has no .obsidian folder. Pick the vault's own folder (open it in Obsidian once if it's new).`, level: "warning" });
         return;

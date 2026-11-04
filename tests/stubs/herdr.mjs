@@ -18,7 +18,9 @@ export const home = () => herdrTest.home;
 export const appHome = () => herdrTest.appHome;
 export const window = () => ({ platform: herdrTest.platform });
 export const settings = () => ({ zoom: 1, dark: true });
-export const readTextFile = async (p) => { try { return fs.readFileSync(p, "utf8"); } catch { return null; } };
+// herdr.d.ts: "Reads UTF-8 text (up to 1 MiB), or null if absent". Beyond 1 MiB is not documented; the stub
+// answers null, the likelier reading, and the reader must still tell the two cases apart.
+export const readTextFile = async (p) => { try { if (fs.statSync(p).size > 1024 * 1024) return null; return fs.readFileSync(p, "utf8"); } catch { return null; } };
 export const watchFolder = (p) => herdrTest.watch(p);
 export const nextCommand = () => (herdrTest.commands.length ? Promise.resolve(herdrTest.commands.shift()) : new Promise(() => {}));
 export const shared = (k) => herdrTest.shared.get(k);

@@ -169,3 +169,35 @@ test("opening a program from the tree is refused; documents go to the OS opener"
   v.open("sheet.xlsx");
   assert.deepEqual(calls, [["xdg-open", "/home/x/A/sheet.xlsx"]]);
 });
+
+// ---- Add vault on a folder beyond the home folder (R2-CR-9, CR-2-10) -------------------------------------
+
+test("Add vault on a folder outside the home folder says so, lists it dimmed, and does not claim it lacks .obsidian", async () => {
+  const home = makeHome("linux", () => []);
+  reset(home);
+  const { v } = await start();
+  herdrTest.pickFolder = async () => "/mnt/disk/Work Notes/";
+  await v.addVault();
+  const n = herdrTest.notices.at(-1);
+  assert.equal(n.title, "Vault outside your home folder");
+  assert.equal(n.body, "Herdr mods can only read inside your home folder, so Work Notes can't be added. A link to it from inside your home folder may work.");
+  assert.doesNotMatch(n.body, /\.obsidian|\/mnt/, "no wrong reason, no path");
+  assert.equal(n.level, "warning");
+  assert.deepEqual(herdrTest.shared.get("vault.list"), [], "not added");
+  assert.deepEqual(herdrTest.shared.get("vault.outside"), [{ path: "/mnt/disk/Work Notes", name: "Work Notes" }]);
+  herdrTest.pickFolder = async () => "/mnt/disk/Work Notes";
+  await v.addVault();
+  assert.equal(herdrTest.shared.get("vault.outside").length, 1, "listed once");
+  assert.equal(herdrTest.shared.get("vault.adding"), null, "guard released");
+});
+
+test("a vault already in the list that lies outside the home folder says so in the tree", async () => {
+  const home = makeHome("linux", () => []);
+  reset(home);
+  herdrTest.shared.set("vault.list", [{ path: "/mnt/disk/Old", name: "Old" }]);
+  herdrTest.shared.set("vault.current", "/mnt/disk/Old");
+  const { v, cx } = await start();
+  v.sync(cx);
+  await settle();
+  assert.equal(v.error, "This vault is outside your home folder, which Herdr mods can't read");
+});

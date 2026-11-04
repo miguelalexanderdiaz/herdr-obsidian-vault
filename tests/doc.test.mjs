@@ -75,3 +75,35 @@ test("dependencies are recorded for live reload", async () => {
   await buildDoc("a.md", null, 0, e);
   assert.deepEqual([...e.deps].sort(), ["/v/a.md", "/v/b.md"]);
 });
+
+// ---- the right message for a file that is there but cannot be read (R2-CR-9, CR-2-10) ------------------------
+
+import { readNote, TOO_LARGE } from "../mods/vault-reader/doc.js";
+
+test("readNote: text, absent, and present-but-over-1-MiB are three different results", async () => {
+  const exists = async (p) => p !== "/v/gone.md";
+  const read = async (p) => (p === "/v/ok.md" ? "hello" : null); // readTextFile: null for absent, and (assumed) for too large
+  assert.equal(await readNote("/v/ok.md", { read, exists }), "hello");
+  assert.equal(await readNote("/v/gone.md", { read, exists }), null);
+  assert.deepEqual(await readNote("/v/big.md", { read, exists }), { tooLarge: true });
+  // a rejection that names the limit, for a file that exists
+  const rejects = async () => { throw new Error("file is larger than 1 MiB"); };
+  assert.deepEqual(await readNote("/v/big.md", { read: rejects, exists }), { tooLarge: true });
+  // any other failure keeps its own message
+  await assert.rejects(readNote("/v/x.md", { read: async () => { throw new Error("EACCES: permission denied"); }, exists }), /EACCES/);
+  assert.equal(await readNote("/v/empty.md", { read: async () => "", exists }), "", "an empty note is a note");
+});
+
+test("a note, canvas or drawing over 1 MiB says so; it does not say 'no longer in the vault' (CR-2-10)", async () => {
+  const mk = (read) => ({ read, resolve: () => null, deps: new Set(), abs: (f) => f });
+  const big = async () => ({ tooLarge: true });
+  assert.equal((await buildDoc("Big.md", null, 0, mk(big))).error, TOO_LARGE.note);
+  assert.equal((await buildDoc("Big.canvas", null, 0, mk(big))).error, TOO_LARGE.canvas);
+  assert.equal((await buildDoc("Big.excalidraw.md", null, 0, mk(big))).error, TOO_LARGE.excalidraw);
+  assert.equal((await buildDoc("Gone.md", null, 0, mk(async () => null))).error, "This file is no longer in the vault");
+  for (const m of Object.values(TOO_LARGE)) assert.match(m, /larger than 1 MiB.*Open it in Obsidian\.$/);
+  // an embedded note that is too large shows its own message inside the note
+  const e = env({ "A.md": "![[B]]", "B.md": "" });
+  const parent = await buildDoc("A.md", null, 0, { ...e, read: async (f) => (f === "A.md" ? "![[B]]" : { tooLarge: true }) });
+  assert.equal(parent.blocks[0].doc.error, TOO_LARGE.note);
+});

@@ -147,3 +147,15 @@ test("when the watch is refused the reader polls and says so (CR-1-9)", async ()
 });
 
 function herdrTestTheme() { return { dim: "#777" }; }
+
+test("a note over 1 MiB gets its own message, a missing one keeps 'no longer in the vault' (R2-CR-9)", async () => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "herdr-big-vault-"));
+  fs.writeFileSync(path.join(vault, "Huge.md"), "# Big\n" + "word ".repeat(260_000)); // about 1.3 MB
+  fs.writeFileSync(path.join(vault, "Huge.canvas"), JSON.stringify({ nodes: [{ id: "a", type: "text", text: "x".repeat(1_200_000), x: 0, y: 0, width: 10, height: 10 }], edges: [] }));
+  const note = await open(vault, "Huge.md");
+  assert.equal(note.r.doc.error, "This note is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.");
+  const canvas = await open(vault, "Huge.canvas");
+  assert.equal(canvas.r.doc.error, "This canvas is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.");
+  const gone = await open(vault, "Gone.md");
+  assert.equal(gone.r.doc.error, "This file is no longer in the vault");
+});

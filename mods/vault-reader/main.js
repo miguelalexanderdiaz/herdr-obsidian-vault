@@ -21,7 +21,7 @@ import { v_flex, h_flex, TextView } from "gpui-base";
 import { props, theme, exec, readTextFile, watchFolder, closeOverlay, notify, run, shared, setShared, openOverlay, settings, spaces, panes, focused, nextCommand } from "herdr";
 import * as fs from "fs/promises";
 import { makeResolver, parseSize, parseLinkUrl, safeUrl } from "./parse.js";
-import { buildDoc, kindOf } from "./doc.js";
+import { buildDoc, kindOf, readNote } from "./doc.js";
 import { edgesSvg, canvasColor } from "./canvas.js";
 import { hash, themeKey, renderJobs, stamps, vaultImage, pdfPage, pdfInfo, pdfPageAt, remoteImage, svgFile, pruneCache, loadSettings, saveSettings, platform } from "./assets.js";
 import { openCommand, previewCommand, previewLabel, previewName, backHint, isBackKey, canOpen, relOf, normPath } from "./platform.js";
@@ -184,7 +184,7 @@ export default class Reader extends View {
 
   build(file, anchor, depth) {
     return buildDoc(file, anchor, depth, {
-      read: (f) => readTextFile(this.abs(f)), resolve: (t, from) => this.resolve(t, from), deps: this.deps, abs: (f) => this.abs(f) });
+      read: (f) => readNote(this.abs(f), { read: readTextFile, exists: fs.exists }), resolve: (t, from) => this.resolve(t, from), deps: this.deps, abs: (f) => this.abs(f) });
   }
 
   // A PDF's pages one at a time (each shows as it's drawn), up to PDF_PAGES;
