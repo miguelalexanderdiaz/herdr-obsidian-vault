@@ -6,6 +6,7 @@
 <title>Troubleshooting - Herdr Obsidian Vault</title>
 <meta name="description" content="Messages shown by the Herdr Obsidian Vault mods, what causes them and how to fix them.">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -22,6 +23,7 @@
 <li><a href="configuration.html">Configuration</a></li>
 <li><a href="privacy.html">Privacy</a></li>
 <li><a href="troubleshooting.html" aria-current="page">Troubleshooting</a></li>
+<li><a href="verify.html">Check your install</a></li>
 <li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
@@ -34,6 +36,31 @@
 <p class="lede">Each entry gives the message as it appears, why, and what to do. The messages are quoted from the code, and the docs check script verifies that they still exist there.</p>
 <div class="note">If a mod breaks right after you edit it, Herdr keeps the last good version and writes the reason to <code>&lt;name&gt;.error</code>. <code>herdr-app status</code> shows errors too. If a layout or key makes the window unusable, press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Esc</kbd>: it sets the layout and <code>keys.json</code> aside.</div>
 <p>The install hint after a message depends on your system. The <a href="requirements.html">requirements table</a> lists them all.</p>
+
+<h2 id="index">Jump to</h2>
+<ul class="jump">
+<li><a href="#no-vaults">The panel says No vault yet</a></li>
+<li><a href="#not-vault">Notification Not an Obsidian vault</a></li>
+<li><a href="#folder-gone">This vault's folder is gone</a></li>
+<li><a href="#outside-home">Outside your home folder: Herdr can't read it</a></li>
+<li><a href="#rg-missing">ripgrep (rg) isn't installed</a></li>
+<li><a href="#stale-tree">Live updates are off for this folder</a></li>
+<li><a href="#more">more not listed (search finds them)</a></li>
+<li><a href="#program">is a program, not a document.</a></li>
+<li><a href="#needs-node">Diagrams and math need Node.js 22 or newer</a></li>
+<li><a href="#needs-browser">Diagrams and math need a browser to draw them</a></li>
+<li><a href="#needs-obsidian">Diagrams and math use Obsidian's own Mermaid and MathJax, read from the installed app</a></li>
+<li><a href="#render-slow">Drawing took too long and was stopped</a></li>
+<li><a href="#render-other">Couldn't draw this</a></li>
+<li><a href="#pdf-first">Poppler (pdftoppm, pdfinfo) isn't installed</a></li>
+<li><a href="#missing-target">isn't in the vault or No file &hellip; in the vault</a></li>
+<li><a href="#anchor">No heading or block</a></li>
+<li><a href="#canvas-empty">This canvas is empty</a></li>
+<li><a href="#deep">Embedded too deep to show here</a></li>
+<li><a href="#web-image">A web image does not show</a></li>
+<li><a href="#stale-picture">A picture looks old</a></li>
+<li><a href="#link-nothing">Clicking a link does nothing</a></li>
+</ul>
 
 <h2 id="panel">Panel</h2>
 
@@ -114,8 +141,8 @@
 <p>Only <code>http</code>, <code>https</code> and <code>mailto</code> links are opened, and other schemes are dropped without a message. Other files open with the system opener (<code>open</code>, <code>xdg-open</code>, <code>rundll32</code>); a missing opener fails silently, so check that it exists.</p>
 
 <h2 id="report">Still stuck</h2>
-<p>Open an issue in the repository with: your operating system, <code>node --version</code>, the output of <code>herdr-app check</code> on both mods, and the exact text of the message. Do not paste note content or paths that name you.</p>
-<div class="pager"><a href="privacy.html" rel="prev">&larr; Privacy</a><a href="how-it-works.html" rel="next">How it works &rarr;</a></div>
+<p>Run the short <a href="verify.html">install check</a> on the sample vault first; it tells you which step fails. Then open an issue in the repository (the &ldquo;Platform report&rdquo; form has the same fields) with: your operating system, <code>node --version</code>, the output of <code>herdr-app check</code> on both mods, and the exact text of the message. Do not paste note content or paths that name you.</p>
+<div class="pager"><a href="privacy.html" rel="prev">&larr; Privacy</a><a href="verify.html" rel="next">Check your install &rarr;</a></div>
 </div>
 </main>
 <footer class="site-footer">

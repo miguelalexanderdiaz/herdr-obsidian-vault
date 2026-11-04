@@ -82,8 +82,10 @@ summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 12px; padding: 0; list-style: none; }
 .cards li { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface); margin: 0; }
 .cards a { font-weight: 700; }
+ul.jump { columns: 16rem; column-gap: 24px; padding-left: 1.2em; }
+ul.jump li { break-inside: avoid; }
 figure { margin: 1.2em 0; }
-figure svg { max-width: 100%; height: auto; }
+figure svg, figure img { max-width: 100%; height: auto; }
 figcaption { color: var(--muted); font-size: .9rem; }
 .pager { display: flex; justify-content: space-between; gap: 16px; margin-top: 2.5em; padding-top: 1em; border-top: 1px solid var(--border); }
 .site-footer { border-top: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: .9rem; padding: 16px 0 28px; }

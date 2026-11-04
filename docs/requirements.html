@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Requirements - Herdr Obsidian Vault</title>
-<meta name="description" content="Programs the Herdr Obsidian Vault mods use on macOS, Linux and Windows, and what you lose without each.">
+<meta name="description" content="What the Vault panel and reader need, per operating system, and what they do without it. macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -22,6 +23,7 @@
 <li><a href="configuration.html">Configuration</a></li>
 <li><a href="privacy.html">Privacy</a></li>
 <li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="verify.html">Check your install</a></li>
 <li><a href="how-it-works.html">How it works</a></li>
 <li><a href="for-agents.html">For agents</a></li>
 </ul>
@@ -32,7 +34,8 @@
 <div class="wrap">
 <h1>Requirements</h1>
 <p class="lede">Only Herdr is required. Everything else is optional and adds a feature. When a program is missing, the panel or the reader says which one in plain words instead of failing.</p>
-<p>These programs are not bundled. For each one the mods try the bare name on your PATH, then the usual install folders of your operating system (Homebrew, Snap, Linuxbrew, Nix, Volta, Scoop, WinGet, Chocolatey, Program Files), then, for Node, the folders of nvm, fnm and asdf, and last your login shell (<code>command -v</code>) on macOS and Linux or <code>where</code> on Windows. A program that was missing is looked for again after 30 seconds, so installing it while Herdr runs works. The only thing the mods ever download is a web image that a note shows (see <a href="privacy.html">privacy</a>).</p>
+<p>macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.</p>
+<p>These programs are not bundled. For ripgrep, Node.js, Poppler and curl the mods try the bare name on your PATH, then the usual install folders of your operating system (Homebrew, Snap, Linuxbrew, Nix, Volta, Scoop, WinGet, Chocolatey, Program Files), then, for Node, the folders of nvm, fnm and asdf, and last your login shell (<code>command -v</code>) on macOS and Linux or <code>where</code> on Windows. The browser and Obsidian are found by the render script in its own way, described under <a href="#overrides">Pointing the mods at a program</a>. A program that was missing is looked for again after 30 seconds, so installing it while Herdr runs works. The only thing the mods ever download is a web image that a note shows (see <a href="privacy.html">privacy</a>).</p>
 
 <div class="table-wrap" role="region" aria-label="Requirements per operating system" tabindex="0">
 <table id="requirements-table">
@@ -49,6 +52,22 @@
 </tbody>
 </table>
 </div>
+
+<h2 id="matrix">What works where</h2>
+<p>This table says how far each feature has been checked on each system. &ldquo;Used by the author&rdquo; means the feature was in the version imported from the author&rsquo;s own macOS setup. Code changed since then was checked by the unit tests and <code>herdr-app check</code> only, because the agents that made the changes may not drive the live app. &ldquo;Fake-OS tests&rdquo; means the unit tests run the code for that system with a made-up operating system, program lookup and file system, not the real thing. Where a program is needed and absent, the cell says what you see instead.</p>
+<div class="table-wrap" role="region" aria-label="What works where" tabindex="0"><table id="matrix-table">
+<thead><tr><th scope="col">Feature</th><th scope="col">Needs</th><th scope="col">macOS</th><th scope="col">Linux</th><th scope="col">Windows</th></tr></thead>
+<tbody>
+<tr><th scope="row">Panel, vault picker, tree, live refresh</th><td>Herdr</td><td>Used by the author</td><td>Fake-OS tests</td><td>Fake-OS tests</td></tr>
+<tr><th scope="row">Vault list from Obsidian, Import</th><td>Obsidian&rsquo;s <code>obsidian.json</code></td><td>First-run list used by the author; Import is new, fake-OS tests</td><td>Fake-OS tests (also Flatpak and Snap places)</td><td>Fake-OS tests</td></tr>
+<tr><th scope="row">Search</th><td><code>rg</code></td><td>Used by the author</td><td>Fake-OS tests; without <code>rg</code> a named message</td><td>Fake-OS tests; without <code>rg</code> a named message</td></tr>
+<tr><th scope="row">Notes, callouts, links, embeds, canvas, images</th><td>Herdr</td><td>Used by the author</td><td>Same code on every system; fake-OS tests for the file stamps</td><td>Same code on every system; fake-OS tests for the file stamps</td></tr>
+<tr><th scope="row">PDF pages</th><td>Poppler</td><td>Used by the author; without Poppler page 1 through Quick Look</td><td>Fake-OS tests; without Poppler a named message</td><td>Fake-OS tests; without Poppler a named message</td></tr>
+<tr><th scope="row">Math, Mermaid, Excalidraw</th><td>Node.js, a browser, the Obsidian app</td><td>Used by the author</td><td>Fake-OS tests of the lookup; without a piece a named message</td><td>Fake-OS tests of the lookup; without a piece a named message</td></tr>
+<tr><th scope="row">Web images</th><td><code>curl</code></td><td>Fake-OS tests (the <code>curl</code> download is new)</td><td>Fake-OS tests; without <code>curl</code> a named message</td><td>Fake-OS tests; without <code>curl</code> a named message</td></tr>
+<tr><th scope="row">Opening other files and links</th><td>The system opener</td><td>Used by the author</td><td>Fake-OS tests; a missing opener does nothing</td><td>Fake-OS tests; a missing opener does nothing</td></tr>
+</tbody></table></div>
+<p>Nothing is marked as used for Linux or Windows because nobody has watched the mods run there. <a href="verify.html">Check your install</a> is how that evidence arrives.</p>
 
 <h2 id="vault-list">Where Obsidian keeps its vault list</h2>
 <p>On first run, and when you choose <em>Import from Obsidian</em>, the panel reads Obsidian&rsquo;s own list of vaults, so you do not have to add them again. The first file in the order below that holds at least one vault is used. If none is found, the empty panel says <em>Obsidian&rsquo;s vault list wasn&rsquo;t found</em> and names the places it looked.</p>

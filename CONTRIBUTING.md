@@ -41,7 +41,8 @@ herdr-app check /absolute/path/to/mods/vault-reader
 git status --short   # clean: nothing generated is left behind
 ```
 
-The CI workflow template (`scripts/ci.workflow.yml`, installed by the owner as `.github/workflows/ci.yml`) runs the first four on Linux, macOS and Windows with Node 22. `herdr-app check` needs the app and runs on your machine only. `herdr-app check` can leave `gpui-kit.d.ts` and `jsconfig.json` in a mod folder; they are git-ignored, do not commit them.
+<!-- publish: ci. Install the workflow (scripts/PUBLISH.md), wait for a green run, then replace this sentence with the systems that ran. -->
+A CI workflow template (`scripts/ci.workflow.yml`) is meant to run the first four on Linux, macOS and Windows. It has not run yet because the author still has to install it as `.github/workflows/ci.yml`, so do not rely on it: run the checks yourself. `herdr-app check` needs the app and runs on your machine only. `herdr-app check` can leave `gpui-kit.d.ts` and `jsconfig.json` in a mod folder; they are git-ignored, do not commit them.
 
 ## Testing rules
 
@@ -76,7 +77,7 @@ Write plainly: short sentences, what happens and what to do. State the real supp
 
 ## Publishing
 
-Publishing to herdr.dev (a screenshot, the Pages setting, the `herdr-mod` topic, making the repository public) is done by the owner. The checklist is `scripts/PUBLISH.md`.
+Publishing to herdr.dev (a screenshot, the Pages setting, the `herdr-mod` topic, making the repository public) is done by the owner. The checklist is `scripts/PUBLISH.md`. The docs site is served by GitHub Pages from the `main` branch and the `/docs` folder. Every sentence that changes when the repository is published carries a mark, an HTML comment that starts with the word publish and a colon; `rg "publish:"` lists them and `node scripts/check-docs.mjs --release` fails until they are resolved.
 
 ## License
 

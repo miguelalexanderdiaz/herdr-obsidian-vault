@@ -1,6 +1,6 @@
 # Herdr Obsidian Vault
 
-> Two Herdr desktop-app mods: a side panel that browses and searches an Obsidian vault, and a floating reader that draws notes (callouts, wikilinks, embeds, images, PDFs, math, Mermaid, Excalidraw, Canvas). Read-only, runs on macOS, Linux and Windows, no bundled binaries.
+> Two Herdr desktop-app mods: a side panel that browses and searches an Obsidian vault, and a floating reader that draws notes (callouts, wikilinks, embeds, images, PDFs, math, Mermaid, Excalidraw, Canvas). Read-only, no bundled binaries. macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.
 
 Facts an agent needs:
 
@@ -23,6 +23,7 @@ Facts an agent needs:
 - [Configuration](https://<owner>.github.io/herdr-obsidian-vault/configuration.html): settings, keys, public contract, limits
 - [Privacy](https://<owner>.github.io/herdr-obsidian-vault/privacy.html): what is read, run, downloaded and written
 - [Troubleshooting](https://<owner>.github.io/herdr-obsidian-vault/troubleshooting.html): every message and its fix
+- [Check your install](https://<owner>.github.io/herdr-obsidian-vault/verify.html): a checklist on the sample vault and a report template
 - [How it works](https://<owner>.github.io/herdr-obsidian-vault/how-it-works.html): files, data flow, caching, rendering
 
 ## Optional

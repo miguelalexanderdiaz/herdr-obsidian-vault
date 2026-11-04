@@ -6,33 +6,39 @@
 <title>Page not found - Herdr Obsidian Vault</title>
 <meta name="description" content="This page does not exist on the Herdr Obsidian Vault documentation site.">
 <meta name="color-scheme" content="light dark">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:,">
+<!-- GitHub Pages serves this file for a missing page at any depth, so it must not depend on relative paths: its CSS is inline and its links start at the site root of a project site. -->
+<style>
+:root { color-scheme: light dark; --bg: #ffffff; --fg: #1b1f24; --muted: #4a5360; --link: #0a58a8; --border: #c9d0d9; --surface: #f4f5f7; --accent: #0a58a8; --accent-fg: #ffffff; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14171c; --fg: #e6e9ee; --muted: #a9b2bf; --link: #7db8ff; --border: #38404b; --surface: #1c2027; --accent: #7db8ff; --accent-fg: #0d1117; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 1rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.skip { position: absolute; left: 16px; top: -100px; background: var(--accent); color: var(--accent-fg); padding: .5rem .75rem; border-radius: 6px; }
+.skip:focus { top: 8px; }
+a { color: var(--link); text-underline-offset: 2px; }
+a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.site-header { border-bottom: 1px solid var(--border); background: var(--surface); }
+.wrap { max-width: 56rem; margin: 0 auto; padding: 0 16px; }
+.brand { display: block; padding: 14px 0; font-weight: 700; color: var(--fg); text-decoration: none; }
+main { padding: 24px 0 48px; }
+h1 { font-size: 2rem; line-height: 1.2; margin: .2em 0 .4em; }
+.site-footer { border-top: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: .9rem; padding: 16px 0 28px; }
+.site-footer p { margin: .3em 0; }
+</style>
 </head>
 <body>
 <a class="skip" href="#content">Skip to the content</a>
 <header class="site-header">
 <div class="wrap">
-<a class="brand" href="index.html">Herdr Obsidian Vault</a>
-<nav aria-label="Documentation">
-<ul>
-<li><a href="index.html">Overview</a></li>
-<li><a href="install.html">Install</a></li>
-<li><a href="usage.html">Usage</a></li>
-<li><a href="requirements.html">Requirements</a></li>
-<li><a href="configuration.html">Configuration</a></li>
-<li><a href="privacy.html">Privacy</a></li>
-<li><a href="troubleshooting.html">Troubleshooting</a></li>
-<li><a href="how-it-works.html">How it works</a></li>
-<li><a href="for-agents.html">For agents</a></li>
-</ul>
-</nav>
+<a class="brand" href="/herdr-obsidian-vault/">Herdr Obsidian Vault</a>
 </div>
 </header>
 <main id="content">
 <div class="wrap">
 <h1>Page not found</h1>
-<p>That page does not exist. Go to the <a href="index.html">overview</a> or pick a page from the menu above.</p>
-
+<p>That page does not exist. Go to the <a href="/herdr-obsidian-vault/">overview</a>, or straight to <a href="/herdr-obsidian-vault/install.html">install</a>, <a href="/herdr-obsidian-vault/troubleshooting.html">troubleshooting</a> or <a href="/herdr-obsidian-vault/verify.html">check your install</a>.</p>
 </div>
 </main>
 <footer class="site-footer">

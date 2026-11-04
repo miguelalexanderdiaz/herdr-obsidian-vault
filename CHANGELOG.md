@@ -4,8 +4,6 @@ All notable changes to this project are written here. The format follows [Keep a
 
 ## [Unreleased]
 
-Round 1: make the mods portable and publishable. Entries are filled in by the documentation role from the plan, the board and the commit log, and re-checked against the code at the end of each round.
-
 ### Added
 
 - Linux and Windows support in the code paths: Obsidian's vault list for macOS, Linux (including Flatpak and Snap) and Windows; tool lookup on PATH and in per-OS folders for `rg`, `pdftoppm`, `pdfinfo`, `curl`, Node.js, a Chromium-family browser and Obsidian's `obsidian.asar`; the system file opener on each OS (`open`, `xdg-open`, `rundll32 url.dll,FileProtocolHandler`; not `cmd /c start`, which would read an `&` in a web address as a second command). All operating-system literals live in one `platform.js` per mod.
@@ -13,13 +11,13 @@ Round 1: make the mods portable and publishable. Entries are filled in by the do
 - Environment variables `HERDR_VAULT_BROWSER`, `CHROME_PATH` and `HERDR_VAULT_ASAR` to point at programs in unusual places.
 - The `remoteImages` setting (`data/vault/settings.json`, default on) and a **Web images: on/off** button in the reader bar to stop downloading web images that notes show.
 - Pruning of `data/vault/cache`, once per session about 8 seconds after the first reader opens: entries older than 30 days, then the oldest until under 200 MB.
-- Tests: `npm test` (Node 22+, no dependencies, no Chrome, Obsidian, ripgrep or Poppler needed); the CI template runs them on Linux, macOS and Windows.
-- Release material: `LICENSE` (Apache-2.0), `NOTICE`, `RECIPE.md`, `keys.json` (Ctrl+Shift+M opens the panel as a popup, with a 420 by 640 overlay added to `mods/vault/mod.json`), `scripts/ci.workflow.yml` (the CI template; the author copies it to `.github/workflows/ci.yml`), `scripts/check-repo.mjs`, `scripts/privacy-scan.mjs`, `scripts/PUBLISH.md`.
+- Tests: `npm test` (Node 22+, no dependencies, no Chrome, Obsidian, ripgrep or Poppler needed); a CI template for Linux, macOS and Windows exists but has not run yet.
+- Release material: `LICENSE` (Apache-2.0), `NOTICE`, `RECIPE.md`, `keys.json` (Ctrl+Shift+M opens the panel as a popup, with a 420 by 640 overlay added to `mods/vault/mod.json`), `scripts/ci.workflow.yml` (the CI template, not run yet; the author copies it to `.github/workflows/ci.yml`), `scripts/check-repo.mjs`, `scripts/privacy-scan.mjs`, `scripts/PUBLISH.md`.
 - Documentation: `README.md`, a GitHub Pages site in `docs/`, `AGENTS.md`, `llms.txt`, `CONTRIBUTING.md`, and `scripts/check-docs.mjs` to keep them honest.
 
 ### Changed
 
-- The Obsidian logo is no longer distributed. `obsidian.png` keeps its path in both mods (the portrait layout loads it) but now holds a generic gem icon, and `vault.svg` is added beside it.
+- The Obsidian logo is no longer distributed. `obsidian.png` keeps its path in `mods/vault-reader` (older copies of the portrait layout load it) but now holds a generic gem icon, and `vault.svg` is added beside it.
 - The panel carries its own search icon instead of loading one from Herdr's `workspace-chrome` mod, which Herdr replaces on update.
 - Fonts come from the person's Herdr font setting with generic fallbacks, not macOS font names.
 - Back in the reader: Alt+Left and Backspace on every system, Cmd+[ on macOS.
@@ -47,11 +45,12 @@ Round 1: make the mods portable and publishable. Entries are filled in by the do
 
 ## [0.1.0] - Initial import
 
-First version, as imported from a working Herdr setup (macOS only).
+First version, as imported from a working Herdr setup (macOS only). This baseline has no git tag.
 
 - `vault` mod: vault picker fed by Obsidian's vault list, file tree, full-text search with ripgrep.
 - `vault-reader` mod: floating note reader with front matter, callouts, wikilinks, embeds, images, tasks, tags, tables, math, Mermaid, Excalidraw, Canvas and PDFs.
 - A sample vault in `examples/sample-vault`.
 
+<!-- publish: tags. Replace <owner>, and create the tag v0.1.0 (or drop the compare links) when you publish. The 0.1.0 baseline has no tag yet. -->
 [Unreleased]: https://github.com/<owner>/herdr-obsidian-vault/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/<owner>/herdr-obsidian-vault/releases/tag/v0.1.0

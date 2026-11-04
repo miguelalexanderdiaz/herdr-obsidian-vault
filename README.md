@@ -2,7 +2,13 @@
 
 Browse an [Obsidian](https://obsidian.md) vault from a side panel in the [Herdr](https://herdr.dev) desktop app, and read its notes in a floating window that draws them the way Obsidian does. Read-only: it never writes into your vault.
 
-<!-- preview: the author adds preview.png before the first release; until then no screenshot is claimed -->
+![Schematic of the Vault panel on the left and the floating Vault reader on the right. A drawing, not a screenshot.](docs/assets/layout.svg)
+
+*The picture above is a schematic of the layout, not a screenshot.*
+
+<!-- publish: preview. Take preview.png (scripts/PREVIEW.md), copy it to docs/assets/, then delete this comment's first and last lines so the picture below shows, and delete the schematic caption above.
+![Screenshot of the Vault panel next to the Vault reader, showing the sample vault](docs/assets/preview.png)
+-->
 
 Two Herdr mods live in this repository:
 
@@ -17,7 +23,12 @@ Documentation for people and agents: [docs site](docs/index.html) (GitHub Pages 
 
 ## Support level
 
-The mods look for every external program in the places used by macOS, Linux and Windows, and say in the panel which one is missing. The author runs them on macOS. Linux and Windows are implemented and covered by unit tests with a fake operating system and by a three-OS CI workflow (a template in `scripts/ci.workflow.yml` that the author still has to install), but have not been watched inside the live Herdr app yet. Reports are welcome.
+macOS is the only OS the author uses; Linux and Windows code paths are implemented and covered by fake-platform unit tests but not run in the live app.
+
+The mods look for every external program in the places used by macOS, Linux and Windows, and say in the panel which one is missing. Reports from Linux and Windows are welcome: [docs/verify.html](docs/verify.html) is a short checklist on the sample vault with a report template.
+
+<!-- publish: ci. Install the workflow (scripts/PUBLISH.md), wait for a green run, then replace this sentence with the systems that ran. -->
+A CI workflow template is in `scripts/ci.workflow.yml`. It has not run yet because the author still has to install it, so no system is claimed to be checked by it.
 
 ## Install
 
@@ -39,10 +50,17 @@ mods, then add the Vault panel to my layout.
 ### By hand
 
 1. Clone or download this repository.
-2. Copy `mods/vault` and `mods/vault-reader` into the `mods` folder of your Herdr home. The home is `~/.config/herdr-app` on macOS and Linux unless `HERDR_APP_HOME` says otherwise; `herdr-app --help` prints the path on your machine, which is the one to use on Windows. Do not overwrite a mod of the same name; rename instead (see [AGENTS.md](AGENTS.md#renaming-a-mod)).
+2. Find your Herdr home: `herdr-app --help` ends with a line `Home: ~/.config/herdr-app (HERDR_APP_HOME picks another)`. Here `~` is your user folder; the default is `.config/herdr-app` inside it, unless `HERDR_APP_HOME` is set. This default is quoted from Herdr's help and has not been checked on Windows. Copy `mods/vault` and `mods/vault-reader` into the `mods` folder of that home. Do not overwrite a mod of the same name; rename instead (see [AGENTS.md](AGENTS.md#renaming-a-mod)).
 
    ```sh
+   # macOS and Linux
    cp -R mods/vault mods/vault-reader ~/.config/herdr-app/mods/
+   ```
+
+   ```powershell
+   # Windows PowerShell: $env:HERDR_APP_HOME if set, else the default under your user folder
+   $h = if ($env:HERDR_APP_HOME) { $env:HERDR_APP_HOME } else { "$HOME\.config\herdr-app" }
+   Copy-Item -Recurse mods\vault, mods\vault-reader "$h\mods"
    ```
 
 3. Merge the optional key of `keys.json` (Ctrl+Shift+M opens the panel as a popup) into your own `keys.json`.
@@ -89,6 +107,21 @@ Only Herdr is required. Each program below adds a feature; without it you get a 
 | curl | Downloading web images that a note shows with `![](https://...)`. | Those images show `curl isn't installed:` with the hint. Turn web images off on purpose with the Web images button. | Ships with macOS | install curl with your package manager (for example: `apt install curl`) | Ships with Windows 10 and newer |
 | System file opener | Opening files the reader cannot show, web links, and PDFs in your viewer. | The click does nothing. | `open` (built in) | `xdg-open` (package `xdg-utils`) | `rundll32 url.dll,FileProtocolHandler` (built in) |
 <!-- requirements:end -->
+
+To install the optional programs in one go (the same commands as the table; a missing one is only a feature lost):
+
+```sh
+# macOS (Homebrew)
+brew install ripgrep node poppler
+# Linux (Debian and Ubuntu names; use your package manager's)
+sudo apt install ripgrep poppler-utils curl
+```
+
+```powershell
+# Windows
+winget install BurntSushi.ripgrep.MSVC OpenJS.NodeJS
+scoop install poppler
+```
 
 Environment variables `HERDR_VAULT_BROWSER` (or `CHROME_PATH`) and `HERDR_VAULT_ASAR` point the mods at a browser and at Obsidian's `obsidian.asar` installed in an unusual place. Where Obsidian keeps its vault list on each system is on the [requirements page](docs/requirements.html).
 
