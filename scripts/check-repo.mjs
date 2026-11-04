@@ -113,6 +113,22 @@ for (const f of files.filter((f) => /\.(json|canvas)$/.test(f))) {
 }
 r.ok(`${files.filter((f) => /\.(json|canvas)$/.test(f)).length} JSON/canvas file(s) parsed`);
 
+// Issue forms (.github/ISSUE_TEMPLATE/*.yml): there is no YAML parser in Node, so the structure GitHub requires is checked
+// line by line: name, description, a body list of known element types, unique ids, no tabs.
+for (const f of files.filter((f) => /^\.github\/ISSUE_TEMPLATE\/.+\.ya?ml$/.test(f) && !f.endsWith("config.yml"))) {
+  const t = readText(f);
+  const problems = [];
+  if (/\t/.test(t)) problems.push("contains a tab (YAML forbids tabs for indentation)");
+  for (const key of ["name", "description", "body"]) if (!new RegExp(`^${key}:`, "m").test(t)) problems.push(`has no top-level ${key}:`);
+  const types = [...t.matchAll(/^\s+- type:\s*(\S+)\s*$/gm)].map((m) => m[1]);
+  if (!types.length) problems.push("has no body elements");
+  for (const ty of types) if (!["markdown", "textarea", "input", "dropdown", "checkboxes"].includes(ty)) problems.push(`unknown element type "${ty}"`);
+  const ids = [...t.matchAll(/^\s+id:\s*(\S+)\s*$/gm)].map((m) => m[1]);
+  if (new Set(ids).size !== ids.length) problems.push("repeats an id");
+  if (types.filter((ty) => ty !== "markdown").length && !ids.length) problems.push("elements have no id");
+  r.check(!problems.length, `${f} is a well-formed issue form (${types.length} elements)`, `${f}: ${problems.join("; ")}`);
+}
+
 // ---- 3. mod.json ----
 console.log("mod.json");
 const PLACES = new Set(["right", "left", "top", "bottom", "none"]);
@@ -337,6 +353,8 @@ if (RELEASE) {
   } else {
     r.error("preview.png is missing (author step in scripts/PUBLISH.md: capture it from examples/sample-vault, see scripts/PREVIEW.md)");
   }
+  // The image line in RECIPE.md sits inside a publish mark until the real picture exists; it must be live to publish.
+  if (has("RECIPE.md") && !/^!\[[^\]]*\]\(preview\.png\)/m.test(readText("RECIPE.md").replace(/<!--[\s\S]*?-->/g, ""))) r.error("RECIPE.md: the preview.png image line is still inside its <!-- publish: preview --> comment (author step: scripts/PUBLISH.md)");
   for (const f of ["RECIPE.md", "NOTICE", "LICENSE", "scripts/PUBLISH.md", "scripts/PREVIEW.md", "README.md"]) {
     if (!has(f)) {
       r.error(`${f} is missing`);
@@ -360,8 +378,8 @@ if (RELEASE) {
   }
   // Publish-time marks in docs: documentation's own gate knows its wording (check-docs --release), we only run it.
   {
-    const res = spawnSync(process.execPath, [path.join(SELF_ROOT, "scripts", "check-docs.mjs"), "--release", "--root", ROOT], { cwd: ROOT, encoding: "utf8" });
-    const lines = `${res.stdout ?? ""}${res.stderr ?? ""}`.split(/\r?\n/).filter((l) => /FAIL/.test(l));
+    const res = spawnSync(process.execPath, [path.join(ROOT, "scripts", "check-docs.mjs"), "--release"], { cwd: ROOT, encoding: "utf8" });
+    const lines = `${res.stdout ?? ""}${res.stderr ?? ""}`.split(/\r?\n/).filter((l) => /FAIL|release:/.test(l));
     if (res.error) r.warn(`check-docs --release could not run: ${res.error.message}`);
     else if (res.status !== 0) {
       r.error("check-docs --release fails (open publish marks in the docs, scripts/PUBLISH.md):");
