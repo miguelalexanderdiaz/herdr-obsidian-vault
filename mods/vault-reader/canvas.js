@@ -3,15 +3,33 @@
 // edge label, drawn in canvas coordinates. Pure: node can run it.
 
 export const CANVAS_COLORS = { 1: "#fb464c", 2: "#e9973f", 3: "#e0de71", 4: "#44cf6e", 5: "#53dfdd", 6: "#a882ff" };
-export const canvasColor = (c, fallback) => (!c ? fallback : CANVAS_COLORS[c] ?? (/^#[0-9a-f]{3,8}$/i.test(c) ? c : fallback));
+export const canvasColor = (c, fallback) => {
+  if (c == null || c === "") return fallback;
+  const key = String(c);
+  if (Object.hasOwn(CANVAS_COLORS, key)) return CANVAS_COLORS[key];
+  // Always "#rrggbb": the reader appends alpha digits to it and mixes it with the background.
+  const m = key.match(/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+  if (!m) return fallback;
+  const h = m[1].toLowerCase();
+  return "#" + (h.length === 3 ? [...h].map((d) => d + d).join("") : h.slice(0, 6));
+};
 
-const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const finite = (v) => typeof v === "number" && Number.isFinite(v);
+
+// Obsidian's defaults for a card with no size (a hand-edited canvas): text cards are small, others bigger.
+const DEFAULT_SIZE = { text: [250, 60], group: [400, 300], file: [400, 300], link: [250, 60] };
 
 export function parseCanvas(text) {
-  const data = JSON.parse(text || "{}");
-  const nodes = (data.nodes ?? []).filter((n) => Number.isFinite(n.x) && Number.isFinite(n.y));
-  const edges = data.edges ?? [];
-  if (!nodes.length) return { empty: true, nodes: [], edges: [] };
+  const data = JSON.parse(text || "{}") ?? {};
+  const nodes = (Array.isArray(data.nodes) ? data.nodes : [])
+    .filter((n) => n && typeof n === "object" && finite(n.x) && finite(n.y))
+    .map((n) => {
+      const [w, h] = DEFAULT_SIZE[n.type] ?? DEFAULT_SIZE.file;
+      return { ...n, width: finite(n.width) && n.width > 0 ? n.width : w, height: finite(n.height) && n.height > 0 ? n.height : h };
+    });
+  const edges = (Array.isArray(data.edges) ? data.edges : []).filter((e) => e && typeof e === "object");
+  if (!nodes.length) return { empty: true, nodes: [], edges: [], box: { x: 0, y: 0, w: 0, h: 0 } };
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const n of nodes) {
     minX = Math.min(minX, n.x); minY = Math.min(minY, n.y - (n.type === "group" && n.label ? 28 : 0));
@@ -48,7 +66,9 @@ function arrow(x, y, nx, ny, color) {
 }
 
 // theme: { line, text, bg, font }
+// Returns null for an empty canvas (nothing to draw).
 export function edgesSvg(canvas, theme) {
+  if (!canvas || canvas.empty || !canvas.box) return null;
   const { box, nodes, edges } = canvas;
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const parts = [];
@@ -71,9 +91,9 @@ export function edgesSvg(canvas, theme) {
     if (e.label) {
       // The curve's middle (t = 0.5).
       const mx = (x1 + 3 * c1[0] + 3 * c2[0] + x2) / 8, my = (y1 + 3 * c1[1] + 3 * c2[1] + y2) / 8;
-      const w = e.label.length * 7.4 + 16;
-      parts.push(`<rect x="${mx - w / 2}" y="${my - 12}" width="${w}" height="24" rx="5" fill="${theme.bg}"/>` +
-        `<text x="${mx}" y="${my + 5}" text-anchor="middle" font-family="${theme.font}" font-size="14" fill="${theme.text}">${esc(e.label)}</text>`);
+      const w = String(e.label).length * 7.4 + 16;
+      parts.push(`<rect x="${mx - w / 2}" y="${my - 12}" width="${w}" height="24" rx="5" fill="${esc(theme.bg)}"/>` +
+        `<text x="${mx}" y="${my + 5}" text-anchor="middle" font-family="${esc(theme.font)}" font-size="14" fill="${esc(theme.text)}">${esc(e.label)}</text>`);
     }
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${box.w}" height="${box.h}" viewBox="${box.x} ${box.y} ${box.w} ${box.h}">${parts.join("")}</svg>`;
