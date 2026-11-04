@@ -2,7 +2,7 @@
 import fs from "node:fs";
 
 export const herdrTest = {
-  props: {}, platform: "linux", home: "/home/test", appHome: "/tmp/herdr-test-app",
+  props: {}, platform: "linux", home: "/home/user", appHome: "/tmp/herdr-test-app",
   exec: async () => { throw new Error("spawn ENOENT"); },
   shared: new Map(), overlays: [], notices: [], runs: [],
   pickFolder: async () => null,

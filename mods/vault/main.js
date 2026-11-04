@@ -138,22 +138,21 @@ export default class Vault extends View {
   async readFolder(rel) {
     const dir = rel ? `${this.root}/${rel}` : this.root;
     const list = await fs.readdir(dir, { withFileTypes: true });
-    const { items, more } = folderEntries(list, label, PER_FOLDER);
-    this.more.set(rel, more);
-    return items;
+    return folderEntries(list, label, PER_FOLDER); // { items, more }
   }
 
   reload(cx) {
     const root = this.root;
     cx.spawn(async (cx) => {
       try {
-        const next = new Map();
+        const next = new Map(), more = new Map();
         for (const rel of ["", ...this.folders]) {
-          try { next.set(rel, await this.readFolder(rel)); }
+          try { const { items, more: n } = await this.readFolder(rel); next.set(rel, items); more.set(rel, n); }
           catch (e) { if (!rel) throw e; this.folders.delete(rel); }
         }
         if (root !== this.root) return;
         this.entries = next;
+        this.more = more;
         this.error = null;
       } catch (e) {
         if (root === this.root) this.error = /ENOENT|No such/i.test(String(e)) ? "This vault's folder is gone" : String(e?.message ?? e);
@@ -197,7 +196,10 @@ export default class Vault extends View {
         const root = this.root;
         this.pending.add(rel);
         cx.spawn(async (cx) => {
-          try { const list = await this.readFolder(rel); if (root === this.root && this.folders.has(rel)) this.entries.set(rel, list); }
+          try {
+            const { items, more } = await this.readFolder(rel);
+            if (root === this.root && this.folders.has(rel)) { this.entries.set(rel, items); this.more.set(rel, more); }
+          }
           catch (e) { this.error = String(e?.message ?? e); }
           finally { this.pending.delete(rel); cx.notify(); }
         });

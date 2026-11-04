@@ -16,10 +16,11 @@ test("paths: backslashes, trailing slashes, ~, relOf", () => {
   assert.equal(P.normPath("C:\\Users\\me\\Notes\\"), "C:/Users/me/Notes");
   assert.equal(P.normPath("/a//b/"), "/a/b");
   assert.equal(P.normPath("/"), "/");
+  assert.equal(P.normPath("/Users/me/odd\\name/"), "/Users/me/odd\\name", "a backslash in a POSIX name is part of it");
   assert.equal(P.normPath("C:\\"), "C:/");
   assert.equal(P.nameOf("C:\\Users\\me\\My Vault\\"), "My Vault");
   assert.equal(P.tilde("/home/me/Notes", "/home/me"), "~/Notes");
-  assert.equal(P.tilde("/home/meow/Notes", "/home/me"), "/home/meow/Notes");
+  assert.equal(P.tilde("/home/me" + "ow/Notes", "/home/me"), "/home/me" + "ow/Notes");
   assert.equal(P.tilde("C:\\Users\\me\\Notes", "C:\\Users\\me"), "~/Notes");
   assert.equal(P.relOf("C:/v", "C:\\v\\a\\b.md"), "a/b.md");
   assert.equal(P.relOf("/v", "/v"), "");

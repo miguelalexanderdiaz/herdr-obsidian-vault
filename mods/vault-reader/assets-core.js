@@ -251,7 +251,7 @@ export function createAssets(deps) {
   const recentFailures = new Map(); // url → { at, res }
   async function remoteImage(url) {
     await ensureDir();
-    if (!(await loadSettings()).remoteImages) return { error: "Images from the web are turned off (Reader menu, “Web images”)", off: true };
+    if (!(await loadSettings()).remoteImages) return { error: "Images from the web are turned off (“Web images” in the bar above turns them on)", off: true };
     if (!remoteUrlOk(url)) return { error: "Not a web address this reader will fetch" };
     const key = hash(`url:${url}`);
     const m = await meta(key);

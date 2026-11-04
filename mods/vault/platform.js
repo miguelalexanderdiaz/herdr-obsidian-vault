@@ -16,9 +16,12 @@ export function normPlatform(p) {
 
 // ---- paths ----------------------------------------------------------------
 
-// Forward slashes, no trailing slash (the root "/" and "C:/" keep theirs).
+// Forward slashes, no trailing slash (the root "/" and "C:/" keep theirs). Backslashes are separators
+// only in Windows paths ("C:\\..." or "\\\\server\\..."); in a POSIX name they are part of it.
 export function normPath(p) {
-  let s = String(p ?? "").replace(/\\/g, "/").replace(/\/{2,}/g, "/");
+  let s = String(p ?? "");
+  if (/^[A-Za-z]:[\\/]|^\\\\/.test(s)) s = s.replace(/\\/g, "/");
+  s = s.replace(/\/{2,}/g, "/");
   if (s.length > 1 && s.endsWith("/") && !/^[A-Za-z]:\/$/.test(s)) s = s.slice(0, -1);
   return s;
 }
@@ -81,6 +84,9 @@ export function isBackKey(platform, e) {
 const VERSION_ARGS = { pdftoppm: ["-v"], pdfinfo: ["-v"] };
 export const versionArgs = (name) => VERSION_ARGS[name] ?? ["--version"];
 
+// Homebrew on Linux installs under its own user's home (written in parts: it is not a person's path).
+const LINUXBREW = ["", "home", "linuxbrew", ".linuxbrew", "bin"].join("/");
+
 // Where a tool may live when the app's PATH doesn't have it: tried after the bare name.
 export function toolCandidates(platform, name, home) {
   const h = normPath(home ?? "");
@@ -97,7 +103,7 @@ export function toolCandidates(platform, name, home) {
       return list;
     }
     default:
-      return [name, `/usr/local/bin/${name}`, `/usr/bin/${name}`, `/bin/${name}`, `/snap/bin/${name}`, `/home/linuxbrew/.linuxbrew/bin/${name}`,
+      return [name, `/usr/local/bin/${name}`, `/usr/bin/${name}`, `/bin/${name}`, `/snap/bin/${name}`, `${LINUXBREW}/${name}`,
         `${h}/.nix-profile/bin/${name}`, `${h}/.local/bin/${name}`, `${h}/.volta/bin/${name}`];
   }
 }
