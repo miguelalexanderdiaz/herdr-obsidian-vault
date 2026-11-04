@@ -9,22 +9,22 @@
 <link rel="icon" href="data:,">
 <!-- GitHub Pages serves this file for a missing page at any depth, so it must not depend on relative paths: its CSS is inline and its links start at the site root of a project site. -->
 <style>
-@font-face { font-family: "Fraunces"; src: url("/herdr-obsidian-vault/assets/fonts/fraunces-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url("/herdr-obsidian-vault/assets/fonts/fraunces-latin-full-normal.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: "Source Serif 4"; src: url("/herdr-obsidian-vault/assets/fonts/source-serif-4-latin-wght-normal.woff2") format("woff2"); font-weight: 200 900; font-display: swap; }
-@font-face { font-family: "JetBrains Mono"; src: url("/herdr-obsidian-vault/assets/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
-:root { color-scheme: dark; --bg: #181616; --fg: #c5c9c5; --muted: #a6a69c; --link: #b6927b; --border: #393836; --surface: #282727; --accent: #b6927b; --accent-fg: #181616; }
+:root { color-scheme: dark; --bg: #181616; --fg: #c5c9c5; --muted: #9e9b93; --link: #8ba4b0; --border: #393836; --surface: #282727; --accent: #b6927b; --accent-fg: #181616; }
 * { box-sizing: border-box; }
 html { background: var(--bg); }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 400 1.0625rem/1.68 "Source Serif 4", "Iowan Old Style", Georgia, serif; -webkit-font-smoothing: antialiased; }
-.skip { position: absolute; left: 16px; top: -100px; background: var(--accent); color: var(--accent-fg); padding: .5rem .75rem; font: 600 .8125rem/1.4 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; text-decoration: none; }
+.skip { position: absolute; left: 16px; top: -100px; background: var(--accent); color: var(--accent-fg); padding: .5rem .75rem; text-decoration: none; }
 .skip:focus { top: 8px; }
-a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a { color: var(--link); text-decoration-color: rgba(139,164,176,.35); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: #8ea4a2; text-decoration-color: #8ea4a2; }
 a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .site-header { border-bottom: 1px solid var(--border); background: var(--bg); }
 .wrap { max-width: 50rem; margin: 0 auto; padding: 0 16px; }
-.brand { display: inline-block; padding: 22px 0 18px; font: 600 1.375rem/1.2 "Fraunces", Georgia, serif; letter-spacing: -0.01em; color: var(--fg); text-decoration: none; }
-main { padding: 40px 0 64px; }
-h1 { font: 500 clamp(2rem, 1.5rem + 2vw, 2.75rem)/1.12 "Fraunces", Georgia, serif; letter-spacing: -0.01em; margin: .1em 0 .45em; }
+.brand { display: inline-block; padding: 20px 0; font: 500 16px/1.4 "Fraunces", Georgia, serif; letter-spacing: -0.005em; color: #c8c093; text-decoration: none; }
+main { padding: 48px 0 64px; }
+h1 { font: 400 clamp(28px, 3.2vw, 44px)/1.12 "Fraunces", Georgia, serif; font-variation-settings: "opsz" 144, "SOFT" 80; letter-spacing: -0.015em; margin: 0 0 .5em; }
 .site-footer { border-top: 1px solid var(--border); background: var(--bg); color: var(--muted); font-size: .875rem; padding: 20px 0 32px; }
 .site-footer p { margin: .3em 0; }
 </style>

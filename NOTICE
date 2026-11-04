@@ -60,7 +60,7 @@ Third-party material included in this repository
    artwork was copied).
 
 5. Fonts of the documentation site (SIL Open Font License, Version 1.1)
-   Files: docs/assets/fonts/*.woff2 (Latin subsets, variable weight, from the
+   Files: docs/assets/fonts/*.woff2 (Latin subsets, variable fonts, from the
    Fontsource packages @fontsource-variable/fraunces 5.3.0,
    @fontsource-variable/source-serif-4 5.3.1 and
    @fontsource-variable/jetbrains-mono 5.3.0; not modified further)
