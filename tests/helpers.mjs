@@ -69,3 +69,13 @@ export function walk(dir, base = dir) {
   return out;
 }
 export const readVaultFile = (rel, vault = VAULT) => fs.readFileSync(path.join(vault, rel), "utf8");
+
+// ---- Herdr's runtime lacks these (probed in round 2); Node has them, which hid two bugs ----------------
+export const NODE_ONLY_GLOBALS = ["TextDecoder", "TextEncoder", "structuredClone"];
+// Runs fn with those globals deleted, then restores them. Build fakes (fakeFs keeps its own encoder) first.
+export async function withoutNodeGlobals(fn) {
+  const saved = NODE_ONLY_GLOBALS.map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]);
+  for (const [k] of saved) delete globalThis[k];
+  try { return await fn(); }
+  finally { for (const [k, d] of saved) if (d) Object.defineProperty(globalThis, k, d); }
+}

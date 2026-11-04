@@ -41,18 +41,20 @@ export function expandCandidate(pattern, { home, env = {}, readdirSync = () => [
 
 const firstThat = (list, exists) => list.find((p) => exists(p)) ?? null;
 
-// Obsidian's obsidian.asar: HERDR_VAULT_ASAR, then the candidates. → path | null
-export function findAsar({ env = {}, home, candidates = [], exists, readdirSync, pathMod = path }) {
-  const list = [];
+// Obsidian's obsidian.asar: the path from data/vault/settings.json ("asar", `preferred`), HERDR_VAULT_ASAR,
+// then the candidates. → path | null
+export function findAsar({ env = {}, home, candidates = [], preferred = [], exists, readdirSync, pathMod = path }) {
+  const list = [...preferred];
   if (env.HERDR_VAULT_ASAR) list.push(env.HERDR_VAULT_ASAR);
   for (const c of candidates) list.push(...expandCandidate(c, { home, env, readdirSync, pathMod }));
   return firstThat(list, exists);
 }
 
-// A Chromium-family browser: HERDR_VAULT_BROWSER, CHROME_PATH, the install folders, then names
-// on PATH. → path | null
-export function findBrowser({ env = {}, home, candidates = [], names = [], exists, readdirSync, pathMod = path, win = false }) {
-  const list = [];
+// A Chromium-family browser, first match wins: the path from data/vault/settings.json ("browser",
+// `preferred`), HERDR_VAULT_BROWSER, CHROME_PATH, the install folders, names on PATH, and last what the
+// mod found through the person's shell (`fallback`). → path | null
+export function findBrowser({ env = {}, home, candidates = [], names = [], preferred = [], fallback = [], exists, readdirSync, pathMod = path, win = false }) {
+  const list = [...preferred];
   for (const v of [env.HERDR_VAULT_BROWSER, env.CHROME_PATH]) if (v) list.push(v);
   for (const c of candidates) list.push(...expandCandidate(c, { home, env, readdirSync, pathMod }));
   const found = firstThat(list, exists);
@@ -62,7 +64,7 @@ export function findBrowser({ env = {}, home, candidates = [], names = [], exist
     const p = pathMod.join(d, win && !n.endsWith(".exe") ? n + ".exe" : n);
     if (exists(p)) return p;
   }
-  return null;
+  return firstThat(fallback, exists);
 }
 
 // A request path → a file under `root`, or null if it would leave it (also for malformed %).
@@ -109,3 +111,18 @@ export const DEADLINE_MS = 24_000; // the mod's exec() gives a command 30 s; sto
 
 // A browser profile folder name for one run: two runs at once (two readers) never share one.
 export const profileName = (pid, now = Date.now(), rand = Math.random()) => `chrome-${pid}-${now.toString(36)}-${rand.toString(36).slice(2, 7)}`;
+
+// The content-security policy of render/page.html (page.html carries the same text in a <meta>; a test
+// compares the two). A note's Mermaid label may hold an <img src="http://...">, and Mermaid's sanitiser
+// lets it through: without this the browser would fetch it (reproduced in round 2). Nothing but the page's
+// own loopback origin, data: and blob: may load.
+export const PAGE_CSP = "default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; "
+  + "font-src 'self' data: blob:; img-src 'self' data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
+
+// The browser's command line for one run. Belt and braces behind the CSP: no name resolves except the
+// loopback address the page is served from (the rule list is comma separated), and no proxy is used, so a
+// system proxy could not be asked for an outside address either.
+export const browserArgs = (profile) => ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+  "--disable-extensions", "--disable-background-networking", "--disable-sync", "--mute-audio",
+  "--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1", "--no-proxy-server",
+  `--user-data-dir=${profile}`, "--remote-debugging-port=0", "--hide-scrollbars", "about:blank"];

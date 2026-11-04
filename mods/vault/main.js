@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 the herdr-obsidian-vault authors (holder named in LICENSE and NOTICE)
 // The Vault panel (right side, beside Files and Changes, or as a popup): an Obsidian vault's
 // whole file list. The vault selector on top switches vaults; + Add vault picks a folder
 // (it must hold a .obsidian folder). Clicking a note, canvas, drawing, image or PDF opens it
@@ -16,7 +18,7 @@ import { theme, props, shared, setShared, pickFolder, readTextFile, watchFolder,
 import * as fs from "fs/promises";
 import { searchVault, forgetFiles } from "./search.js";
 import { nameOf, normPath, tilde as tildeOf, openCommand, canOpen, obsidianConfigCandidates, missingMessage } from "./platform.js";
-import { readVaultList } from "./obsidian-config.js";
+import { readVaultList, insideHome } from "./obsidian-config.js";
 import { visibleChanges, folderEntries } from "./tree.js";
 import { Watcher, POLL_MS, LIVE_OFF } from "./watch.js";
 import { MOD, MOD_DIR, READER } from "./mod-name.js";
@@ -24,6 +26,7 @@ import { MOD, MOD_DIR, READER } from "./mod-name.js";
 const ICON = `${MOD_DIR}/icons`;
 const MENU_W = 300;
 const PER_FOLDER = 2000;
+export const ROWS_MAX = 3000; // rows drawn in all open folders together: every render builds an element per row
 
 const tilde = (p) => tildeOf(p, home());
 
@@ -155,7 +158,10 @@ export default class Vault extends View {
         this.more = more;
         this.error = null;
       } catch (e) {
-        if (root === this.root) this.error = /ENOENT|No such/i.test(String(e)) ? "This vault's folder is gone" : String(e?.message ?? e);
+        if (root === this.root) {
+          this.error = !insideHome(root, home(), window().platform === "windows") ? "This vault is outside your home folder, which Herdr mods can't read"
+            : /ENOENT|No such/i.test(String(e)) ? "This vault's folder is gone" : String(e?.message ?? e);
+        }
       }
       cx.notify();
     });
@@ -301,6 +307,13 @@ export default class Vault extends View {
       const folder = await pickFolder({ prompt: "Add vault" });
       if (!folder) return;
       const path = normPath(folder);
+      // Beyond the home folder fs.exists says "no" (or fails), which used to read as "has no .obsidian folder".
+      if (!insideHome(path, home(), window().platform === "windows")) {
+        notify({ title: "Vault outside your home folder", body: `Herdr mods can only read inside your home folder, so ${nameOf(path)} can't be added. A link to it from inside your home folder may work.`, level: "warning" });
+        const out = shared("vault.outside") ?? [];
+        if (!out.some((o) => o.path === path)) setShared("vault.outside", [...out, { path, name: nameOf(path) }]);
+        return;
+      }
       if (!(await fs.exists(`${path}/.obsidian`).catch(() => false))) {
         notify({ title: "Not an Obsidian vault", body: `${tilde(path)} has no .obsidian folder. Pick the vault's own folder (open it in Obsidian once if it's new).`, level: "warning" });
         return;
@@ -376,6 +389,7 @@ export default class Vault extends View {
 
   tree(t) {
     const rows = this.rows("", 0, [], t);
+    if (rows.over) rows.push(div().h(24).pl(27).text_size(12).text_color(t.dim).child(`Only the first ${ROWS_MAX} rows are drawn (close a folder, or search)`));
     return v_flex().id("vault-tree").flex_1().min_h(0).overflow_y_scrollbar().p(6)
       .when(Boolean(this.hint), (el) => el.child(div().px(8).pb(4).text_size(11).text_color(t.dim).child(this.hint)))
       .children(rows)
@@ -387,6 +401,7 @@ export default class Vault extends View {
     const open = shared("vault.open");
     const showing = open && open.vault === this.root ? open.file : null;
     for (const entry of this.entries.get(prefix) ?? []) {
+      if (out.length >= ROWS_MAX) { out.over = true; return out; }
       const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
       const expanded = this.folders.has(rel);
       const k = entry.dir ? null : kind(entry.name);

@@ -1,8 +1,10 @@
 // Just enough of the `herdr` module for tests. Tests set state through `herdrTest`.
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 export const herdrTest = {
-  props: {}, platform: "linux", home: "/home/user", appHome: "/tmp/herdr-test-app",
+  props: {}, platform: "linux", home: "/home/user", appHome: path.join(os.tmpdir(), "herdr-test-app"),
   exec: async () => { throw new Error("spawn ENOENT"); },
   shared: new Map(), overlays: [], notices: [], runs: [],
   pickFolder: async () => null,
@@ -16,7 +18,9 @@ export const home = () => herdrTest.home;
 export const appHome = () => herdrTest.appHome;
 export const window = () => ({ platform: herdrTest.platform });
 export const settings = () => ({ zoom: 1, dark: true });
-export const readTextFile = async (p) => { try { return fs.readFileSync(p, "utf8"); } catch { return null; } };
+// herdr.d.ts: "Reads UTF-8 text (up to 1 MiB), or null if absent". Beyond 1 MiB is not documented; the stub
+// answers null, the likelier reading, and the reader must still tell the two cases apart.
+export const readTextFile = async (p) => { try { if (fs.statSync(p).size > 1024 * 1024) return null; return fs.readFileSync(p, "utf8"); } catch { return null; } };
 export const watchFolder = (p) => herdrTest.watch(p);
 export const nextCommand = () => (herdrTest.commands.length ? Promise.resolve(herdrTest.commands.shift()) : new Promise(() => {}));
 export const shared = (k) => herdrTest.shared.get(k);

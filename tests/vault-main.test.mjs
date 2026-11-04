@@ -6,6 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { register } from "node:module";
+import "./stubs/runtime.mjs"; // Herdr has no TextDecoder, TextEncoder or structuredClone
 
 register("./stubs/hooks.mjs", import.meta.url);
 // Herdr gives mods a localStorage.
@@ -167,4 +168,65 @@ test("opening a program from the tree is refused; documents go to the OS opener"
   assert.equal(herdrTest.notices.at(-1).title, "Not opened");
   v.open("sheet.xlsx");
   assert.deepEqual(calls, [["xdg-open", "/home/x/A/sheet.xlsx"]]);
+});
+
+// ---- Add vault on a folder beyond the home folder (R2-CR-9, CR-2-10) -------------------------------------
+
+test("Add vault on a folder outside the home folder says so, lists it dimmed, and does not claim it lacks .obsidian", async () => {
+  const home = makeHome("linux", () => []);
+  reset(home);
+  const { v } = await start();
+  herdrTest.pickFolder = async () => "/mnt/disk/Work Notes/";
+  await v.addVault();
+  const n = herdrTest.notices.at(-1);
+  assert.equal(n.title, "Vault outside your home folder");
+  assert.equal(n.body, "Herdr mods can only read inside your home folder, so Work Notes can't be added. A link to it from inside your home folder may work.");
+  assert.doesNotMatch(n.body, /\.obsidian|\/mnt/, "no wrong reason, no path");
+  assert.equal(n.level, "warning");
+  assert.deepEqual(herdrTest.shared.get("vault.list"), [], "not added");
+  assert.deepEqual(herdrTest.shared.get("vault.outside"), [{ path: "/mnt/disk/Work Notes", name: "Work Notes" }]);
+  herdrTest.pickFolder = async () => "/mnt/disk/Work Notes";
+  await v.addVault();
+  assert.equal(herdrTest.shared.get("vault.outside").length, 1, "listed once");
+  assert.equal(herdrTest.shared.get("vault.adding"), null, "guard released");
+});
+
+test("a vault already in the list that lies outside the home folder says so in the tree", async () => {
+  const home = makeHome("linux", () => []);
+  reset(home);
+  herdrTest.shared.set("vault.list", [{ path: "/mnt/disk/Old", name: "Old" }]);
+  herdrTest.shared.set("vault.current", "/mnt/disk/Old");
+  const { v, cx } = await start();
+  v.sync(cx);
+  await settle();
+  assert.equal(v.error, "This vault is outside your home folder, which Herdr mods can't read");
+});
+
+// ---- the tree draws a bounded number of rows (R2-CR-12, CR-2-12) -----------------------------------------
+
+const T = { foreground: "#fff", background: "#000", muted: "#999", accent: "#fa0", surface: "#111", raised: "#222", border: "#333", dim: "#777", hover: "#222", selected: "#333" };
+
+test("5,000 files in a folder: the folder cap plus the more-row, never 5,000 rows; open folders share a total cap", async () => {
+  const { ROWS_MAX } = await import("../mods/vault/main.js");
+  const { folderEntries } = await import("../mods/vault/tree.js");
+  const home = makeHome("linux", () => []);
+  reset(home);
+  const { v } = await start();
+  const e = (name) => ({ name, isDirectory: () => false });
+  const names = Array.from({ length: 5000 }, (_, i) => `note-${i}.md`);
+  const { items, more } = folderEntries(names.map(e), (n) => n, 2000);
+  v.entries = new Map([["", items]]);
+  v.more = new Map([["", more]]);
+  const rows = v.rows("", 0, [], T);
+  assert.equal(rows.length, 2000 + 1, "2,000 rows and one '+3000 more' row");
+  assert.ok(rows.length <= ROWS_MAX);
+
+  // three open folders of 2,000 each: the total is bounded and says so
+  const sub = (p) => folderEntries(Array.from({ length: 2000 }, (_, i) => e(`${p}-${i}.md`)), (n) => n, 2000).items;
+  v.entries = new Map([["", ["a", "b", "c"].map((n) => ({ name: n, dir: true }))], ["a", sub("a")], ["b", sub("b")], ["c", sub("c")]]);
+  v.more = new Map();
+  v.folders = new Set(["a", "b", "c"]);
+  const all = v.rows("", 0, [], T);
+  assert.equal(all.length, ROWS_MAX);
+  assert.equal(all.over, true);
 });

@@ -6,6 +6,29 @@
 import { splitFrontmatter, parseBlocks, section, isExcalidraw, IMAGE_EXT } from "./parse.js";
 import { parseCanvas } from "./canvas.js";
 
+// readTextFile gives up to 1 MiB. A file that is there but bigger comes back as { tooLarge: true } from the
+// reader's read(), and says so, instead of "no longer in the vault".
+export const TOO_LARGE = {
+  note: "This note is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.",
+  canvas: "This canvas is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.",
+  excalidraw: "This drawing is larger than 1 MiB, so the reader can't open it. Open it in Obsidian.",
+};
+
+// A vault file's text: a string, null when it is not there, { tooLarge: true } when it is there but
+// readTextFile (1 MiB, "or null if absent") would not give it. What Herdr does beyond 1 MiB is not
+// documented (null or a rejection), so both are read as "too large" when the file exists; any other
+// failure keeps its own message.
+export async function readNote(path, { read, exists }) {
+  let text;
+  try { text = await read(path); }
+  catch (e) {
+    if (/1 ?MiB|too (large|big)|larger|exceed|limit/i.test(String(e?.message ?? e)) && await exists(path).catch(() => false)) return { tooLarge: true };
+    throw e;
+  }
+  if (text !== null && text !== undefined) return text;
+  return (await exists(path).catch(() => false)) ? { tooLarge: true } : null;
+}
+
 export function kindOf(path) {
   if (/\.canvas$/i.test(path)) return "canvas";
   if (/\.excalidraw(\.md)?$/i.test(path)) return "excalidraw";
@@ -15,7 +38,7 @@ export function kindOf(path) {
   return "other";
 }
 
-// env: { read(file) → text | null, resolve(target, from) → file | null, deps: Set, abs(file) }
+// env: { read(file) → text | null | { tooLarge: true }, resolve(target, from) → file | null, deps: Set, abs(file) }
 export async function buildDoc(file, anchor, depth, env) {
   const kind = kindOf(file);
   env.deps?.add(env.abs(file));
@@ -23,6 +46,7 @@ export async function buildDoc(file, anchor, depth, env) {
   if (kind === "image" || kind === "pdf" || kind === "other") return doc;
   const text = await env.read(file);
   if (text === null) return { ...doc, error: "This file is no longer in the vault" };
+  if (text.tooLarge) return { ...doc, error: TOO_LARGE[kind] ?? TOO_LARGE.note };
   if (kind === "canvas") {
     try { doc.canvas = parseCanvas(text); } catch (e) { return { ...doc, error: `Not a canvas file: ${e.message}` }; }
     for (const n of doc.canvas.nodes) {

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Watcher, POLL_MS, LIVE_OFF } from "../mods/vault/watch.js";
-import { visibleChanges, isHidden, folderEntries } from "../mods/vault/tree.js";
+import { visibleChanges, isHidden, folderEntries, naturalCompare } from "../mods/vault/tree.js";
 import { listVault } from "../mods/vault-reader/vault-files.js";
 
 // A fake watchFolder: every call parks until the test sends a batch (or an error) to it.
@@ -128,4 +128,33 @@ test("listVault: walks folders, skips dot folders, honours the limit and unreada
   assert.equal((await listVault("/v", readdir, 2)).length, 2);
   assert.deepEqual(await listVault("/nope", readdir), []);
   assert.deepEqual((await listVault("C:\\v\\", async (d) => (d === "C:/v" ? [{ name: "w.md", isDirectory: () => false }] : []))), ["w.md"]);
+});
+
+// ---- natural order without Intl or localeCompare options (R2-CR-4, CR-2-6) ------------------------------
+
+test("naturalCompare: case-insensitive, numbers as numbers, total and stable (CR-2-6)", () => {
+  const sort = (list) => [...list].sort(naturalCompare);
+  assert.deepEqual(sort(["Zebra", "apple", "Mango"]), ["apple", "Mango", "Zebra"]);
+  assert.deepEqual(sort(["Note 10", "Note 2", "note 1"]), ["note 1", "Note 2", "Note 10"]);
+  assert.deepEqual(sort(["10", "9", "1", "100"]), ["1", "9", "10", "100"]);
+  assert.deepEqual(sort(["a1b10", "a1b9", "a1b2", "a01b3"]), ["a1b2", "a01b3", "a1b9", "a1b10"]);
+  assert.deepEqual(sort(["b", "a", "ab", "a1", "A"]), ["A", "a", "a1", "ab", "b"]);
+  // equal when folded: raw code-unit order decides, the same every time
+  assert.deepEqual(sort(["a", "A"]), ["A", "a"]);
+  assert.deepEqual(sort(["A", "a"]), ["A", "a"]);
+  assert.deepEqual(sort(["1", "01"]), ["01", "1"]);
+  assert.equal(naturalCompare("x", "x"), 0);
+  // a number longer than 2^53 still compares right
+  assert.ok(naturalCompare("n12345678901234567890", "n12345678901234567891") < 0);
+  assert.ok(naturalCompare("n99999999999999999999", "n100000000000000000000") < 0);
+});
+
+test("folderEntries never calls localeCompare, so Herdr and Node agree", () => {
+  const orig = String.prototype.localeCompare;
+  String.prototype.localeCompare = () => { throw new Error("localeCompare was called"); };
+  try {
+    const e = (name, dir = false) => ({ name, isDirectory: () => dir });
+    const { items } = folderEntries([e("Zebra.md"), e("apple.md"), e("Note 10.md"), e("Note 2.md"), e("Dir", true)], (n) => n.replace(/\.md$/, ""), 100);
+    assert.deepEqual(items.map((i) => i.name), ["Dir", "apple.md", "Note 2.md", "Note 10.md", "Zebra.md"]);
+  } finally { String.prototype.localeCompare = orig; }
 });
