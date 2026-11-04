@@ -156,6 +156,40 @@ test("a link to a missing anchor fails", () => {
   expectFail(r, "anchor not found");
 });
 
+test("a page with an inline script fails", () => {
+  const r = seeded((root) => {
+    edit(root, "docs/index.html", (s) => s.replace("</head>", "<script>alert(1)</script>\n</head>"));
+    rebuildFull(root);
+  });
+  expectFail(r, "inline <script>");
+});
+
+test("a page loading a script from another host fails", () => {
+  const r = seeded((root) => {
+    edit(root, "docs/index.html", (s) => s.replace("</head>", '<script src="https://cdn.example.net/x.js"></script>\n</head>'));
+    rebuildFull(root);
+  });
+  expectFail(r, "must be an existing file in docs/assets/");
+});
+
+test("an event-handler attribute fails", () => {
+  const r = seeded((root) => {
+    edit(root, "docs/index.html", (s) => s.replace("<h1>", '<h1 onclick="go()">'));
+    rebuildFull(root);
+  });
+  expectFail(r, "event-handler attribute");
+});
+
+test("a site script that reaches the network fails", () => {
+  const r = seeded((root) => fs.appendFileSync(path.join(root, "docs", "assets", "copy.js"), "\nfetch('x.json');\n"));
+  expectFail(r, "may not reach the network");
+});
+
+test("a site script that stores something fails", () => {
+  const r = seeded((root) => fs.appendFileSync(path.join(root, "docs", "assets", "copy.js"), "\nlocalStorage.setItem('a', '1');\n"));
+  expectFail(r, "may not reach the network");
+});
+
 test("--release lists every open publish-time item and fails; the plain run does not", () => {
   const root = copy();
   try {

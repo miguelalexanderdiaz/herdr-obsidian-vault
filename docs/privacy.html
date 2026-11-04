@@ -80,7 +80,7 @@
 
 <h2 id="writes">Writes</h2>
 <p>Only under <code>data/vault</code> in the Herdr home: the <code>cache</code> (rendered pictures, copies of vault images, downloaded web images, page images of PDFs), <code>lib</code> (Obsidian&rsquo;s Mermaid and MathJax), a temporary <code>chrome-&hellip;</code> profile folder per render run, and <code>settings.json</code>. Vault images are copied there because Herdr can only show pictures from its own folder. Cached pictures can contain a rendering of your private notes: delete <code>data/vault/cache</code> to wipe them. The cache is pruned by age and size automatically, once per session (see <a href="configuration.html#stored">Configuration</a>). A failed download or a missing program is never written to the cache.</p>
-<p>Herdr keeps the vault list and the open note in its shared state (<code>shared.json</code> in the Herdr home), and the open folders of the tree in its per-mod storage. Shared state holds paths of your vaults and the file of the open note, and it stays after you uninstall; <a href="install.html#uninstall">Install: Uninstall</a> says how to clear it.</p>
+<p>Herdr keeps the vault list and the open note in its shared state (<code>shared.json</code> in the Herdr home), and the open folders of the tree in its per-mod storage. Shared state holds paths of your vaults and the file of the open note, and it stays after you uninstall: <code>vault.list</code> and <code>vault.current</code> hold the paths of your vaults, <code>vault.open</code> the vault and file of the note that was open, and <code>vault.outside</code> the vaults outside your home folder. They are harmless; to forget them, close Herdr and delete those <code>vault.*</code> keys from <code>shared.json</code>.</p>
 
 <h2 id="third-party">Third-party material</h2>
 <p>Mermaid (MIT) and MathJax (Apache-2.0) are not distributed by this project. They are copied from your own Obsidian installation to <code>data/vault/lib</code> on your machine, and stay under their own licenses. Icons: Lucide (ISC). Obsidian is a trademark of its owner; this project is not affiliated with it.</p>
@@ -90,7 +90,7 @@
 <footer class="site-footer">
 <div class="wrap">
 <p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
-<p>This site loads nothing from other websites and runs no scripts.</p>
+<p>This site loads nothing from other websites. Its one script, on the Install page, is the Copy button.</p>
 </div>
 </footer>
 </body>

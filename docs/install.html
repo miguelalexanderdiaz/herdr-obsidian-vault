@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Install - Herdr Obsidian Vault</title>
-<meta name="description" content="Install the Vault panel and Vault reader mods in Herdr, with an agent or by hand, and show the panel.">
+<meta name="description" content="Install the Vault panel and Vault reader mods in Herdr with one command, with an agent, or by hand.">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
+<script src="assets/copy.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#content">Skip to the content</a>
@@ -33,80 +34,64 @@
 <main id="content">
 <div class="wrap">
 <h1>Install</h1>
-<p class="lede">Both mods are needed. The panel opens notes in the reader, and the reader is opened by the panel. Install them under exactly the names <code>vault</code> and <code>vault-reader</code>.</p>
+<p class="os">macOS / Linux</p>
+<div class="cell"><pre id="cmd-sh" tabindex="0"><code>curl -fsSL https://raw.githubusercontent.com/miguelalexanderdiaz/herdr-obsidian-vault/main/install/install.sh | sh</code></pre><button class="copy" type="button" data-copy="cmd-sh" aria-live="polite" hidden>Copy</button></div>
+<p class="os">Windows (PowerShell)</p>
+<div class="cell"><pre id="cmd-ps" tabindex="0"><code>irm https://raw.githubusercontent.com/miguelalexanderdiaz/herdr-obsidian-vault/main/install/install.ps1 | iex</code></pre><button class="copy" type="button" data-copy="cmd-ps" aria-live="polite" hidden>Copy</button></div>
+<p>It shows what the mods reach and asks before writing anything, backs up anything it replaces, copies both mods (<code>vault</code> and <code>vault-reader</code>), adds one key to <code>keys.json</code> and checks each mod. Running it again updates.</p>
+<p>Then <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> opens the Vault panel as a 420 by 640 popup in any layout; <a href="usage.html#show">Usage</a> says how to dock it.</p>
 
-<h2 id="one-command">One command</h2>
-<!-- publish: owner. Replace <owner> in the two lines below too. -->
-<p>macOS and Linux:</p>
-<pre><code>curl -fsSL https://raw.githubusercontent.com/&lt;owner&gt;/herdr-obsidian-vault/main/install/install.sh | sh</code></pre>
-<p>Windows (PowerShell):</p>
-<pre><code>irm https://raw.githubusercontent.com/&lt;owner&gt;/herdr-obsidian-vault/main/install/install.ps1 | iex</code></pre>
-<p>It says what the mods reach (remote pictures in notes, the programs they run, what they read) and asks before writing anything. Then it copies <code>mods/vault</code> and <code>mods/vault-reader</code> into your Herdr home, adds <code>ctrl-shift-m</code> to <code>keys.json</code> (asking before it replaces a key you use) and runs <code>herdr-app check</code>. Anything it replaces is backed up first under <code>community/herdr-obsidian-vault/</code> in the Herdr home, and running it again updates in place. <code>sh -s -- --yes</code> answers every question with yes (Windows: <code>$env:HERDR_YES = 1</code> first); <code>--home &lt;folder&gt;</code> or <code>HERDR_APP_HOME</code> picks another Herdr home; from a clone, run <code>install/install.sh</code> or <code>.\install\install.ps1</code>. Merging <code>keys.json</code> uses Node, or on macOS the system's own JavaScript; without either the script prints the keys to add by hand. To remove it: the same line with <code>sh -s -- --uninstall</code> (Windows: <code>$env:HERDR_UNINSTALL = 1</code> first); it leaves <code>data/vault</code>, the cache and settings, in place.</p>
+<p id="uninstall">Remove it: the same command with the uninstall flag. It removes what it added and leaves <code>data/vault</code> (cache and settings); your vaults are never touched.</p>
+<div class="cell"><pre id="rm-sh" tabindex="0"><code>curl -fsSL https://raw.githubusercontent.com/miguelalexanderdiaz/herdr-obsidian-vault/main/install/install.sh | sh -s -- --uninstall</code></pre><button class="copy" type="button" data-copy="rm-sh" aria-live="polite" hidden>Copy</button></div>
+<div class="cell"><pre id="rm-ps" tabindex="0"><code>$env:HERDR_UNINSTALL = 1; irm https://raw.githubusercontent.com/miguelalexanderdiaz/herdr-obsidian-vault/main/install/install.ps1 | iex</code></pre><button class="copy" type="button" data-copy="rm-ps" aria-live="polite" hidden>Copy</button></div>
 
-<h2 id="agent">Or ask a Herdr agent</h2>
-<!-- publish: owner. Replace <owner> with the GitHub owner of the published repository here and in the clone line below. -->
+<details class="fold" id="agent">
+<summary>With an agent</summary>
+<!-- publish: owner. Replace <owner> with the GitHub owner of the published repository in the prompt below. -->
 <!-- publish: herdr.dev. Once the repository is listed on herdr.dev, add that site's own install form next to this prompt. -->
-<p>Herdr agents know how to install shared mods. Paste this into an agent running in Herdr, with the repository address filled in:</p>
-<pre><code>Install the Herdr mods from https://github.com/&lt;owner&gt;/herdr-obsidian-vault .
+<p>Paste this into an agent running in Herdr, with the repository address filled in:</p>
+<div class="cell"><pre id="agent-prompt" tabindex="0"><code>Install the Herdr mods from https://github.com/&lt;owner&gt;/herdr-obsidian-vault .
 It has two mods, mods/vault and mods/vault-reader, and a keys.json.
 Read every file first, tell me what they run and fetch, copy both
 folders into my mods folder without overwriting anything, merge
 keys.json after asking me about clashes, run herdr-app check on both
-mods, then add the Vault panel to my layout.</code></pre>
-<p>The agent follows Herdr&rsquo;s own rule: it reads everything and tells you before adding a mod that reaches the network or runs programs. This one does both, so expect that message. The list is on the <a href="privacy.html">privacy page</a>.</p>
+mods, then add the Vault panel to my layout.</code></pre><button class="copy" type="button" data-copy="agent-prompt" aria-live="polite" hidden>Copy</button></div>
+<p>The agent reads everything and tells you what the mods reach before it adds them; these run programs and download web images, as listed on <a href="privacy.html">Privacy</a>. The steps an agent follows are on <a href="for-agents.html">For agents</a>.</p>
+</details>
 
-<h2 id="manual">Or copy the folders yourself</h2>
+<details class="fold" id="manual">
+<summary>By hand</summary>
 <ol>
-<li>Get the repository: <code>git clone https://github.com/&lt;owner&gt;/herdr-obsidian-vault.git</code> (or download the zip).</li>
-<li>Find your Herdr home folder. <code>herdr-app --help</code> ends with a line <code>Home: ~/.config/herdr-app (HERDR_APP_HOME picks another)</code>. Here <code>~</code> is your user folder, and the default is <code>.config/herdr-app</code> inside it unless the variable <code>HERDR_APP_HOME</code> is set. That default is quoted from Herdr&rsquo;s help and has not been checked on Windows. Below, <code>$HERDR_HOME</code> stands for that folder.</li>
-<li>Copy <code>mods/vault</code> and <code>mods/vault-reader</code> into the <code>mods</code> folder inside that home. Do not overwrite a mod of the same name; if you already have one, rename the new folder and read the <a href="how-it-works.html#rename">rename note</a>.
-<pre><code># macOS and Linux (HERDR_HOME defaults to ~/.config/herdr-app)
+<li>Clone or download the repository.</li>
+<li>Copy <code>mods/vault</code> and <code>mods/vault-reader</code> into the <code>mods</code> folder of your Herdr home. The last line of <code>herdr-app --help</code> names it: <code>~/.config/herdr-app</code> unless <code>HERDR_APP_HOME</code> is set (on Windows, not yet checked).
+<pre><code># macOS and Linux
 HERDR_HOME="${HERDR_APP_HOME:-$HOME/.config/herdr-app}"
 cp -R mods/vault mods/vault-reader "$HERDR_HOME/mods/"
 
 # Windows PowerShell
 $HERDR_HOME = if ($env:HERDR_APP_HOME) { $env:HERDR_APP_HOME } else { "$HOME\.config\herdr-app" }
 Copy-Item -Recurse mods\vault, mods\vault-reader "$HERDR_HOME\mods"</code></pre></li>
-<li>Merge the key from <code>keys.json</code> in the repository into your own <code>keys.json</code> (add its section and key; keep any key you already use). It is optional; see <a href="configuration.html#keys">Configuration</a>.</li>
-<li>Check both mods:
+<li>Add the key from the repository&rsquo;s <code>keys.json</code> to your own, keeping any key you already use (<a href="configuration.html#keys">Configuration</a>).</li>
+<li>Check both mods; both must pass. Herdr reloads mods on its own, so there is no restart.
 <pre><code>herdr-app check "$HERDR_HOME/mods/vault"
-herdr-app check "$HERDR_HOME/mods/vault-reader"</code></pre>
-Both must pass. Herdr reloads mods as soon as their files change, so there is no restart.</li>
+herdr-app check "$HERDR_HOME/mods/vault-reader"</code></pre></li>
 </ol>
+<p>To remove them by hand, delete the two folders and the key, and any vault block in your layout. <code>data/vault</code> in the Herdr home holds the cache, the Mermaid and MathJax copies, the browser profile and the settings; delete it too if you like.</p>
+</details>
 
-<h2 id="programs">Optional programs</h2>
-<p>Only Herdr is required. These commands install the rest in one go; skip any of them and you only lose that feature (see <a href="requirements.html">Requirements</a>).</p>
-<pre><code># macOS (Homebrew)
-brew install ripgrep node poppler
-
-# Linux (Debian and Ubuntu names; use your package manager&rsquo;s)
-sudo apt install ripgrep poppler-utils curl
-
-# Windows
-winget install BurntSushi.ripgrep.MSVC OpenJS.NodeJS
-scoop install poppler</code></pre>
-<p>Diagrams and math also need a Chromium-family browser and the Obsidian app; the requirements page says where they are looked for.</p>
-
-<h2 id="show">Show the panel</h2>
-<p>The mods have <code>"place": "none"</code>, so they do not dock anywhere by themselves. Pick one:</p>
+<details class="fold" id="options">
+<summary>Options, name clashes and checks</summary>
 <ul>
-<li><strong>As a popup, in any layout.</strong> The repository&rsquo;s <code>keys.json</code> binds <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> to <code>mod.open:vault</code>, which opens the panel as a 420 by 640 popup and, pressed again, closes it. The installer merges that key (by hand, see <a href="configuration.html#keys">Configuration</a>). It works in Herdr&rsquo;s own layout and in any other, with no layout change.</li>
-<li><strong>Docked in a layout.</strong> Add a block to a column or stack of one of your own layout files in <code>layouts/</code>:
-<pre><code>{ "id": "vault", "type": "block", "content": { "mod": "vault" } }</code></pre>
-Herdr&rsquo;s shipped layouts are read-only, so clone one first (<code>herdr-app do layout.clone '{"name":"main","as":"my-layout"}'</code>) and edit the clone.</li>
-<li><strong>Split a pane.</strong> Run the Herdr app command <code>pane.split</code> with a direction and <code>mod</code> set to <code>vault</code> (<code>herdr-app commands</code> lists its arguments).</li>
+<li><strong>No questions:</strong> <code>sh -s -- --yes</code> after the pipe (Windows: <code>$env:HERDR_YES = 1;</code> first).</li>
+<li><strong>Another Herdr home:</strong> <code>HERDR_APP_HOME</code>, or from a clone <code>--home &lt;folder&gt;</code> (<code>-Home</code> on Windows).</li>
+<li><strong>From a clone:</strong> <code>install/install.sh</code> or <code>.\install\install.ps1</code>.</li>
+<li><strong>Backups:</strong> under <code>community/herdr-obsidian-vault/</code> in the Herdr home.</li>
+<li><strong>Keys:</strong> it asks before it replaces a key you use. Merging needs Node, or on macOS the system&rsquo;s own JavaScript; without either it prints the key to add by hand.</li>
+<li><strong>Name clashes:</strong> the installer replaces a <code>vault</code> or <code>vault-reader</code> folder that is already there, after a backup. Both names are needed as they are, because the panel opens the reader by name. By hand, never overwrite another mod of the same name: rename the new one (<a href="how-it-works.html#rename">If a mod name is taken</a>).</li>
+<li><strong>Checks:</strong> it runs <code>herdr-app check</code> on each mod and says which one failed. To check what you see, follow <a href="verify.html">Check your install</a> on the sample vault.</li>
+<li><strong>Requirements:</strong> only Herdr; each optional program adds a feature (<a href="requirements.html">Requirements</a>).</li>
 </ul>
-
-<h2 id="first">First run</h2>
-<p>The panel starts with the vaults that Obsidian already lists on this machine, most recently opened first. If Obsidian has never been run, or the vault lives outside your home folder, use <strong>Add vault</strong> and pick a folder that contains <code>.obsidian</code>. To try the mod without a vault of your own, add <code>examples/sample-vault</code> from the repository, then follow <a href="verify.html">Check your install</a>.</p>
-
-<h2 id="uninstall">Uninstall</h2>
-<ol>
-<li>Remove the vault block from your layout and any keys you merged.</li>
-<li>Delete the folders <code>mods/vault</code> and <code>mods/vault-reader</code> from your Herdr home.</li>
-<li>Optional: delete <code>data/vault</code> in the Herdr home. It holds the picture cache, the Mermaid and MathJax copies, the headless browser profile and the reader settings. Nothing else is written outside the mod folders.</li>
-</ol>
-<p>Your vaults are never touched. Herdr keeps a few values in its own <code>shared.json</code> (in the Herdr home) after the mods are gone: <code>vault.list</code> and <code>vault.current</code> hold the paths of your vaults, <code>vault.open</code> the vault and file of the note that was open, and <code>vault.outside</code> vaults outside your home folder. They are harmless, but to forget them, close Herdr and delete those <code>vault.*</code> keys from <code>shared.json</code>.</p>
+</details>
 <div class="pager"><a href="index.html" rel="prev">&larr; Overview</a><a href="usage.html" rel="next">Usage &rarr;</a></div>
 
 </div>
@@ -114,7 +99,7 @@ Herdr&rsquo;s shipped layouts are read-only, so clone one first (<code>herdr-app
 <footer class="site-footer">
 <div class="wrap">
 <p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
-<p>This site loads nothing from other websites and runs no scripts.</p>
+<p>This site loads nothing from other websites. Its one script, on the Install page, is the Copy button.</p>
 </div>
 </footer>
 </body>

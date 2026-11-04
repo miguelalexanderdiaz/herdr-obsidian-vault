@@ -23,7 +23,7 @@ node --version   # v22.4 or newer
 | `tests/` | `*.test.mjs` tests for `npm test`, `tests/fixtures/` for edge-case files, `tests/tools/` for helper scripts |
 | `examples/sample-vault/` | the test vault; keep it generic and small |
 | `scripts/` | repository checks and the publish checklists |
-| `docs/` | the Pages site; plain HTML and CSS, no scripts, nothing loaded from other sites |
+| `docs/` | the Pages site; plain HTML and CSS, one small script (the Copy button, `docs/assets/copy.js`), nothing loaded from other sites |
 
 Mod folders must stay self-contained: do not import from one mod into the other, and do not put a `package.json` inside a mod folder.
 
@@ -117,6 +117,7 @@ Before every commit, make sure that nothing personal got in. `node scripts/priva
 If you change a requirement, a message, a key, a limit or a setting, change the docs in the same pull request: `README.md` (requirements table), the matching page in `docs/` (`requirements`, `configuration`, `troubleshooting`, `usage` limits, `verify` steps), `AGENTS.md` and `CHANGELOG.md`. After editing `llms.txt`, copy it (`cp llms.txt docs/llms.txt`) and rebuild the long text (`node scripts/build-llms-full.mjs`). Then run `node scripts/check-docs.mjs`; it checks:
 
 - links, anchors, contrast, that the README and the site list the same requirements, and that the keys table equals `keys.json`;
+- that pages run no inline script and no `on...=` attribute, load only the site's own `docs/assets/*.js`, and that those scripts reach no network, load no code and store nothing;
 - that every message quoted in the troubleshooting page (`class="msg"`) is a string literal in the code. A quote found only in a comment fails. A quote shorter than 12 characters must be a whole literal or the whole text between two `${...}` holes of a template;
 - the claims table `scripts/doc-claims.json`: each row names a phrase in a doc (`docText`), a code file and a pattern run on that file with comments removed. To add one, copy a row; when you change a constant, change the doc and the row together, and the failure names the row;
 - the one support-level sentence (`SUPPORT` in `scripts/check-docs.mjs`), word for word, in the README, both `llms.txt` copies, `docs/index.html` and `docs/requirements.html` (page text and meta description);
