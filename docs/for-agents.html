@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>For agents - Herdr Obsidian Vault</title>
+<meta name="description" content="Where an AI agent finds the install, edit and test instructions for the Herdr Obsidian Vault mods.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to the content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html">Herdr Obsidian Vault</a>
+<nav aria-label="Documentation">
+<ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="usage.html">Usage</a></li>
+<li><a href="requirements.html">Requirements</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="how-it-works.html">How it works</a></li>
+<li><a href="for-agents.html" aria-current="page">For agents</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<main id="content">
+<div class="wrap">
+<h1>For agents</h1>
+<p class="lede">If you are an AI agent asked to install, adapt or change these mods, start with <code>AGENTS.md</code> in the repository root. It covers the install checklist, what to tell the person first, the rules for editing a Herdr mod safely, the test commands and the rename procedure.</p>
+<ul>
+<li><code>AGENTS.md</code>: the full instructions.</li>
+<li><code>llms.txt</code>: a short map of this project for language models. A copy is served at <a href="llms.txt">llms.txt</a> on this site.</li>
+<li><code>RECIPE.md</code>: the brief to rebuild the mods from scratch (behaviour and intent only).</li>
+<li><a href="privacy.html">Privacy</a>: the list of what to tell the person before adding the mods.</li>
+</ul>
+<p>Three rules matter most. Never write inside a mod folder while it runs, because Herdr reloads a mod when any file in it changes. Never drive someone&rsquo;s live Herdr window while testing; use <code>herdr-app check</code> on the mod folder and <code>npm test</code>. Keep personal data out of every file.</p>
+<div class="pager"><a href="how-it-works.html" rel="prev">&larr; How it works</a><span></span></div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
+<p>This site loads nothing from other websites and runs no scripts.</p>
+</div>
+</footer>
+</body>
+</html>

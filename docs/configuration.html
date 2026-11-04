@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configuration - Herdr Obsidian Vault</title>
+<meta name="description" content="Settings, keys, shared state, limits and environment variables of the Vault panel and Vault reader mods.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to the content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html">Herdr Obsidian Vault</a>
+<nav aria-label="Documentation">
+<ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="usage.html">Usage</a></li>
+<li><a href="requirements.html">Requirements</a></li>
+<li><a href="configuration.html" aria-current="page">Configuration</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="how-it-works.html">How it works</a></li>
+<li><a href="for-agents.html">For agents</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<main id="content">
+<div class="wrap">
+<h1>Configuration</h1>
+<p class="lede">There is no settings screen. What can be changed is below, and everything that other mods or layouts may rely on is in the contract table.</p>
+
+<h2 id="settings">Settings</h2>
+<div class="table-wrap" role="region" aria-label="Settings" tabindex="0"><table>
+<thead><tr><th scope="col">Setting</th><th scope="col">Where</th><th scope="col">Default</th><th scope="col">Does</th></tr></thead>
+<tbody>
+<tr><th scope="row"><code>remoteImages</code></th><td><code>data/vault/settings.json</code> in the Herdr home; the <em>Web images: on/off</em> button in the reader bar (shown when the note has web pictures)</td><td><code>true</code></td><td>When <code>false</code>, notes that show a web image (<code>![](https://&hellip;)</code>) do not download it and the picture says <em>Images from the web are turned off</em>. Obsidian shows web images by default, so the default matches.</td></tr>
+</tbody></table></div>
+
+<h2 id="env">Environment variables</h2>
+<div class="table-wrap" role="region" aria-label="Environment variables" tabindex="0"><table>
+<thead><tr><th scope="col">Variable</th><th scope="col">Meaning</th></tr></thead>
+<tbody>
+<tr><th scope="row"><code>HERDR_APP_HOME</code></th><td>Chooses the Herdr home folder (Herdr&rsquo;s own variable; the mods write under <code>data/vault</code> of whichever home is in use).</td></tr>
+<tr><th scope="row"><code>HERDR_VAULT_BROWSER</code>, <code>CHROME_PATH</code></th><td>Full path of the browser program for the render script. Tried in this order, before the usual install folders and the names on PATH.</td></tr>
+<tr><th scope="row"><code>HERDR_VAULT_ASAR</code></th><td>Full path of Obsidian&rsquo;s <code>obsidian.asar</code>, tried before the usual install folders.</td></tr>
+</tbody></table></div>
+
+<h2 id="keys">Keys</h2>
+<p>The repository ships a <code>keys.json</code> with one optional binding: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> opens (and closes) the Vault panel as a popup. Merge it into your own <code>keys.json</code>; Herdr does not read it from the mod folder. If the key is already yours for something else, keep yours and open the panel with the app command <code>mod.open</code> from the command palette instead. The reader and search keys listed on the <a href="usage.html">usage page</a> are built in and cannot be remapped.</p>
+<div class="table-wrap" role="region" aria-label="keys.json rows" tabindex="0"><table id="keys-table">
+<thead><tr><th scope="col">Section</th><th scope="col">Key</th><th scope="col">Action</th></tr></thead>
+<tbody>
+<tr><td><code>global</code></td><td><kbd>ctrl-shift-m</kbd></td><td><code>mod.open:vault</code></td></tr>
+</tbody></table></div>
+
+<h2 id="contract">Public contract</h2>
+<p>Other layouts and mods (the <em>herdr-portrait-layout</em> layout, for one) rely on these names. They do not change without a note on that project&rsquo;s board. Do not rename them in a fork you want to stay compatible with.</p>
+<div class="table-wrap" role="region" aria-label="Public contract" tabindex="0"><table id="contract-table">
+<thead><tr><th scope="col">Name</th><th scope="col">Kind</th><th scope="col">Shape and meaning</th></tr></thead>
+<tbody>
+<tr><th scope="row"><code>vault</code></th><td>mod</td><td>The panel. Also draws its own picker menu when opened with the prop <code>menu: true</code>.</td></tr>
+<tr><th scope="row"><code>vault-reader</code></th><td>mod</td><td>The reader. Props: <code>{ vault, file, anchor?, kept?, id?, overlay? }</code> where <code>vault</code> is an absolute folder and <code>file</code> a path inside it. The Keep menu uses <code>{ menu: true, window, vault, file, anchor, overlay }</code>.</td></tr>
+<tr><th scope="row"><code>vault.list</code></th><td>shared key</td><td><code>[{ path, name }]</code>, the vaults shown in the picker.</td></tr>
+<tr><th scope="row"><code>vault.current</code></th><td>shared key</td><td>Path of the selected vault.</td></tr>
+<tr><th scope="row"><code>vault.open</code></th><td>shared key</td><td><code>{ vault, file, token } | null</code>, the note the floating reader shows; the panel highlights it.</td></tr>
+<tr><th scope="row"><code>vault.panes</code></th><td>shared key</td><td><code>{ [pane id]: { vault, file, id } }</code>, notes kept in panes, so a tree or pane header can show their names.</td></tr>
+<tr><th scope="row"><code>vault.outside</code></th><td>shared key</td><td><code>[{ path, name }]</code>, vaults Obsidian knows that lie outside the home folder. Added in this release; it does not change the shape of <code>vault.list</code>.</td></tr>
+<tr><th scope="row"><code>vault.add</code></th><td>mod command</td><td>Sent to <code>vault</code> by its picker menu (and by a key that you bind) to open the add-vault folder picker.</td></tr>
+<tr><th scope="row"><code>vault.import</code></th><td>mod command</td><td>Sent to <code>vault</code> by the <em>Import from Obsidian</em> menu item to read Obsidian&rsquo;s vault list again. Additive.</td></tr>
+<tr><th scope="row"><code>obsidian</code></th><td>tab name</td><td>Kept notes go in a tab with this name. Matched without regard to case.</td></tr>
+<tr><th scope="row"><code>mods/vault-reader/obsidian.png</code></th><td>file</td><td>A small icon that the portrait layout loads. The content is a generic gem, not the Obsidian logo; the path is kept for compatibility. <code>vault.svg</code> beside it is the vector version.</td></tr>
+</tbody></table></div>
+
+<h2 id="limits">Limits in the code</h2>
+<p>These are constants at the top of the source files. Change them by editing the mod; Herdr reloads on save.</p>
+<div class="table-wrap" role="region" aria-label="Limits" tabindex="0"><table>
+<thead><tr><th scope="col">Constant</th><th scope="col">File</th><th scope="col">Value</th><th scope="col">Meaning</th></tr></thead>
+<tbody>
+<tr><th scope="row"><code>PER_FOLDER</code></th><td><code>mods/vault/main.js</code></td><td>2000</td><td>Entries listed per folder.</td></tr>
+<tr><th scope="row"><code>MAX</code></th><td><code>mods/vault/search-core.js</code></td><td>200</td><td>Search results.</td></tr>
+<tr><th scope="row"><code>PDF_PAGES</code></th><td><code>mods/vault-reader/main.js</code></td><td>30</td><td>Pages drawn for an opened PDF.</td></tr>
+<tr><th scope="row"><code>COLUMN</code>, <code>TEXT</code></th><td><code>mods/vault-reader/main.js</code></td><td>1040, 15</td><td>Widest text column and body text size, in logical pixels.</td></tr>
+<tr><th scope="row"><code>RENDER_VERSION</code></th><td><code>mods/vault-reader/main.js</code></td><td>3</td><td>Raise it when the render output changes, so cached pictures are drawn again.</td></tr>
+<tr><th scope="row"><code>BATCH</code></th><td><code>mods/vault-reader/assets-core.js</code></td><td>6</td><td>Diagrams or formulas rendered per browser start (a cold start must fit Herdr&rsquo;s 30 second limit).</td></tr>
+<tr><th scope="row"><code>CACHE_MAX_AGE_DAYS</code>, <code>CACHE_MAX_MB</code></th><td><code>mods/vault-reader/assets-core.js</code></td><td>30, 200</td><td>Cache pruning limits.</td></tr>
+<tr><th scope="row"><code>REMOTE_MAX_BYTES</code>, <code>IMAGE_MAX_BYTES</code></th><td><code>mods/vault-reader/assets-core.js</code></td><td>20 MB, 40 MB</td><td>Largest web image downloaded; largest image shown.</td></tr>
+<tr><th scope="row"><code>POLL_MS</code></th><td><code>mods/vault/watch.js</code>, <code>mods/vault-reader/watch.js</code></td><td>10000</td><td>Refresh interval when the folder cannot be watched.</td></tr>
+</tbody></table></div>
+
+<h2 id="stored">What is stored</h2>
+<ul>
+<li><code>data/vault/cache</code> in the Herdr home: pictures and their size files. Once per session, about 8 seconds after the first reader opens, entries older than 30 days are removed, then the oldest until the folder is under 200 MB. You can delete the folder at any time; it is rebuilt on demand.</li>
+<li><code>data/vault/lib</code>: Mermaid and MathJax copied from your Obsidian installation, once per Obsidian version.</li>
+<li><code>data/vault/chrome-&hellip;</code>: a private, temporary profile of the headless browser, one per run, removed when the run ends (leftovers older than an hour are swept).</li>
+<li><code>data/vault/settings.json</code>: the settings above.</li>
+<li>Herdr shared state: the keys of the contract table (<code>vault.list</code>, <code>vault.current</code>, <code>vault.outside</code>, <code>vault.open</code>, <code>vault.panes</code>). Herdr&rsquo;s per-mod storage: <code>open:&lt;vault path&gt;</code>, the open folders of the tree.</li>
+</ul>
+<div class="pager"><a href="requirements.html" rel="prev">&larr; Requirements</a><a href="privacy.html" rel="next">Privacy &rarr;</a></div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
+<p>This site loads nothing from other websites and runs no scripts.</p>
+</div>
+</footer>
+</body>
+</html>

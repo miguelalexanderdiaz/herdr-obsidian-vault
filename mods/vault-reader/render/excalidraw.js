@@ -1,17 +1,28 @@
 // An Excalidraw scene as an SVG string: shapes, arrows, text, images and frames,
 // drawn clean (no hand-drawn wobble). Dark themes invert it the way Excalidraw does.
 (function () {
-  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  const FONTS = {
-    1: '"Chalkboard SE", "Comic Sans MS", cursive', 5: '"Chalkboard SE", "Comic Sans MS", cursive',
-    2: '"Helvetica Neue", Helvetica, sans-serif', 6: '"Helvetica Neue", Helvetica, sans-serif',
-    3: 'Menlo, "SF Mono", monospace', 7: '"Helvetica Neue", Helvetica, sans-serif', 8: '"Comic Sans MS", cursive',
-  };
+  // A drawing comes from a vault, which may be somebody else's: every value that lands in the SVG
+  // goes through one of these, so a scene can't close an attribute or add markup.
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  const num = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
+  const COLOR = /^(#[0-9a-f]{3,8}|transparent|[a-z]{3,20}|rgba?\([\d\s.,%/]+\)|hsla?\([\d\s.,%deg/]+\))$/i;
+  const col = (c, d) => (typeof c === "string" && COLOR.test(c.trim()) ? c.trim() : d);
+  const STYLES = new Set(["solid", "dashed", "dotted"]);
+  const FILLS = new Set(["solid", "hachure", "cross-hatch", "zigzag"]);
+  const ARROWHEADS = new Set(["arrow", "triangle", "triangle_outline", "bar", "dot", "circle", "circle_outline", "diamond", "diamond_outline"]);
+  const head_ = (k) => (k == null ? null : ARROWHEADS.has(k) ? k : "arrow");
+  const DATA_URL = /^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/;
+  const pts_ = (list) => (Array.isArray(list) ? list.filter((p) => Array.isArray(p)).map((p) => [num(p[0]), num(p[1])]) : []);
+  // Fonts: the drawing's family numbers map to generic stacks that exist on every OS.
+  const SANS = '"Helvetica Neue", "Segoe UI", system-ui, Helvetica, Arial, sans-serif';
+  const HAND = '"Chalkboard SE", "Comic Sans MS", "Segoe Print", "Bradley Hand", cursive';
+  const MONO = 'Menlo, "SF Mono", Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace';
+  const FONTS = { 1: HAND, 5: HAND, 2: SANS, 6: SANS, 3: MONO, 7: SANS, 8: HAND };
 
   function radius(e) {
     if (!e.roundness) return 0;
     const x = Math.min(Math.abs(e.width), Math.abs(e.height));
-    if (e.roundness.type === 3) { const fixed = e.roundness.value ?? 32; return x <= fixed / 0.25 ? x * 0.25 : fixed; }
+    if (e.roundness.type === 3) { const fixed = num(e.roundness.value, 32) || 32; return x <= fixed / 0.25 ? x * 0.25 : fixed; }
     return x * 0.25;
   }
 
@@ -59,8 +70,15 @@
     if (!raw) throw new Error("Couldn't read the drawing's data");
     const data = JSON.parse(raw);
     const files = { ...(data.files ?? {}), ...(scene.files ?? {}) };
-    const els = (data.elements ?? []).filter((e) => !e.isDeleted);
+    const els = (Array.isArray(data.elements) ? data.elements : []).filter((e) => e && typeof e === "object" && !e.isDeleted);
     if (!els.length) throw new Error("The drawing is empty");
+    // Numbers first: nothing below sees a string where a number goes.
+    for (const e of els) {
+      for (const k of ["x", "y", "width", "height", "angle", "strokeWidth", "fontSize", "lineHeight"]) if (e[k] != null) e[k] = num(e[k], k === "strokeWidth" ? 2 : k === "fontSize" ? 20 : k === "lineHeight" ? 1.25 : 0);
+      e.x = num(e.x); e.y = num(e.y); e.width = Math.abs(num(e.width)); e.height = Math.abs(num(e.height));
+      if (e.opacity != null) e.opacity = Math.min(100, Math.max(0, num(e.opacity, 100)));
+      if (e.points != null) e.points = pts_(e.points);
+    }
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     const grow = (x, y) => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); };
     for (const e of els) {
@@ -71,16 +89,19 @@
     const defs = [], body = [];
     let pid = 0;
     for (const e of els) {
-      const color = e.strokeColor ?? "#1e1e1e", sw = e.strokeWidth ?? 2;
-      const dash = e.strokeStyle === "dashed" ? `stroke-dasharray="${8} ${8 + sw}"` : e.strokeStyle === "dotted" ? `stroke-dasharray="1.5 ${6 + sw}" stroke-linecap="round"` : "";
+      const color = col(e.strokeColor, "#1e1e1e"), sw = e.strokeWidth ?? 2;
+      const back = col(e.backgroundColor, "transparent");
+      const strokeStyle = STYLES.has(e.strokeStyle) ? e.strokeStyle : "solid";
+      const dash = strokeStyle === "dashed" ? `stroke-dasharray="${8} ${8 + sw}"` : strokeStyle === "dotted" ? `stroke-dasharray="1.5 ${6 + sw}" stroke-linecap="round"` : "";
       let fill = "none";
-      if (e.backgroundColor && e.backgroundColor !== "transparent") {
-        if (e.fillStyle === "solid") fill = e.backgroundColor;
+      if (back !== "transparent") {
+        if (e.fillStyle === "solid") fill = back;
         else {
           const id = `h${pid++}`, gap = 6 + sw * 2;
-          const lines = e.fillStyle === "cross-hatch"
-            ? `<path d="M0 0 L0 ${gap} M0 0 L${gap} 0" stroke="${e.backgroundColor}" stroke-width="${Math.max(1, sw / 2)}"/>`
-            : `<path d="M0 0 L0 ${gap}" stroke="${e.backgroundColor}" stroke-width="${Math.max(1, sw / 2)}"/>`;
+          const hatch = FILLS.has(e.fillStyle) ? e.fillStyle : "hachure";
+          const lines = hatch === "cross-hatch"
+            ? `<path d="M0 0 L0 ${gap} M0 0 L${gap} 0" stroke="${back}" stroke-width="${Math.max(1, sw / 2)}"/>`
+            : `<path d="M0 0 L0 ${gap}" stroke="${back}" stroke-width="${Math.max(1, sw / 2)}"/>`;
           defs.push(`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${gap}" height="${gap}" patternTransform="rotate(-41)">${lines}</pattern>`);
           fill = `url(#${id})`;
         }
@@ -102,8 +123,8 @@
           const d = e.roundness && !e.elbowed ? smooth(pts) : "M" + pts.map((p) => p.join(" ")).join(" L");
           s = `<path d="${d}${closed ? " Z" : ""}" fill="${closed ? fill : "none"}" ${stroke} stroke-linecap="round"/>`;
           if (e.type === "arrow") {
-            s += head(e.endArrowhead === undefined ? "arrow" : e.endArrowhead, pts.at(-1), pts.at(-2), sw, color);
-            s += head(e.startArrowhead, pts[0], pts[1], sw, color);
+            s += head(e.endArrowhead === undefined ? "arrow" : head_(e.endArrowhead), pts.at(-1), pts.at(-2), sw, color);
+            s += head(head_(e.startArrowhead), pts[0], pts[1], sw, color);
           }
           break;
         }
@@ -124,17 +145,18 @@
         }
         case "image": {
           const f = files[e.fileId];
-          if (f?.dataURL) s = `<image href="${f.dataURL}" x="${ox}" y="${oy}" width="${e.width}" height="${e.height}" preserveAspectRatio="none"${dark ? ' style="filter: invert(100%) hue-rotate(180deg)"' : ""}/>`;
+          const url = typeof f?.dataURL === "string" && DATA_URL.test(f.dataURL) ? f.dataURL : null;
+          if (url) s = `<image href="${url}" x="${ox}" y="${oy}" width="${e.width}" height="${e.height}" preserveAspectRatio="none"${dark ? ' style="filter: invert(100%) hue-rotate(180deg)"' : ""}/>`;
           else s = `<rect x="${ox}" y="${oy}" width="${e.width}" height="${e.height}" fill="none" stroke="#999" stroke-dasharray="4 4"/>`;
           break;
         }
         case "frame": case "magicframe":
           s = `<rect x="${ox}" y="${oy}" width="${e.width}" height="${e.height}" rx="8" fill="none" stroke="#bbb" stroke-width="1"/>` +
-            `<text x="${ox}" y="${oy - 6}" font-family='"Helvetica Neue", sans-serif' font-size="14" fill="#999">${esc(e.name ?? "Frame")}</text>`;
+            `<text x="${ox}" y="${oy - 6}" font-family='${SANS}' font-size="14" fill="#999">${esc(e.name ?? "Frame")}</text>`;
           break;
         case "embeddable": case "iframe":
           s = `<rect x="${ox}" y="${oy}" width="${e.width}" height="${e.height}" rx="8" fill="none" stroke="${color}"/>` +
-            `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-family='"Helvetica Neue", sans-serif' font-size="14" fill="${color}">${esc(e.link ?? "embed")}</text>`;
+            `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-family='${SANS}' font-size="14" fill="${color}">${esc(e.link ?? "embed")}</text>`;
           break;
       }
       if (s) body.push(`<g${rot}${op}>${s}</g>`);

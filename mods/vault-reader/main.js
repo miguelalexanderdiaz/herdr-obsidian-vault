@@ -20,18 +20,22 @@ import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex, TextView } from "gpui-base";
 import { props, theme, exec, readTextFile, watchFolder, closeOverlay, notify, run, shared, setShared, openOverlay, settings, spaces, panes, focused, nextCommand } from "herdr";
 import * as fs from "fs/promises";
-import { makeResolver, parseSize, parseLinkUrl } from "./parse.js";
+import { makeResolver, parseSize, parseLinkUrl, safeUrl } from "./parse.js";
 import { buildDoc, kindOf } from "./doc.js";
-import { parseCanvas, edgesSvg, canvasColor } from "./canvas.js";
-import { hash, themeKey, renderJobs, stamps, vaultImage, pdfPage, pdfInfo, pdfPageAt, remoteImage, svgFile } from "./assets.js";
+import { edgesSvg, canvasColor } from "./canvas.js";
+import { hash, themeKey, renderJobs, stamps, vaultImage, pdfPage, pdfInfo, pdfPageAt, remoteImage, svgFile, pruneCache, loadSettings, saveSettings, platform } from "./assets.js";
+import { openCommand, previewCommand, previewLabel, previewName, backHint, isBackKey, canOpen, relOf, normPath } from "./platform.js";
+import { listVault, isHidden } from "./vault-files.js";
+import { Watcher, POLL_MS, LIVE_OFF } from "./watch.js";
+import { MOD, MOD_DIR } from "./mod-name.js";
 
-const FONT = "Helvetica Neue";
+const ICONS = `${MOD_DIR}/icons`;
 const TEXT = 15;
 const COLUMN = 1040;
 const MENU_W = 300;
 const PDF_PAGES = 30; // pages drawn for an opened PDF; Preview has the rest
 // Bump when the renderer's output changes, so cached pictures are drawn again.
-const RENDER_VERSION = 2;
+const RENDER_VERSION = 3;
 
 const CALLOUT_ALIAS = { summary: "abstract", tldr: "abstract", hint: "tip", important: "tip", check: "success", done: "success",
   help: "question", faq: "question", caution: "warning", attention: "warning", fail: "failure", missing: "failure", error: "danger", cite: "quote" };
@@ -44,31 +48,22 @@ const folderOf = (p) => (p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "");
 const stop = (_e, cx) => cx.stop_propagation();
 
 
-// Every file of the vault, vault-relative (dot folders like .obsidian left out).
-export async function listVault(root, limit = 30000) {
-  const out = [];
-  const walk = async (rel) => {
-    let entries;
-    try { entries = await fs.readdir(rel ? `${root}/${rel}` : root, { withFileTypes: true }); } catch { return; }
-    for (const e of entries) {
-      if (out.length >= limit || e.name.startsWith(".")) continue;
-      const p = rel ? `${rel}/${e.name}` : e.name;
-      if (e.isDirectory()) await walk(p);
-      else out.push(p);
-    }
-  };
-  await walk("");
-  return out;
-}
-
-const openExternal = (target) => exec("open", [target]).catch(() => {});
-// PDFs and pictures: always in Preview, as the button says.
-const openInPreview = (file) => exec("open", ["-a", "Preview", file]).catch(() => openExternal(file));
+// Programs are never launched from a note: only documents and web links are handed to the system.
+const openExternal = (target) => {
+  const [cmd, args] = openCommand(platform(), target);
+  return exec(cmd, args).catch(() => {});
+};
+// PDFs and pictures: in Preview on macOS (as the button says), in the default app elsewhere.
+const openInPreview = (file) => {
+  const [cmd, args] = previewCommand(platform(), file);
+  return exec(cmd, args).catch(() => openExternal(file));
+};
+let pruned = false; // the picture cache is trimmed once per session
 
 export default class Reader extends View {
   init(_props, cx) {
     const p = props() ?? {};
-    this.vault = p.vault;
+    this.vault = p.vault ? normPath(p.vault) : p.vault;
     this.file = p.file;
     this.anchor = p.anchor ?? null;
     this.kept = Boolean(p.kept);
@@ -77,21 +72,33 @@ export default class Reader extends View {
     this.doc = null;
     this.assets = new Map();
     this.folds = new Map();
+    this.notes = []; // one line each: what could not be drawn and why (shown above the note)
     this.colW = COLUMN;
+    this.closed = false;
+    this.fileSet = new Set();
+    this.watcher = new Watcher(watchFolder);
     this.token = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
     this.handle = cx.focus_handle();
     if (p.menu || !this.vault || !this.file) return;
     if (!this.kept) { this.handle.focus(); cx.timer.after(80, () => this.handle.focus()); }
     else {
       // A kept pane can take the keyboard (pane.go onto it sends "focus").
-      cx.spawn(async (cx) => { for (;;) { if ((await nextCommand()) === "focus") this.handle.focus(); cx.notify(); } });
+      cx.spawn(async (cx) => {
+        while (!this.closed) {
+          try { if ((await nextCommand()) === "focus") this.handle.focus(); } catch { /* keep listening */ }
+          cx.notify();
+        }
+      });
       // Which pane is mine: known from an earlier run, else the vault-reader pane that
       // has the focus right after tab.new / pane.split made it.
       if (!this.claim()) for (const ms of [60, 200, 500, 1000, 2000]) cx.timer.after(ms, (cx) => { if (!this.pane && this.claim()) cx.notify(); });
     }
     this.announce();
+    loadSettings().then((st) => { this.remoteImages = st.remoteImages; cx.notify(); }).catch(() => {});
     this.load(cx);
     this.watch(cx);
+    // The picture cache is trimmed once per session, a little after the first note is up.
+    if (!pruned) { pruned = true; cx.timer.after(8000, (cx) => cx.spawn(async () => { await pruneCache().catch(() => {}); })); }
   }
 
   // Which note the floating reader shows (the Vault list marks it); a kept
@@ -111,13 +118,21 @@ export default class Reader extends View {
     const known = id && Object.entries(map).find(([, v]) => v.id === id);
     if (known && panes().some((x) => x.pane === known[0])) { this.pane = known[0]; this.announce(); return true; }
     const f = focused();
-    const mine = f?.pane && panes().find((x) => x.pane === f.pane && x.mod === "vault-reader");
+    const mine = f?.pane && panes().find((x) => x.pane === f.pane && x.mod === MOD);
     if (mine && !(map[mine.pane] && map[mine.pane].id !== id)) { this.pane = mine.pane; this.announce(); return true; }
     return false;
   }
 
   async close() {
+    this.closed = true;
+    this.watcher?.stop();
+    this.pollTask?.cancel();
     if (!this.kept && shared("vault.open")?.token === this.token) setShared("vault.open", null);
+    // A kept pane that goes leaves no stale entry for the space tree (same keys and shape).
+    if (this.kept && this.pane) {
+      const map = shared("vault.panes");
+      if (map && this.pane in map) { const { [this.pane]: _gone, ...rest } = map; setShared("vault.panes", rest); }
+    }
   }
 
   // ---- loading ----------------------------------------------------------------
@@ -125,21 +140,44 @@ export default class Reader extends View {
   load(cx) {
     const gen = ++this.gen;
     this.doc = this.doc && this.doc.file === this.file ? { ...this.doc, reloading: true } : { loading: true, file: this.file };
+    this.notes = [];
+    this.hasRemote = false;
     cx.spawn(async (cx) => {
+      // Reading and parsing the note: a failure here is the note's (shown instead of it).
+      let doc;
       try {
-        if (!this.files) { this.files = await listVault(this.vault); this.resolve = makeResolver(this.files); }
+        if (!this.files) await this.relist();
         this.deps = new Set();
-        const doc = await this.build(this.file, this.anchor, 0);
-        if (gen !== this.gen) return;
-        this.doc = doc;
-        cx.notify();
-        await this.fetchAssets(doc, gen, cx);
+        doc = await this.build(this.file, this.anchor, 0);
       } catch (e) {
         if (gen !== this.gen) return;
         this.doc = { error: String(e?.message ?? e), file: this.file };
         cx.notify();
+        return;
+      }
+      if (gen !== this.gen) return;
+      this.doc = doc;
+      cx.notify();
+      // Pictures, diagrams and PDFs: a failure here is shown beside the note, never in its place.
+      try {
+        await this.fetchAssets(doc, gen, cx);
+        if (this.polling && gen === this.gen) this.snapshot = await this.depStamps();
+      } catch (e) {
+        if (gen !== this.gen) return;
+        this.note(`Some pictures could not be drawn: ${String(e?.message ?? e).split("\n")[0].slice(0, 160)}`);
+        cx.notify();
       }
     });
+  }
+
+  note(text) {
+    if (text && !this.notes.includes(text)) this.notes.push(text);
+  }
+
+  async relist() {
+    this.files = await listVault(this.vault, fs.readdir);
+    this.fileSet = new Set(this.files);
+    this.resolve = makeResolver(this.files);
   }
 
   abs(rel) { return `${this.vault}/${rel}`; }
@@ -150,7 +188,7 @@ export default class Reader extends View {
   }
 
   // A PDF's pages one at a time (each shows as it's drawn), up to PDF_PAGES;
-  // without Poppler (pdftoppm), Quick Look's first page.
+  // without Poppler (pdftoppm), Quick Look's first page on macOS, else an install hint.
   async pdfPages(f, stamp, gen, commit) {
     const key = (f.d.key = hash(`file:${f.abs}:${stamp}`));
     const info = await pdfInfo(f.abs, stamp);
@@ -165,7 +203,8 @@ export default class Reader extends View {
     }
   }
 
-  // Mermaid, math, Excalidraw, images and PDFs of the shown note (and its embeds).
+  // Mermaid, math, Excalidraw, images and PDFs of the shown note (and its embeds). Each phase
+  // fails on its own: what went wrong becomes a line in this.notes.
   async fetchAssets(doc, gen, cx) {
     const t = theme(), tk = themeKey(t);
     const jobs = [], files = [], remote = [], canvases = [];
@@ -176,7 +215,7 @@ export default class Reader extends View {
       if (d.kind === "image") { files.push({ d, abs: this.abs(d.file), as: "image" }); return; }
       // The PDF you opened shows every page; one inside a note or a canvas, its first.
       if (d.kind === "pdf") { files.push({ d, abs: this.abs(d.file), as: d === doc ? "pdfdoc" : "pdf" }); return; }
-      if (d.canvas) canvases.push(d);
+      if (d.canvas && !d.canvas.empty) canvases.push(d);
       if (d.canvas) for (const n of d.canvas.nodes) {
         if (n.type === "file" && n.target) {
           if (n.fileKind === "image") files.push({ d: n, abs: this.abs(n.target), as: "image" });
@@ -197,7 +236,7 @@ export default class Reader extends View {
           if (/^https?:/i.test(b.src)) remote.push(b);
           else {
             let src = b.src;
-            try { src = decodeURI(src); } catch {}
+            try { src = decodeURI(src); } catch { /* keep as written */ }
             const target = this.resolve(src, doc.file);
             if (target) { b.resolved = target; files.push({ d: b, abs: this.abs(target), as: "image" }); }
             else b.error = `No file ${src} in the vault`;
@@ -208,55 +247,108 @@ export default class Reader extends View {
       walk(d.blocks);
     };
     visit(doc);
-    const st = await stamps(files.map((f) => f.abs));
+    this.hasRemote = remote.length > 0;
+    const commit = (map) => { if (gen === this.gen) { for (const [k, v] of map) this.assets.set(k, v); cx.notify(); } };
+    const phase = async (what, fn) => {
+      try { await fn(); } catch (e) { if (gen === this.gen) { this.note(`${what}: ${String(e?.message ?? e).split("\n")[0].slice(0, 160)}`); cx.notify(); } }
+    };
+    const st = await stamps(files.map((f) => f.abs)).catch(() => new Map());
     for (const f of files) {
       this.deps.add(f.abs);
       if (f.as === "excalidraw") f.d.key = job({ kind: "excalidraw", file: f.abs, stamp: st.get(f.abs) });
     }
-    const commit = (map) => { if (gen === this.gen) { for (const [k, v] of map) this.assets.set(k, v); cx.notify(); } };
-    // Pictures first (fast), then whatever needs the renderer.
+    // Pictures first (fast), then whatever needs the renderer. One failing file shows its own message.
     for (const f of files) {
+      if (gen !== this.gen) return;
       if (f.as === "excalidraw") continue;
-      if (f.as === "pdfdoc") { await this.pdfPages(f, st.get(f.abs) ?? "", gen, commit); continue; }
-      const res = f.as === "pdf" ? await pdfPage(f.abs, st.get(f.abs) ?? "") : await vaultImage(f.abs, st.get(f.abs) ?? "");
-      f.d.key = hash(`file:${f.abs}:${st.get(f.abs)}`);
-      commit(new Map([[f.d.key, res]]));
+      await phase(`${f.abs.split("/").pop()}`, async () => {
+        if (f.as === "pdfdoc") { await this.pdfPages(f, st.get(f.abs) ?? "", gen, commit); return; }
+        const res = f.as === "pdf" ? await pdfPage(f.abs, st.get(f.abs) ?? "") : await vaultImage(f.abs, st.get(f.abs) ?? "");
+        f.d.key = hash(`file:${f.abs}:${st.get(f.abs)}`);
+        if (res.missing) this.note(res.error);
+        commit(new Map([[f.d.key, res]]));
+      });
     }
     for (const b of remote) {
+      if (gen !== this.gen) return;
       b.key = hash(`url:${b.src}`);
-      commit(new Map([[b.key, await remoteImage(b.src)]]));
+      await phase("Web image", async () => {
+        const res = await remoteImage(b.src);
+        if (res.missing) this.note(res.error);
+        commit(new Map([[b.key, res]]));
+      });
     }
-    for (const d of canvases) {
-      d.edges = await svgFile(edgesSvg(d.canvas, { line: t.muted, text: t.foreground, bg: t.background, font: FONT }));
-      commit(new Map());
-    }
+    await phase("Canvas", async () => {
+      for (const d of canvases) {
+        const svgText = edgesSvg(d.canvas, { line: t.muted, text: t.foreground, bg: t.background, font: "sans-serif" });
+        if (svgText) d.edges = await svgFile(svgText);
+        commit(new Map());
+      }
+    });
     const missing = jobs.filter((j) => !this.assets.has(j.key));
-    if (missing.length) {
+    if (missing.length && gen === this.gen) {
       const palette = { fg: t.foreground, bg: t.background, muted: t.muted, accent: t.accent, border: t.border,
-        surface: t.surface, raised: t.raised, dark: settings().dark !== false, size: TEXT,
+        surface: t.surface, raised: t.raised, dark: settings().dark !== false, size: TEXT, font: settings().ui_font,
         // Pie slices and mind-map branches: bright enough to carry dark labels.
         series: [t.accent, t.ansi12 ?? t.ansi4, t.ansi10 ?? t.ansi2, t.ansi13 ?? t.ansi5, t.ansi14 ?? t.ansi6, t.ansi11 ?? t.ansi3, t.ansi9 ?? t.ansi1, t.muted] };
-      await renderJobs(missing, palette, commit);
+      await phase("Diagrams and math", async () => {
+        const res = await renderJobs(missing, palette, commit);
+        // A problem with the machine (no browser ...) is the same for every job: say it once.
+        for (const r of res.values()) if (r.transient && r.error) { this.note(r.error); break; }
+        commit(new Map());
+      });
     }
   }
 
+  // ---- watching the vault ------------------------------------------------------------------
+
   watch(cx) {
     const vault = this.vault;
-    cx.spawn(async (cx) => {
-      for (;;) {
-        let changed;
-        try { changed = await watchFolder(vault); } catch { return; }
-        if (vault !== this.vault) return;
-        const real = changed.filter((p) => !p.includes("/.obsidian/") && !p.includes("/.trash/") && !p.includes("/.git/"));
-        if (!real.length) continue;
-        const all = real.includes(vault) || real.includes(vault + "/");
-        if (all || real.some((p) => !this.files?.includes(p.slice(vault.length + 1)))) {
-          this.files = await listVault(vault);
-          this.resolve = makeResolver(this.files);
-        }
-        if (all || real.some((p) => this.deps?.has(p))) this.load(cx);
-      }
+    this.watcher.start(vault, {
+      onBatch: (changed) => this.changed(vault, changed, cx),
+      onFail: () => this.poll(cx),
     });
+  }
+
+  // A batch of changed paths from watchFolder: re-list the vault when its set of files changed
+  // (new or deleted notes change what links resolve to), reload when the shown note or one of
+  // its pictures changed.
+  async changed(vault, changed, cx) {
+    const rels = [];
+    let all = false;
+    for (const p of changed) {
+      const rel = relOf(vault, p);
+      if (rel === null) continue;
+      if (rel === "") all = true;
+      else if (!isHidden(rel)) rels.push(rel);
+    }
+    if (!all && !rels.length) return;
+    let relist = all || rels.some((r) => !this.fileSet.has(r));
+    if (!relist) for (const r of rels.slice(0, 50)) if (!(await fs.exists(this.abs(r)).catch(() => true))) { relist = true; break; }
+    if (relist) await this.relist();
+    if (all || rels.some((r) => this.deps?.has(this.abs(r)))) this.load(cx);
+    else if (relist) cx.notify();
+  }
+
+  // The watch was refused (a very large tree on Linux): look at the open note's files every
+  // POLL_MS instead, and say so.
+  poll(cx) {
+    if (this.polling || this.closed) return;
+    this.polling = true;
+    this.hint = LIVE_OFF;
+    this.pollTask = cx.timer.every(POLL_MS, (cx) => cx.spawn(async (cx) => {
+      if (this.closed || !this.deps) return;
+      const now = await this.depStamps();
+      const before = this.snapshot;
+      this.snapshot = now;
+      if (before && before !== now) { await this.relist().catch(() => {}); this.load(cx); }
+    }));
+    cx.notify();
+  }
+
+  async depStamps() {
+    const st = await stamps([...(this.deps ?? [])]).catch(() => new Map());
+    return JSON.stringify([...st].sort());
   }
 
   // ---- navigation ---------------------------------------------------------------
@@ -279,14 +371,22 @@ export default class Reader extends View {
   follow(url, cx) {
     const target = parseLinkUrl(url);
     if (target == null) {
-      if (/^(https?|mailto|obsidian|file):/i.test(url)) openExternal(url);
+      // Web links and mail only: no file:, obsidian: or anything else a note could name.
+      const safe = safeUrl(url);
+      if (safe) openExternal(safe);
       return;
     }
     const hashAt = target.indexOf("#");
     const file = hashAt >= 0 ? target.slice(0, hashAt) : target;
     const anchor = hashAt >= 0 ? target.slice(hashAt + 1) : null;
+    // Only files of this vault (a hand-written vault: link could name any path).
+    if (file && !this.fileSet.has(file)) return;
     const kind = kindOf(file);
-    if (kind === "other") { openExternal(this.abs(file)); return; }
+    if (kind === "other") {
+      if (canOpen(file)) openExternal(this.abs(file));
+      else { this.note(`${file.split("/").pop()} is a program: the reader doesn't launch programs from notes`); cx.notify(); }
+      return;
+    }
     this.go(file || this.file, anchor, cx);
   }
 
@@ -310,13 +410,12 @@ export default class Reader extends View {
         .on_size_change((size, cx) => { const w = Math.round(size.width) - (this.kept ? 36 : 60); if (Math.abs(w - this.colW) > 2) { this.colW = w; cx.notify(); } })
         .children(this.content(t, width)));
     return v_flex().id("vault-reader").track_focus(this.handle).size_full().min_h(0).bg(t.background)
-      .font_family(FONT).text_size(TEXT).text_color(t.foreground)
+      .text_size(TEXT).text_color(t.foreground)
       .on_key_down((e, cx) => {
-        const k = e.key, m = e.modifiers ?? {};
-        if (k === "escape" && !this.kept) { cx.stop_propagation(); this.closeWindow(); }
-        else if ((k === "[" && m.platform) || (k === "left" && m.alt) || k === "backspace") { cx.stop_propagation(); this.back(cx); }
+        if (e.key === "escape" && !this.kept) { cx.stop_propagation(); this.closeWindow(); }
+        else if (isBackKey(platform(), e)) { cx.stop_propagation(); this.back(cx); }
       })
-      .when(!this.kept || this.history.length > 0 || Boolean(this.anchor), (el) => el.child(this.bar(t, p)))
+      .when(!this.kept || this.history.length > 0 || Boolean(this.anchor) || this.hasRemote, (el) => el.child(this.bar(t, p)))
       .child(body);
   }
 
@@ -327,28 +426,37 @@ export default class Reader extends View {
     const folder = folderOf(this.file);
     return h_flex().id("vr-bar").h(this.kept ? 34 : 40).flex_none().px(12).gap(8).items_center()
       .bg(t.chrome).border_b(1).border_color(t.border).text_size(12.5)
-      .child(image("mods/vault-reader/obsidian.png").w(15).h(15).flex_none())
-      .when(this.history.length > 0, (el) => el.child(button("vr-back", svg("mods/vault-reader/icons/arrow-left.svg").size(14), (_e, cx) => this.back(cx), "Back (⌘[)")))
+      .child(svg(`${MOD_DIR}/vault.svg`).size(15).flex_none().text_color(t.muted))
+      .when(this.history.length > 0, (el) => el.child(button("vr-back", svg(`${ICONS}/arrow-left.svg`).size(14), (_e, cx) => this.back(cx), backHint(platform()))))
       .child(div().flex_none().max_w(360).truncate().font_semibold().text_size(13.5).text_color(t.foreground).child(stem(this.file)))
       .when(Boolean(this.anchor), (el) => el.child(h_flex().flex_none().gap(6).items_center().text_color(t.muted)
         .child(div().max_w(220).truncate().child("› " + this.anchor.replace(/^\^/, "")))
         .child(button("vr-whole", "Whole note", (_e, cx) => this.go(this.file, null, cx), "Show the whole note"))))
       .child(div().flex_1().min_w(0).overflow_hidden().whitespace_nowrap().text_ellipsis_start().text_size(11.5).text_color(t.dim).child(folder))
       .when(kindOf(this.file) === "pdf" || kindOf(this.file) === "image", (el) => el.child(button("vr-preview",
-        h_flex().gap(5).items_center().child(svg("mods/vault-reader/icons/external-link.svg").size(13)).child("Open in Preview"),
-        () => openInPreview(this.abs(this.file)), "Open this file in Preview")))
+        h_flex().gap(5).items_center().child(svg(`${ICONS}/external-link.svg`).size(13)).child(previewLabel(platform())),
+        () => openInPreview(this.abs(this.file)), `Open this file in ${previewName(platform())}`)))
+      .when(this.hasRemote, (el) => el.child(button("vr-web", this.remoteImages === false ? "Web images: off" : "Web images: on",
+        (_e, cx) => this.toggleRemote(cx), "Pictures from the web are downloaded when a note is opened. Click to turn them " + (this.remoteImages === false ? "on" : "off"))))
       .when(!this.kept && Boolean(p.overlay), (el) => el
         .child(this.keepButton(t, p, button))
-        .child(button("vr-close", svg("mods/vault-reader/icons/x.svg").size(14), () => this.closeWindow(), "Close (Esc)")));
+        .child(button("vr-close", svg(`${ICONS}/x.svg`).size(14), () => this.closeWindow(), "Close (Esc)")));
+  }
+
+  toggleRemote(cx) {
+    const next = this.remoteImages === false;
+    this.remoteImages = next;
+    saveSettings({ remoteImages: next }).then(() => this.load(cx)).catch(() => {});
+    cx.notify();
   }
 
   // Keep ▾: the menu opens under the button, right edges lined up. Event positions
   // are window px; overlay positions are at zoom 1, hence the division.
   keepButton(t, p, button) {
-    return button("vr-keep", h_flex().gap(4).items_center().child("Keep").child(svg("mods/vault-reader/icons/chevron-down.svg").size(11)), () => {
+    return button("vr-keep", h_flex().gap(4).items_center().child("Keep").child(svg(`${ICONS}/chevron-down.svg`).size(11)), () => {
       const z = Number(settings().zoom) || 1, b = this.keepAt;
       const at = b ? { x: Math.max(0, (b.x + b.width) / z - MENU_W), y: (b.y + b.height) / z + 4 } : "pointer";
-      openOverlay({ mod: "vault-reader", kind: "popup", width: MENU_W, at,
+      openOverlay({ mod: MOD, kind: "popup", width: MENU_W, at,
         props: { menu: true, window: p.overlay, vault: this.vault, file: this.file, anchor: this.anchor } });
     }, "Keep this note in the space").on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.keepAt = e.bounds ?? (e.position ? { ...e.position, width: 0, height: 0 } : null); });
   }
@@ -369,17 +477,17 @@ export default class Reader extends View {
       .hover((el) => el.bg(t.hover)).on_click(action)
       .child(div().text_size(12.5).text_color(t.foreground).child(label))
       .child(div().text_size(11).text_color(t.dim).child(hint));
-    return v_flex().id("vr-menu").w_full().p(4).gap(1).bg(t.raised).font_family(FONT)
+    return v_flex().id("vr-menu").w_full().p(4).gap(1).bg(t.raised)
       .child(item("keep-tab", "New tab", "A tab named obsidian, with this note", () => {
-        run("tab.new", { name: "obsidian", mod: "vault-reader", props: { ...note, id: newId() } });
+        run("tab.new", { name: "obsidian", mod: MOD, props: { ...note, id: newId() } });
         done();
       }))
       .children(tabs.map((tab, i) => item(`keep-add-${i}`, tabs.length > 1 ? `Add to obsidian (tab ${tab.index})` : "Add to obsidian",
         `One more note in that tab (${tab.panes} now)`, () => {
           const last = panes().filter((x) => x.tab === tab.id).pop();
           run("tab.select", { id: tab.id });
-          if (last) run("pane.split", { pane: last.pane, direction: "down", mod: "vault-reader", props: { ...note, id: newId() } });
-          else run("tab.new", { name: "obsidian", mod: "vault-reader", props: { ...note, id: newId() } });
+          if (last) run("pane.split", { pane: last.pane, direction: "down", mod: MOD, props: { ...note, id: newId() } });
+          else run("tab.new", { name: "obsidian", mod: MOD, props: { ...note, id: newId() } });
           done();
         })));
   }
@@ -388,7 +496,9 @@ export default class Reader extends View {
     const d = this.doc;
     if (!d || d.loading) return [div().text_color(t.dim).child("Opening…")];
     if (d.error) return [this.notice(t, d.error)];
-    return this.docView(d, t, width, "d");
+    // What could not be drawn (and the hint about live updates) sits above the note, which stays readable.
+    const lines = [...this.notes, ...(this.hint ? [this.hint] : [])];
+    return [...lines.map((text) => this.notice(t, text, t.dim)), ...this.docView(d, t, width, "d")];
   }
 
   notice(t, text, color = t.dim) {
@@ -403,7 +513,7 @@ export default class Reader extends View {
       if (!a?.pages) return [this.picture(t, a, width, null, id, file, "Loading…", false, true)];
       a.pages.forEach((pg, i) => out.push(this.picture(t, pg, width, null, `${id}-p${i + 1}`, file, "Loading…", false, true)));
       if (!a.done) out.push(div().text_size(12.5).text_color(t.dim).child(`Drawing page ${a.pages.length + 1} of ${a.total}…`));
-      else if (a.total > a.pages.length) out.push(this.openRow(t, `${id}-rest`, `Pages 1–${a.pages.length} of ${a.total} here: open all of it in Preview`, file, true));
+      else if (a.total > a.pages.length) out.push(this.openRow(t, `${id}-rest`, `Pages 1–${a.pages.length} of ${a.total} here: open all of it in ${previewName(platform())}`, file, true));
       return out;
     }
     if (d.kind === "image") {
@@ -420,12 +530,12 @@ export default class Reader extends View {
   }
 
   properties(t, list) {
-    const chip = (text, i) => div().flex_none().px(7).py(1).rounded(4).bg(t.raised).text_size(12.5).text_color(t.foreground).child(text);
+    const chip = (text) => div().flex_none().px(7).py(1).rounded(4).bg(t.raised).text_size(12.5).text_color(t.foreground).child(text);
     return v_flex().gap(3).pb(10).border_b(1).border_color(t.border).text_size(13)
       .children(list.map(([k, v], i) => h_flex().id(`prop-${i}`).gap(12).items_start()
         .child(div().w(130).flex_none().truncate().text_color(t.dim).child(k))
         .child(Array.isArray(v)
-          ? h_flex().flex_1().flex_wrap().gap(4).children(v.map((x, j) => chip(k === "tags" ? `#${String(x).replace(/^#/, "")}` : String(x), j)))
+          ? h_flex().flex_1().flex_wrap().gap(4).children(v.map((x) => chip(k === "tags" ? `#${String(x).replace(/^#/, "")}` : String(x))))
           : div().flex_1().min_w(0).text_color(t.foreground).child(String(v)))));
   }
 
@@ -446,11 +556,13 @@ export default class Reader extends View {
         .child(this.md("```\n" + b.src + "\n```", id));
       case "mermaid": {
         const a = this.assets.get(b.key);
+        if (a?.error && a.transient) return this.md("```mermaid\n" + b.src + "\n```", id); // the reason is in the notice above
         if (a?.error) return v_flex().gap(4).child(this.notice(t, `Mermaid: ${a.error.split("\n")[0]}`, t.blocked)).child(this.md("```mermaid\n" + b.src + "\n```", id));
         return this.picture(t, a, width, null, id, null, "Drawing the diagram…", true);
       }
       case "math": {
         const a = this.assets.get(b.key);
+        if (a?.error && a.transient) return this.md("```\n$$\n" + b.src + "\n$$\n```", id);
         if (a?.error) return this.notice(t, `Math: ${a.error} — ${b.src}`, t.blocked);
         return this.picture(t, a, width, null, id, null, "…", true);
       }
@@ -469,20 +581,21 @@ export default class Reader extends View {
   // fill: grow to the column too (PDF pages), not only shrink.
   picture(t, a, width, size, id, openPath = null, waiting = "Loading…", center = false, fill = false) {
     if (!a) return div().h(36).flex_none().px(12).items_center().flex().rounded(6).bg(t.surface).text_size(12.5).text_color(t.dim).child(waiting);
-    if (a.error) return this.notice(t, a.error);
+    if (a.error) return this.notice(t, a.transient ? "Not drawn (see the note above)" : a.error);
     let w = a.w, h = a.h;
     if (size?.w) { h = size.h ?? (h * size.w) / w; w = size.w; }
     if (w > width || (fill && !size?.w)) { h = (h * width) / w; w = width; }
     const img = image(a.path).w(Math.round(w)).h(Math.round(h)).flex_none();
     const box = h_flex().id(`pic-${id}`).w_full().flex_none().when(center, (el) => el.justify_center()).child(img);
     // PDF pages open in Preview.
-    return openPath ? box.cursor_pointer().on_click(() => openInPreview(openPath)).tooltip("Open in Preview") : box;
+    return openPath ? box.cursor_pointer().on_click(() => openInPreview(openPath)).tooltip(previewLabel(platform())) : box;
   }
 
   openRow(t, id, label, path, preview = false) {
+    if (!canOpen(path)) return div().text_size(13).text_color(t.dim).child(`${path.split("/").pop()} (a program: not opened from a note)`);
     return h_flex().id(id).gap(6).items_center().cursor_pointer().text_size(13).text_color(t.accent)
       .on_click(() => (preview ? openInPreview(path) : openExternal(path)))
-      .child(svg("mods/vault-reader/icons/external-link.svg").size(13)).child(label);
+      .child(svg(`${ICONS}/external-link.svg`).size(13)).child(label);
   }
 
   flow(b, t, id) {
@@ -491,14 +604,18 @@ export default class Reader extends View {
       if (tok.kind === "math") {
         const a = this.assets.get(tok.key);
         words.push(a && !a.error ? image(a.path).w(a.w).h(a.h).flex_none()
-          : div().text_color(a?.error ? t.blocked : t.dim).child(`$${tok.src}$`));
+          : div().text_color(a?.error && !a.transient ? t.blocked : t.dim).child(`$${tok.src}$`));
         return;
       }
       for (const [j, w] of tok.text.split(/\s+/).filter(Boolean).entries()) {
         let el = div().id(`${id}-w${i}-${j}`).flex_none().child(w);
         if (tok.bold) el = el.font_bold();
         if (tok.italic) el = el.italic();
-        if (tok.code) el = el.px(4).rounded(4).bg(t.raised).font_family(settings().font_family ?? "Menlo").text_size(TEXT - 2);
+        if (tok.code) {
+          el = el.px(4).rounded(4).bg(t.raised).text_size(TEXT - 2);
+          const mono = settings().font_family;
+          if (mono) el = el.font_family(mono);
+        }
         if (tok.link) el = el.text_color(t.accent).cursor_pointer().on_click((_e, cx) => this.follow(tok.link, cx));
         words.push(el);
       }
@@ -514,11 +631,11 @@ export default class Reader extends View {
     const foldable = b.fold === "+" || b.fold === "-";
     const title = h_flex().id(`${id}-t`).gap(8).items_center()
       .when(foldable, (el) => el.cursor_pointer().on_click((_e, cx) => { this.folds.set(id, !open); cx.notify(); }))
-      .child(svg(`mods/vault-reader/icons/${icon}.svg`).size(16).flex_none().text_color(color))
+      .child(svg(`${ICONS}/${icon}.svg`).size(16).flex_none().text_color(color))
       // A title with a link needs TextView; a plain one is plain text in the callout's color.
       .child(div().flex_1().min_w(0).font_semibold().text_color(color).child(/\]\(/.test(b.title)
         ? this.md(b.title, `${id}-tt`) : b.title.replace(/\*\*|__|`/g, "").replace(/(^|[^*])\*([^*]+)\*/g, "$1$2")))
-      .when(foldable, (el) => el.child(svg(`mods/vault-reader/icons/chevron-${open ? "down" : "right"}.svg`).size(14).flex_none().text_color(color)));
+      .when(foldable, (el) => el.child(svg(`${ICONS}/chevron-${open ? "down" : "right"}.svg`).size(14).flex_none().text_color(color)));
     return v_flex().w_full().px(14).py(10).gap(6).rounded(6).bg(color + "1c")
       .child(title)
       .when(open && b.body.length > 0, (el) => el.children(this.blocks(b.body, t, width - 28, id, from)));
@@ -529,7 +646,7 @@ export default class Reader extends View {
     if (b.kind === "image" || b.kind === "pdf") {
       const pic = this.picture(t, this.assets.get(b.key), width, parseSize(b.size), id, b.kind === "pdf" ? this.abs(b.resolved) : null, "Loading…", false, b.kind === "pdf");
       if (b.kind !== "pdf") return pic;
-      return v_flex().gap(6).child(pic).child(this.openRow(t, `${id}-pdf`, `Open ${b.resolved.split("/").pop()} in Preview`, this.abs(b.resolved), true));
+      return v_flex().gap(6).child(pic).child(this.openRow(t, `${id}-pdf`, `Open ${b.resolved.split("/").pop()} in ${previewName(platform())}`, this.abs(b.resolved), true));
     }
     if (b.kind === "excalidraw") return this.picture(t, this.assets.get(b.key), width, parseSize(b.size), id, null, "Drawing…", true);
     if (b.kind === "other") return this.openRow(t, `${id}-o`, b.resolved.split("/").pop(), this.abs(b.resolved));
@@ -539,7 +656,7 @@ export default class Reader extends View {
       .child(h_flex().id(`${id}-h`).gap(6).items_center().cursor_pointer().text_size(12).text_color(t.dim)
         .hover((el) => el.text_color(t.accent))
         .on_click((_e, cx) => this.go(b.resolved, b.anchor, cx))
-        .child(svg("mods/vault-reader/icons/link.svg").size(12)).child(label))
+        .child(svg(`${ICONS}/link.svg`).size(12)).child(label))
       .children(inner);
   }
 
@@ -563,8 +680,11 @@ export default class Reader extends View {
         .rounded(s(8)).border_2().border_color(color).bg(n.color ? mixHex(color, t.background, 0.88) : t.surface)
         .text_size(Math.max(9, TEXT * scale)).px(s(14)).py(s(10)).gap(s(6));
       if (n.type === "text") card = card.child(this.md(n.text ?? "", `${id}-n${i}`));
-      else if (n.type === "link") card = card.cursor_pointer().on_click(() => openExternal(n.url))
-        .child(div().text_color(t.accent).child(n.url ?? ""));
+      else if (n.type === "link") {
+        const url = safeUrl(n.url); // a card can only open web links
+        card = (url ? card.cursor_pointer().on_click(() => openExternal(url)) : card)
+          .child(div().text_color(url ? t.accent : t.dim).child(String(n.url ?? "")));
+      }
       else if (n.type === "file") {
         const title = h_flex().id(`${id}-f${i}`).gap(6).items_center().cursor_pointer().text_color(t.accent).font_semibold()
           .on_click((_e, cx) => this.go(n.target, n.subpath?.replace(/^#/, ""), cx))

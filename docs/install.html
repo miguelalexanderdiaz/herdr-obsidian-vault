@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install - Herdr Obsidian Vault</title>
+<meta name="description" content="Install the Vault panel and Vault reader mods in Herdr, with an agent or by hand, and show the panel.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to the content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html">Herdr Obsidian Vault</a>
+<nav aria-label="Documentation">
+<ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="install.html" aria-current="page">Install</a></li>
+<li><a href="usage.html">Usage</a></li>
+<li><a href="requirements.html">Requirements</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="how-it-works.html">How it works</a></li>
+<li><a href="for-agents.html">For agents</a></li>
+</ul>
+</nav>
+</div>
+</header>
+<main id="content">
+<div class="wrap">
+<h1>Install</h1>
+<p class="lede">Both mods are needed. The panel opens notes in the reader, and the reader is opened by the panel. Install them under exactly the names <code>vault</code> and <code>vault-reader</code>.</p>
+
+<h2 id="agent">Option 1: ask a Herdr agent</h2>
+<p>Herdr agents know how to install shared mods. Paste this into an agent running in Herdr, with the repository address filled in:</p>
+<pre><code>Install the Herdr mods from https://github.com/&lt;owner&gt;/herdr-obsidian-vault .
+It has two mods, mods/vault and mods/vault-reader, and a keys.json.
+Read every file first, tell me what they run and fetch, copy both
+folders into my mods folder without overwriting anything, merge
+keys.json after asking me about clashes, run herdr-app check on both
+mods, then add the Vault panel to my layout.</code></pre>
+<p>The agent follows Herdr&rsquo;s own rule: it reads everything and tells you before adding a mod that reaches the network or runs programs. This one does both, so expect that message. The list is on the <a href="privacy.html">privacy page</a>.</p>
+
+<h2 id="manual">Option 2: copy the folders yourself</h2>
+<ol>
+<li>Get the repository: <code>git clone https://github.com/&lt;owner&gt;/herdr-obsidian-vault.git</code> (or download the zip).</li>
+<li>Find your Herdr home folder. It is <code>~/.config/herdr-app</code> on macOS and Linux unless the variable <code>HERDR_APP_HOME</code> points elsewhere. <code>herdr-app --help</code> prints the path for your machine; use that on Windows.</li>
+<li>Copy <code>mods/vault</code> and <code>mods/vault-reader</code> into the <code>mods</code> folder inside that home. Do not overwrite a mod of the same name; if you already have one, rename the new folder and read the <a href="how-it-works.html#rename">rename note</a>.
+<pre><code># macOS and Linux
+cp -R mods/vault mods/vault-reader ~/.config/herdr-app/mods/
+
+# Windows PowerShell (replace the target with your Herdr home)
+Copy-Item -Recurse mods\vault, mods\vault-reader "$HERDR_HOME\mods"</code></pre></li>
+<li>Merge the key from <code>keys.json</code> in the repository into your own <code>keys.json</code> (add its section and key; keep any key you already use). It is optional; see <a href="configuration.html#keys">Configuration</a>.</li>
+<li>Check both mods:
+<pre><code>herdr-app check ~/.config/herdr-app/mods/vault
+herdr-app check ~/.config/herdr-app/mods/vault-reader</code></pre>
+Both must pass. Herdr reloads mods as soon as their files change, so there is no restart.</li>
+</ol>
+
+<h2 id="show">Show the panel</h2>
+<p>The mods have <code>"place": "none"</code>, so nothing appears until you put the panel somewhere. Pick one:</p>
+<ul>
+<li><strong>In a layout.</strong> Add a block to a column or stack of your layout file in <code>layouts/</code>:
+<pre><code>{ "id": "vault", "type": "block", "content": { "mod": "vault" } }</code></pre>
+For the <em>herdr-portrait-layout</em> layout, append that object to the children of the node whose id is <code>panel-body</code>. Its bar then shows a Vault button by itself.</li>
+<li><strong>Split a pane.</strong> Run the Herdr app command <code>pane.split</code> with a direction and <code>mod</code> set to <code>vault</code> (<code>herdr-app commands</code> lists its arguments).</li>
+<li><strong>As a popup.</strong> The repository&rsquo;s <code>keys.json</code> binds <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> to <code>mod.open:vault</code>, which opens the panel as a 420 by 640 popup and, pressed again, closes it. Merge that key (see <a href="configuration.html#keys">Configuration</a>) and no layout change is needed.</li>
+</ul>
+
+<h2 id="first">First run</h2>
+<p>The panel starts with the vaults that Obsidian already lists on this machine, most recently opened first. If Obsidian has never been run, or the vault lives outside your home folder, use <strong>Add vault</strong> and pick a folder that contains <code>.obsidian</code>. To try the mod without a vault of your own, add <code>examples/sample-vault</code> from the repository.</p>
+
+<h2 id="uninstall">Uninstall</h2>
+<ol>
+<li>Remove the vault block from your layout and any keys you merged.</li>
+<li>Delete the folders <code>mods/vault</code> and <code>mods/vault-reader</code> from your Herdr home.</li>
+<li>Optional: delete <code>data/vault</code> in the Herdr home. It holds the picture cache, the Mermaid and MathJax copies, the headless browser profile and the reader settings. Nothing else is written outside the mod folders.</li>
+</ol>
+<p>Your vaults are never touched. Herdr keeps the vault list in its own shared state (<code>vault.list</code>); it is harmless once the mods are gone.</p>
+
+<h2 id="publish">For the author: publishing</h2>
+<p>These pages are served by GitHub Pages from the <code>main</code> branch and <code>/docs</code> folder. Turning that on, adding the <code>herdr-mod</code> topic and making the repository public are steps only the owner can take; they are listed in <code>scripts/PUBLISH.md</code>. Private repositories need a paid GitHub plan for Pages.</p>
+<div class="pager"><a href="index.html" rel="prev">&larr; Overview</a><a href="usage.html" rel="next">Usage &rarr;</a></div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<p>Apache-2.0. Not affiliated with, endorsed by, or sponsored by Obsidian. The Obsidian logo is not distributed.</p>
+<p>This site loads nothing from other websites and runs no scripts.</p>
+</div>
+</footer>
+</body>
+</html>
