@@ -1,0 +1,15 @@
+# Actions are pinned to commits (see scripts/ci.workflow.yml); this keeps the pins current. Actions only: the
+# repository has no npm or other dependencies.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    # Pull request titles must be Conventional Commits (.github/workflows/pr-title.yml): "ci(deps): bump ..."
+    commit-message:
+      prefix: ci
+      include: scope

@@ -3,7 +3,7 @@
 // so it runs on any machine with a Chromium-family browser and skips, with its reason, where there is none.
 // Includes the canary for the privacy claim: a Mermaid label with an <img> pointing at a local counting
 // server must cause zero requests (R2-CR-6 / D14).
-import test from "node:test";
+import test, { before } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import http from "node:http";
@@ -53,6 +53,24 @@ function run(app, spec, extraEnv = {}) {
 }
 const leftovers = (app) => fs.readdirSync(path.join(app, "data", "vault")).filter((n) => /^chrome-|^lib\.tmp-|^lib\.lock/.test(n));
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "herdr-render-e2e-"));
+
+// The first start of a browser binary on a fresh CI machine is slow (on Windows the virus scan reads the
+// new chrome.exe and its DLLs, and other test files run beside this one): it once took longer than
+// render.mjs allows a start, so the run reported "no-browser" (now "timeout", see render/browser.mjs). The
+// tests below check drawing, not a cold start, so the browser is started once beforehand, without a time
+// limit that matters (60 s), the same way the control test further down runs it.
+before(async () => {
+  if (skip) return;
+  const dir = tmp();
+  try {
+    await new Promise((ok) => {
+      const child = spawn(B.bin, ["--headless=new", "--disable-gpu", "--no-first-run", `--user-data-dir=${path.join(dir, "warm")}`, "--dump-dom", "about:blank"], { stdio: "ignore" });
+      const t = setTimeout(() => child.kill("SIGKILL"), 60_000);
+      child.on("exit", () => { clearTimeout(t); ok(); });
+      child.on("error", () => { clearTimeout(t); ok(); });
+    });
+  } finally { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); }
+});
 
 test("renders Mermaid, math and Excalidraw with a stub bundle; PNGs, sizes, no profile folder left, library extracted once", { skip }, async () => {
   const dir = tmp();
