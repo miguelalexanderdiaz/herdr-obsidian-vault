@@ -243,3 +243,15 @@ test("mods/vault/platform.js shares its functions verbatim with mods/vault-reade
 test("watch.js is identical in both mods", () => {
   assert.equal(fs.readFileSync(path.join(MODS, "vault", "watch.js"), "utf8"), fs.readFileSync(path.join(MODS, "vault-reader", "watch.js"), "utf8"));
 });
+
+test("utf8Text decodes like TextDecoder, including invalid bytes, without needing it (CR-2-1)", () => {
+  const dec = new TextDecoder();
+  const enc = new TextEncoder();
+  const cases = ["plain", "café 世界 😀 end", "", "<svg width=\"1\">"].map((s) => enc.encode(s));
+  for (const b of cases) assert.equal(P.utf8Text(b), dec.decode(b), Array.from(b).join(","));
+  // invalid bytes become U+FFFD (one per byte here, a little more than TextDecoder's); the text around them survives
+  const bad = P.utf8Text(Uint8Array.from([0x61, 0xc3, 0x28, 0xe2, 0x82, 0xff, 0xc0, 0xaf, 0xed, 0xa0, 0x80, 0x62]));
+  assert.ok(bad.startsWith("a\ufffd(") && bad.endsWith("b") && !/[\ud800-\udfff]/.test(bad));
+  assert.equal(P.utf8Text(enc.encode("abcdef"), 3), "abc");
+  assert.equal(P.utf8Text(undefined), "");
+});

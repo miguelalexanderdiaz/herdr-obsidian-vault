@@ -169,6 +169,30 @@ export function imageInfo(bytes) {
   return null;
 }
 
+// The first `limit` bytes as text, decoded as UTF-8 (invalid bytes become U+FFFD). Herdr's JavaScript has
+// no TextDecoder (probed in round 2), and an SVG header may hold a non-ASCII title or comment before its
+// size, so a plain byte-to-char loop would not do.
+export function utf8Text(bytes, limit = bytes?.length ?? 0) {
+  const n = Math.min(limit, bytes?.length ?? 0);
+  let out = "";
+  for (let i = 0; i < n;) {
+    const c = bytes[i];
+    let cp = 0xfffd, len = 1;
+    if (c < 0x80) cp = c;
+    else if (c >= 0xc2 && c < 0xe0 && (bytes[i + 1] & 0xc0) === 0x80) { cp = ((c & 0x1f) << 6) | (bytes[i + 1] & 0x3f); len = 2; }
+    else if (c >= 0xe0 && c < 0xf0 && (bytes[i + 1] & 0xc0) === 0x80 && (bytes[i + 2] & 0xc0) === 0x80) {
+      const v = ((c & 0x0f) << 12) | ((bytes[i + 1] & 0x3f) << 6) | (bytes[i + 2] & 0x3f);
+      if (v >= 0x800 && (v < 0xd800 || v > 0xdfff)) { cp = v; len = 3; }
+    } else if (c >= 0xf0 && c < 0xf5 && (bytes[i + 1] & 0xc0) === 0x80 && (bytes[i + 2] & 0xc0) === 0x80 && (bytes[i + 3] & 0xc0) === 0x80) {
+      const v = ((c & 0x07) << 18) | ((bytes[i + 1] & 0x3f) << 12) | ((bytes[i + 2] & 0x3f) << 6) | (bytes[i + 3] & 0x3f);
+      if (v >= 0x10000 && v <= 0x10ffff) { cp = v; len = 4; }
+    }
+    out += String.fromCodePoint(cp);
+    i += len;
+  }
+  return out;
+}
+
 // The size an SVG declares (width/height, else viewBox), or a default.
 export function svgSize(text) {
   const head = String(text ?? "").slice(0, 2000);

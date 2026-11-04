@@ -197,7 +197,7 @@ export function makeResolver(files) {
     if (!cands.length) return null;
     return [...cands].sort((a, b) =>
       Number(dirname(b) === fromDir) - Number(dirname(a) === fromDir) ||
-      a.split("/").length - b.split("/").length || a.length - b.length || a.localeCompare(b))[0];
+      a.split("/").length - b.split("/").length || a.length - b.length || (a < b ? -1 : a > b ? 1 : 0))[0];
   };
 }
 

@@ -8,7 +8,7 @@
 // installing the tool or coming back online fixes them without clearing anything.
 
 import {
-  normPlatform, openCommand, stampsOf, macImageSizeCommand, macThumbnailCommand, imageInfo, svgSize, looksLikeSvg, makeToolFinder,
+  normPlatform, openCommand, stampsOf, macImageSizeCommand, macThumbnailCommand, imageInfo, svgSize, looksLikeSvg, utf8Text, makeToolFinder,
   missingMessage, renderProblem, nodeOk, obsidianAsarCandidates, browserCandidates, browserNames,
 } from "./platform.js";
 import { MOD_DIR } from "./mod-name.js";
@@ -20,6 +20,11 @@ export const CACHE_MAX_MB = 200;
 export const REMOTE_MAX_BYTES = 20_000_000;
 export const IMAGE_MAX_BYTES = 40_000_000;
 export const REMOTE_RETRY_MS = 5 * 60_000; // a failed download is not tried again for this long (and never stored on disk)
+
+// A problem that is the file's own (not an image, a page that cannot be drawn): cached, so it is not
+// tried again until the file changes. Any other exception (a missing function, a full disk, a tool that
+// failed to start) is not cached: it is the machine's or ours, and the next load should try again.
+export class FileProblem extends Error {}
 
 // FNV-1a, twice with different seeds: a 64-bit key as hex.
 export function hash(s) {
@@ -59,7 +64,7 @@ export function curlArgs(url, dest) {
 export function extFromBytes(bytes) {
   const info = imageInfo(bytes);
   if (info) return info.type;
-  const head = new TextDecoder().decode(bytes.slice(0, 2000));
+  const head = utf8Text(bytes, 2000);
   return looksLikeSvg(head) ? "svg" : null;
 }
 
@@ -123,10 +128,10 @@ export function createAssets(deps) {
   };
   const putMeta = (key, value) => fs.writeFile(abs(`${REL}/${key}.json`), JSON.stringify(value)).catch(() => {});
   const hit = (key, ext, m) => (m.error ? { error: m.error } : { path: `${REL}/${key}.${ext}`, w: m.w, h: m.h });
-  // Cache a failure only when the file itself is the problem, not the machine.
-  const fail = async (key, e, cache = true) => {
+  // Cache a failure only when the file itself is the problem (FileProblem), not the machine.
+  const fail = async (key, e) => {
     const error = String(e?.message ?? e);
-    if (cache) await putMeta(key, { error });
+    if (e instanceof FileProblem) await putMeta(key, { error });
     return { error };
   };
 
@@ -150,7 +155,7 @@ export function createAssets(deps) {
   // ---- vault images ----
   // Size from the file's own header; on macOS the system tool only for formats read here (AVIF, TIFF).
   async function sizeOf(bytes, ext, destPath) {
-    if (ext === "svg") return svgSize(new TextDecoder().decode(bytes.slice(0, 4000)));
+    if (ext === "svg") return svgSize(utf8Text(bytes, 4000));
     const info = imageInfo(bytes);
     if (info) return { w: info.w, h: info.h };
     if (platform === "macos" && destPath) {
@@ -160,7 +165,7 @@ export function createAssets(deps) {
       const h = Number((r?.stdout?.match(/pixelHeight:\s*(\d+)/) || [])[1]);
       if (w && h) return { w, h };
     }
-    throw new Error("Not an image this reader can show");
+    throw new FileProblem("Not an image this reader can show");
   }
 
   // A vault image (absolute path) → { path, w, h } | { error }, at its pixel size
@@ -169,12 +174,12 @@ export function createAssets(deps) {
   async function vaultImage(file, stamp) {
     await ensureDir();
     const ext = (file.match(/\.(\w+)$/) || [, "png"])[1].toLowerCase();
-    const key = hash(`img:${file}:${stamp}`);
+    const key = hash(`img2:${file}:${stamp}`);
     const m = await meta(key);
     if (m) return hit(key, ext, m);
     try {
       const bytes = await fs.readFile(file);
-      if (bytes.length > IMAGE_MAX_BYTES) throw new Error("This image is too large to show here");
+      if (bytes.length > IMAGE_MAX_BYTES) throw new FileProblem("This image is too large to show here");
       const dest = abs(`${REL}/${key}.${ext}`);
       await fs.writeFile(dest, bytes);
       const { w, h } = await sizeOf(bytes, ext, dest);
@@ -191,7 +196,7 @@ export function createAssets(deps) {
     const [cmd, args] = macThumbnailCommand(tmp, file);
     const r = await exec(cmd, args);
     const made = (await fs.readdir(tmp)).find((f) => f.endsWith(".png"));
-    if (!made) throw new Error(r.stderr?.trim() || "Quick Look made no preview");
+    if (!made) throw new FileProblem(r.stderr?.trim() || "Quick Look made no preview");
     const bytes = await fs.readFile(`${tmp}/${made}`);
     await fs.writeFile(abs(`${REL}/${key}.png`), bytes);
     await fs.unlink(`${tmp}/${made}`).catch(() => {});
@@ -236,7 +241,7 @@ export function createAssets(deps) {
     if (!bin) return { error: missingMessage(platform, "poppler"), missing: "poppler" };
     try {
       const r = await exec(bin, ["-png", "-r", "144", "-f", String(n), "-l", String(n), "-singlefile", file, abs(`${REL}/${key}`)]);
-      if (r.code !== 0) throw new Error(r.stderr?.trim() || `Couldn't draw page ${n}`);
+      if (r.code !== 0) throw new FileProblem(r.stderr?.trim() || `Couldn't draw page ${n}`);
       const bytes = await fs.readFile(abs(`${REL}/${key}.png`));
       const { w, h } = await sizeOf(bytes, "png");
       const shown = { w: Math.round(w / 2), h: Math.round(h / 2) };
@@ -253,7 +258,7 @@ export function createAssets(deps) {
     await ensureDir();
     if (!(await loadSettings()).remoteImages) return { error: "Images from the web are turned off (“Web images” in the bar above turns them on)", off: true };
     if (!remoteUrlOk(url)) return { error: "Not a web address this reader will fetch" };
-    const key = hash(`url:${url}`);
+    const key = hash(`url2:${url}`);
     const m = await meta(key);
     if (m) {
       const ext = m.ext ?? "png";
@@ -274,7 +279,7 @@ export function createAssets(deps) {
       recentFailures.delete(url);
       const bytes = await fs.readFile(tmp);
       const ext = extFromBytes(bytes);
-      if (!ext) return fail(key, new Error("The address isn't a picture"));
+      if (!ext) return fail(key, new FileProblem("The address isn't a picture"));
       await fs.writeFile(abs(`${REL}/${key}.${ext}`), bytes);
       const { w, h } = await sizeOf(bytes, ext, abs(`${REL}/${key}.${ext}`));
       await putMeta(key, { w, h, ext });

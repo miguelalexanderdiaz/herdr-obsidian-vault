@@ -4,7 +4,7 @@ import {
   createAssets, hash, themeKey, parseSettings, remoteUrlOk, curlArgs, extFromBytes, parseStamp, pruneList,
   BATCH, REL, REMOTE_RETRY_MS,
 } from "../mods/vault-reader/assets-core.js";
-import { fakeExec, fakeFs, png, jpeg } from "./helpers.mjs";
+import { fakeExec, fakeFs, png, jpeg, withoutNodeGlobals } from "./helpers.mjs";
 
 const APP = "/app";
 const mk = (script, { platform = "linux", files = {}, now = () => 0 } = {}) => {
@@ -307,4 +307,49 @@ test("pruneCache runs through stat and unlink (fake clock and sizes)", async () 
   const gone = await a.pruneCache(30, 200);
   assert.equal(gone, 2);
   assert.deepEqual([...fs.files.keys()].sort(), [`${dir}/new.json`, `${dir}/new.png`]);
+});
+
+// ---- no TextDecoder in Herdr (R2-CR-3, CR-2-1) ----------------------------------------------------------
+
+test("svg images are sized and shown where TextDecoder does not exist (CR-2-1)", async () => {
+  const svg = '<?xml version="1.0"?><!-- Zeichnung \u00fcber \u4e16\u754c \ud83d\ude00 --><svg xmlns="http://www.w3.org/2000/svg" width="64" height="48"></svg>';
+  const { assets, fs } = mk(() => undefined, { files: { "/h/v/logo.svg": svg } });
+  await withoutNodeGlobals(async () => {
+    assert.equal(typeof globalThis.TextDecoder, "undefined");
+    const r = await assets.vaultImage("/h/v/logo.svg", "1:1");
+    assert.equal(r.error, undefined);
+    assert.deepEqual([r.w, r.h], [64, 48]);
+    assert.ok(fs.files.has(`${APP}/${r.path}`));
+  });
+});
+
+test("a web svg is recognised without TextDecoder, and a non-picture is still 'not a picture' (CR-2-1)", async () => {
+  const fs = fakeFs();
+  const exec = fakeExec(curlScript(new TextEncoder().encode('<svg viewBox="0 0 30 20"></svg>'), fs));
+  const assets = createAssets({ exec, fs, appHome: APP, home: "/h", platform: "linux" });
+  await withoutNodeGlobals(async () => {
+    const r = await assets.remoteImage("https://example.com/a.svg");
+    assert.deepEqual([r.w, r.h], [30, 20]);
+    assert.equal(extFromBytes(new Uint8Array([104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115])), null);
+  });
+});
+
+test("an unexpected error is returned but never written to the cache (CR-2-1)", async () => {
+  const { assets, fs } = mk(() => undefined, { files: { "/h/v/pic.png": png(5, 5) } });
+  fs.writeFile = async () => { throw new ReferenceError("TextDecoder is not defined"); };
+  const r = await assets.vaultImage("/h/v/pic.png", "1:1");
+  assert.match(r.error, /TextDecoder is not defined/);
+  assert.equal([...fs.files.keys()].filter((k) => k.endsWith(".json")).length, 0, "nothing cached");
+  // a file problem is cached
+  const bad = mk(() => undefined, { files: { "/h/v/bad.png": "not an image at all" } });
+  assert.match((await bad.assets.vaultImage("/h/v/bad.png", "1:1")).error, /Not an image/);
+  assert.equal([...bad.fs.files.keys()].filter((k) => k.endsWith(".json")).length, 1);
+});
+
+test("poisoned cache entries from before the fix are ignored: the image key changed (CR-2-1)", async () => {
+  const old = hash("img:/h/v/logo.svg:1:1");
+  const { assets, fs } = mk(() => undefined, { files: { "/h/v/logo.svg": '<svg width="1" height="2"></svg>', [`${APP}/${REL}/${old}.json`]: '{"error":"TextDecoder is not defined"}' } });
+  const r = await assets.vaultImage("/h/v/logo.svg", "1:1");
+  assert.deepEqual([r.w, r.h], [1, 2]);
+  void fs;
 });
