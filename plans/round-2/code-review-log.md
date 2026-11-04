@@ -30,7 +30,7 @@ the live app was not driven. Commits are one per task (subject ends with the tas
 - `npm test`: 213 tests, 213 pass, 0 skipped (previous suite: 154). With `HERDR_VAULT_BROWSER` pointing at a missing file the four browser tests skip with "skipped: HERDR_VAULT_BROWSER names no file (...)" and the rest pass.
 - `herdr-app check` on `mods/vault` and `mods/vault-reader` in this worktree: both "check passed".
 - `node scripts/privacy-scan.mjs`, `syntax-check.mjs`: 0 errors. `check-repo.mjs`: 0 errors, 1 warning (the CI workflow is not installed, expected). `check-docs.mjs`: 2 problems, both the old "Node.js 22 or newer" wording that documentation updates on its own branch.
-- Scratch merge of the three role branches (throw-away clone, not in the repo): `npm test` 232 tests, 229 pass, 3 fail (documentation's `tests/check-docs.test.mjs` copies a fixed script list that lacks `check-recipe`, `install-sim`, `typecheck`; posted on the board). `check-docs`, `check-repo`, `check-recipe`, `privacy-scan`, `syntax-check`, `install-sim`, `build-llms-full --check` green; `typecheck` prints "skipped: TypeScript's tsc was not found".
+- Throw-away merge of the three role branches (throw-away clone, not in the repo): `npm test` 232 tests, 229 pass, 3 fail (documentation's `tests/check-docs.test.mjs` copies a fixed script list that lacks `check-recipe`, `install-sim`, `typecheck`; posted on the board). `check-docs`, `check-repo`, `check-recipe`, `privacy-scan`, `syntax-check`, `install-sim`, `build-llms-full --check` green; `typecheck` prints "skipped: TypeScript's tsc was not found".
 - Real renderer, this machine, real Obsidian bundle and Chrome (`render.mjs` called as the mod calls it): a Mermaid flowchart, a Mermaid label with `<img src=http://127.0.0.1:PORT/track>`, display and inline math: all 4 jobs ok in about 1.0 to 1.9 s; loopback listener hits: 0; `data/vault` afterwards holds only `lib` (no `chrome-*`). Before the CSP the same label produced hits (audit CR-2-3).
 - e2e on Chrome and on Brave (`HERDR_VAULT_BROWSER` set to Brave): 5 of 5 pass. Canary 0 requests on both.
 - Seeded-fault evidence (temp edit, reverted, `git status` clean afterwards):
@@ -38,7 +38,7 @@ the live app was not driven. Commits are one per task (subject ends with the tas
   - runtime guard: `new TextDecoder()` added to `mods/vault/main.js` -> `runtime-globals` fails naming `mods/vault/main.js:26  TextDecoder`; two in-test seeded cases also run (`TextDecoder` appended to a clean copy, `fs.stat` / `setTimeout` / `localeCompare` with options);
   - canary: CSP meta and the two browser flags removed -> the canary test fails with both tracker URLs in `c.seen`;
   - element stub with no `gpui-kit.d.ts` available (`HOME=/nonexistent`): the committed `gpui-methods.json` is used and the suite passes.
-- Probe of the Herdr runtime (CR-2-7 item 5, no new probe this step): the facts in `tests/runtime-globals.test.mjs` are those of the audit's two probe mods (`herdr-app check` on a scratch folder). I did not run a new probe: nothing new was assumed.
+- Probe of the Herdr runtime (CR-2-7 item 5, no new probe this step): the facts in `tests/runtime-globals.test.mjs` are those of the audit's two probe mods (`herdr-app check` on a throw-away folder). I did not run a new probe: nothing new was assumed.
 
 ## Deferred, with reasons
 
@@ -56,4 +56,4 @@ the live app was not driven. Commits are one per task (subject ends with the tas
 3. If the author wants fewer rows per folder, change `PER_FOLDER` and tell documentation (the wording is in `docs/usage.html`).
 4. The CSP allows `'unsafe-eval'` and inline scripts (Obsidian's Mermaid/MathJax need at least one of them; I did not test each directive removal against the real bundle): tighten only with the real bundle at hand.
 5. `tests/stubs/gpui-methods.json` must be regenerated after Herdr updates (`node tests/tools/gen-gpui-methods.mjs`); on a developer's machine the live d.ts is used and a test notices when the committed list is behind.
-6. The type check (`scripts/typecheck.mjs`, harness-completeness) will probably find argument-shape problems that name checks cannot; send them to code-review.
+6. The type check (`scripts/typecheck.mjs`, herdr-completeness) will probably find argument-shape problems that name checks cannot; send them to code-review.
