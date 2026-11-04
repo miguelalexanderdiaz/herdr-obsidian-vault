@@ -517,3 +517,58 @@ test("a 20 MB+ image is refused from its stamp, without reading the file (CR-2-1
   assert.equal(ok.error, undefined);
   assert.equal(reads, 1);
 });
+
+// ---- cache hygiene (R2-CR-16, CR-2-15) -------------------------------------------------------------------------
+
+import { TOUCH_AFTER_MS } from "../mods/vault-reader/assets-core.js";
+
+test("a cache hit older than a week writes its json again, once per session; the caller never sees `at`", async () => {
+  let t = 1_000_000;
+  const fs = fakeFs({ "/h/v/p.png": png(8, 6) });
+  const a = createAssets({ exec: fakeExec(() => undefined), fs, appHome: APP, home: "/h", platform: "linux", now: () => t });
+  const first = await a.vaultImage("/h/v/p.png", "1:2");
+  const jsonKey = [...fs.files.keys()].find((k) => k.endsWith(".json"));
+  assert.equal(JSON.parse(fs.files.get(jsonKey)).at, t, "written with the time");
+  assert.deepEqual(Object.keys(first).sort(), ["h", "path", "w"]);
+  let writes = 0;
+  const w = fs.writeFile;
+  fs.writeFile = async (p, d) => { if (p === jsonKey) writes++; return w(p, d); };
+  t += TOUCH_AFTER_MS - 1000;
+  await a.vaultImage("/h/v/p.png", "1:2");
+  assert.equal(writes, 0, "used inside the week: nothing written");
+  t += 2000;
+  await a.vaultImage("/h/v/p.png", "1:2");
+  assert.equal(writes, 1, "older than a week: refreshed");
+  assert.equal(JSON.parse(fs.files.get(jsonKey)).at, t);
+  t += TOUCH_AFTER_MS + 1;
+  await a.vaultImage("/h/v/p.png", "1:2");
+  assert.equal(writes, 1, "at most once per entry per session");
+});
+
+test("Quick Look leaves no temporary folder behind, on success and on failure", async () => {
+  for (const works of [true, false]) {
+    const fs = fakeFs();
+    const exec = fakeExec((cmd, args) => {
+      if (cmd === "qlmanage") { if (works) fs.files.set(`${args[args.indexOf("-o") + 1]}/a.pdf.png`, png(1200, 1600)); return { code: 0, stderr: "" }; }
+      return undefined;
+    });
+    const a = createAssets({ exec, fs, appHome: APP, home: "/Users/x", platform: "macos" });
+    const r = await a.pdfPage("/Users/x/v/a.pdf", "1:1");
+    assert.equal(Boolean(r.error), !works);
+    assert.deepEqual([...fs.dirs].filter((d) => d.includes("/ql-")), [], `works=${works}`);
+    assert.deepEqual([...fs.files.keys()].filter((k) => k.includes("/ql-")), []);
+  }
+});
+
+test("the job file is removed even when the renderer cannot start (no job-* leftover)", async () => {
+  const fs = fakeFs();
+  const exec = fakeExec((cmd, args) => {
+    if (args[0] === "--version") return { stdout: "v22.14.0" };
+    if (args[0]?.endsWith("render.mjs")) throw new Error("spawn EAGAIN");
+    return undefined;
+  });
+  const a = createAssets({ exec, fs, appHome: APP, home: "/h", platform: "linux" });
+  const r = (await a.renderJobs([{ key: "kk", kind: "math", src: "x" }], {})).get("kk");
+  assert.equal(r.transient, true);
+  assert.deepEqual([...fs.files.keys()].filter((k) => k.includes("jobs-")), []);
+});

@@ -16,6 +16,7 @@ import { MOD_DIR } from "./mod-name.js";
 export const REL = "data/vault/cache";
 export const BATCH = 6; // render jobs per node run: a cold Chrome start must fit the 30 s exec limit
 export const CACHE_MAX_AGE_DAYS = 30;
+export const TOUCH_AFTER_MS = 7 * 86_400_000; // a cache hit older than this is written again, so use keeps it from the prune
 export const CACHE_MAX_MB = 200;
 export const REMOTE_MAX_BYTES = 20_000_000;
 export const IMAGE_MAX_BYTES = 40_000_000;
@@ -141,10 +142,19 @@ export function createAssets(deps) {
     await fs.mkdir(abs(REL), { recursive: true }).catch(() => {});
     ready = true;
   };
+  // `at` (when the entry was written or last used) keeps a picture that is read every day from the 30-day
+  // prune: a use older than TOUCH_AFTER_MS rewrites the small json (whose mtime pruning looks at), once per
+  // entry per session. Callers never see `at`.
+  const touched = new Set();
   const meta = async (key) => {
-    try { return JSON.parse(await fs.readText(abs(`${REL}/${key}.json`))); } catch { return null; }
+    let parsed;
+    try { parsed = JSON.parse(await fs.readText(abs(`${REL}/${key}.json`))); } catch { return null; }
+    if (!parsed || typeof parsed !== "object") return null;
+    const { at, ...m } = parsed;
+    if (!(now() - at < TOUCH_AFTER_MS) && !touched.has(key)) { touched.add(key); await putMeta(key, m); }
+    return m;
   };
-  const putMeta = (key, value) => fs.writeFile(abs(`${REL}/${key}.json`), JSON.stringify(value)).catch(() => {});
+  const putMeta = (key, value) => fs.writeFile(abs(`${REL}/${key}.json`), JSON.stringify({ ...value, at: now() })).catch(() => {});
   const hit = (key, ext, m) => (m.error ? { error: m.error } : { path: `${REL}/${key}.${ext}`, w: m.w, h: m.h });
   // Cache a failure only when the file itself is the problem (FileProblem), not the machine.
   const fail = async (key, e) => {
@@ -213,18 +223,22 @@ export function createAssets(deps) {
   async function quickLook(file, key) {
     const tmp = abs(`${REL}/ql-${key}`);
     await fs.mkdir(tmp, { recursive: true });
-    const [cmd, args] = macThumbnailCommand(tmp, file);
-    const r = await exec(cmd, args);
-    const made = (await fs.readdir(tmp)).find((f) => f.endsWith(".png"));
-    if (!made) throw new FileProblem(r.stderr?.trim() || "Quick Look made no preview");
-    const bytes = await fs.readFile(`${tmp}/${made}`);
-    await fs.writeFile(abs(`${REL}/${key}.png`), bytes);
-    await fs.unlink(`${tmp}/${made}`).catch(() => {});
-    await fs.rmdir(tmp).catch(() => {});
-    const { w, h } = await sizeOf(bytes, "png");
-    const shown = { w: Math.round(w / 2), h: Math.round(h / 2) };
-    await putMeta(key, shown);
-    return { path: `${REL}/${key}.png`, ...shown };
+    try {
+      const [cmd, args] = macThumbnailCommand(tmp, file);
+      const r = await exec(cmd, args);
+      const made = (await fs.readdir(tmp)).find((f) => f.endsWith(".png"));
+      if (!made) throw new FileProblem(r.stderr?.trim() || "Quick Look made no preview");
+      const bytes = await fs.readFile(`${tmp}/${made}`);
+      await fs.writeFile(abs(`${REL}/${key}.png`), bytes);
+      const { w, h } = await sizeOf(bytes, "png");
+      const shown = { w: Math.round(w / 2), h: Math.round(h / 2) };
+      await putMeta(key, shown);
+      return { path: `${REL}/${key}.png`, ...shown };
+    } finally {
+      // whatever happened, the temporary folder and what is in it go (it used to stay when Quick Look failed)
+      for (const f of await fs.readdir(tmp).catch(() => [])) await fs.unlink(`${tmp}/${f}`).catch(() => {});
+      await fs.rmdir(tmp).catch(() => {});
+    }
   }
 
   // The first page of a PDF that sits inside a note or a canvas → { path, w, h } | { error, missing? }.
