@@ -1,0 +1,126 @@
+# AGENTS.md
+
+Instructions for AI agents that install, adapt, test or edit this repository. People should read [README.md](README.md) first. A short machine-readable map is in [llms.txt](llms.txt).
+
+## What this repository is
+
+Two Herdr desktop-app mods that let a person browse and read an Obsidian vault:
+
+- `mods/vault`: the panel. Vault picker, file tree, ripgrep search. Opens notes in the reader.
+- `mods/vault-reader`: the floating reader. Draws a note: properties, callouts, wikilinks, embeds, images, PDFs, math, Mermaid, Excalidraw, Canvas.
+
+Both are read-only toward the vault. They are installed together, under exactly these folder names.
+
+Herdr mods are JavaScript that describes native GPUI elements (gpui-kit). There is no DOM and no Node API inside a mod. The truth about the API is in the Herdr home folder: `AGENTS.md`, `herdr.d.ts` and `gpui-kit.d.ts` (Herdr rewrites the type files on every start). The home is `~/.config/herdr-app` unless `HERDR_APP_HOME` says otherwise; `herdr-app --help` prints it.
+
+## File map
+
+| Path | What | Runs in |
+| --- | --- | --- |
+| `mods/vault/main.js` | panel view, vault list, tree, add vault, picker menu | Herdr (mod) |
+| `mods/vault/search.js` | ripgrep search, snippet function | Herdr (mod) |
+| `mods/vault-reader/main.js` | reader view, loading, links, Keep menu, keys | Herdr (mod) |
+| `mods/vault-reader/parse.js`, `doc.js`, `canvas.js` | pure functions: Markdown to blocks, file to document, canvas to cards | Herdr and plain Node |
+| `mods/vault-reader/assets.js` | pictures: images, PDF pages, web images, render jobs, the cache | Herdr (mod) |
+| `mods/*/platform.js` | every operating-system specific literal: tool lookup, install hints, openers, config paths | Herdr and plain Node |
+| `mods/vault-reader/render/` | `render.mjs` (plain Node), `page.html`, `page.js`, `excalidraw.js`, `lzstring.js` (browser) | Node and the headless browser |
+| `mods/*/mod.json`, `mods/*/icons/` | mod manifest, Lucide icons | Herdr |
+| `examples/sample-vault/` | test vault: one file per feature | tests and manual checks |
+| `tests/` | `node --test` suite and fixtures | plain Node |
+| `docs/` | the GitHub Pages site (plain HTML and CSS) | browsers |
+| `scripts/` | `check-docs.mjs`, `check-repo.mjs`, `privacy-scan.mjs`, `syntax-check.mjs`, `ci.workflow.yml` (CI template), publish checklists | plain Node |
+| `RECIPE.md`, `NOTICE`, `LICENSE`, `keys.json` | brief to rebuild, third-party credits, license, optional keys | |
+
+## Tell the person before you install
+
+Herdr's rule is to tell the person first when a mod reaches the network, runs programs or reads outside its own folder. This one does all three. Say, in your own words:
+
+- **Reads**: the folder of the selected vault (recursively, with a watcher), Obsidian's vault list (`obsidian.json` in Obsidian's config folder), and, for diagrams and math, Obsidian's `obsidian.asar` (only its Mermaid and MathJax files).
+- **Runs** (none bundled): `rg`, `node`, a headless Chrome, Chromium, Edge or Brave, `pdfinfo` and `pdftoppm`, `curl`, the system opener (`open`, `xdg-open`, `cmd /c start`), and on macOS `qlmanage` as a PDF fallback.
+- **Downloads**: web images that a note shows, with `curl`, as soon as the note opens (the host sees the IP address). Setting `remoteImages` to `false` in `data/vault/settings.json` stops it.
+- **Writes**: only under `data/vault` in the Herdr home (cache, Mermaid and MathJax copies, browser profile, settings). Never into the vault. The cache is pruned at 30 days and 200 MB; deleting it is always safe.
+- **Opens**: only `http`, `https` and `mailto` links from notes and canvas cards; `file:` and `obsidian:` are dropped.
+
+The reference version of this list is `docs/privacy.html`. Keep the two in step.
+
+## Install checklist (for an agent)
+
+1. Read `README.md`, `RECIPE.md`, `NOTICE`, `keys.json` and every file under `mods/vault` and `mods/vault-reader` before writing anything.
+2. Tell the person the list above.
+3. Copy the folders `mods/vault` and `mods/vault-reader` into `<Herdr home>/mods/`. Leave `RECIPE.md` and previews out. **Never overwrite.** If either name is taken, follow [Renaming a mod](#renaming-a-mod).
+4. Merge `keys.json` into the person's `keys.json`: add its sections and keys, ask before replacing a key they already use. Run `herdr-app commands` to see what is free.
+5. Run `herdr-app check <absolute path of each mod folder in the Herdr home>`. Both must pass.
+6. Put the panel where the person wants it. In a layout, add a stack or column child `{ "id": "vault", "type": "block", "content": { "mod": "vault" } }`. In `herdr-portrait-layout`, append it to the children of the node with id `panel-body`. The mods have `"place": "none"`, so they show nowhere until placed.
+7. Check the programs the person has (table in `README.md`). Missing ones are not a reason to stop: the UI says what is missing. Offer the install command for their system.
+8. Do not drive their live window to "test" it (see Testing).
+9. To uninstall: delete the two mod folders, the layout block and the merged keys; `data/vault` in the Herdr home is optional to delete.
+
+## Rules for editing a Herdr mod
+
+These come from Herdr and from mistakes already made here.
+
+- **Never write inside a mod folder at run time.** Herdr reloads a mod whenever any file in its folder changes. Caches live in `<Herdr home>/data/vault`.
+- **No DOM and no Node APIs inside mod code** (`main.js`, `search.js`, `assets.js`). Use `exec`, `fetch`, `readTextFile`, `watchFolder` and `import * as fs from "fs/promises"` from Herdr. Mods may read under the home folder and write only under the Herdr home.
+- **Plain Node files are the exception**: `render/render.mjs` and anything under `tests/` and `scripts/` run under Node 22 and may use Node APIs. Mod code must never import them.
+- **Keep `parse.js`, `doc.js`, `canvas.js` and `platform.js` free of `herdr` imports**, so `node --test` can load them. Anything that needs `exec` takes it as an argument.
+- **All operating-system literals live in `platform.js`** (one per mod, with identical tables; a test compares them). Do not write `/Applications`, `/opt/homebrew`, `Library/Application Support`, `stat -f` or similar anywhere else. `scripts/privacy-scan.mjs` fails on it.
+- **No top-level side effects, no `setTimeout`/`setInterval`** (use `cx.timer`), no top-level `await` (use `cx.spawn` in `init`). Never keep a `cx` and use it later; every callback gets its own.
+- **Slow work goes through `exec` or `fetch`**, not a loop in `render`. `exec` has a 30 second limit and 8 MiB of output per call (`herdr.d.ts`); the renderer batches stay under it.
+- **Images and SVGs** passed to `image()` and `svg()` load only from the Herdr home folder. That is why vault images are copied into `data/vault/cache`.
+- **`mod.json` has `"place": "none"`**; the only fields are those Herdr documents (`place`, `size`, `overlay`, `title`, `focusable`). Do not add a `version` field.
+- **Keep the contract stable**: mod names `vault` and `vault-reader`; shared keys `vault.list`, `vault.current`, `vault.open`, `vault.panes` (same shapes); command `vault.add`; reader props `{ vault, file, anchor?, kept?, id?, overlay? }`; the tab name `obsidian`; the path `mods/vault-reader/obsidian.png`. The portrait layout depends on them. To change one, post on that repository's board first. `scripts/check-repo.mjs` enforces the list.
+- **Do not edit** `herdr.d.ts`, `gpui-kit.d.ts` or `jsconfig.json`; Herdr writes them and `.gitignore` hides them.
+- **Escape hatch**: `ctrl-alt-shift-escape` sets the person's layout and `keys.json` aside. Mention it if you change keys.
+- If an edit leaves a mod invalid, Herdr keeps the last good version and writes `<name>.error` next to it. Read that file.
+
+## Testing
+
+Run from the repository root. Node 22 or newer; no dependencies; nothing needs Chrome, Obsidian, ripgrep or Poppler.
+
+```sh
+node --test tests/                                       # unit tests on the pure modules and the sample vault
+node scripts/check-repo.mjs                              # manifests, keys, contract, third-party notices
+node scripts/privacy-scan.mjs                            # personal data and operating-system literals
+node scripts/check-docs.mjs                              # links, anchors, contrast, tables, messages
+herdr-app check /absolute/path/to/mods/vault             # Herdr loads the mod once
+herdr-app check /absolute/path/to/mods/vault-reader
+```
+
+`herdr-app check` loads a mod once and checks its first description. It does not lay out the mod or run later async states. Never call a mod done on that alone, and never use `herdr-app do`, `shot` or `status` against a window you do not own: it is somebody's live screen.
+
+The test vault is `examples/sample-vault`. Open `Feature tour` in the reader to see most features; `Board.canvas`, `Flow sketch.excalidraw.md` and the two PDFs cover the rest. Edge-case fixtures belong in `tests/fixtures/`, not in the sample vault.
+
+## Adapting for a different setup
+
+- A different mod name: [Renaming a mod](#renaming-a-mod).
+- A tool in an unusual place: the `HERDR_VAULT_BROWSER` / `CHROME_PATH` and `HERDR_VAULT_ASAR` environment variables, or add the path to the tables in `platform.js` and its test.
+- No network wanted: set `remoteImages` to `false` in `data/vault/settings.json`.
+- Bigger or smaller limits: the constants listed on `docs/configuration.html`.
+- Another operating system's quirk: add it to `platform.js` in both mods, with a test that uses a fake platform and a fake `exec`.
+
+## Renaming a mod
+
+Only when a name is taken. Rename the folder, then search the whole repository for the old name and change each hit:
+
+1. The folder name, and every `mods/<old>/` path in `main.js`, `assets.js` and `render` files (asset, icon, script and cache paths).
+2. The name `vault-reader` in the panel's `openOverlay({ mod: ... })` call and in the reader's own `panes()` and `tab.new` / `pane.split` calls.
+3. The `mod` name in the layout block and in `keys.json` (`mod:<name>` sections, `mod.open:<name>`).
+4. The shared keys (`vault.*`) and the command `vault.add`: change them only if the person wants the two copies kept apart, and then everywhere, including the other layouts that read them.
+5. The data folder `data/vault`: keep it shared unless the two copies must not share a cache.
+
+Run `herdr-app check` on both folders afterwards. If `mods/vault-reader/` is built from one constant, change that first; the search is the check.
+
+## Privacy rules for contributors and agents
+
+- No personal data in any file or commit: no real names (except the copyright line in `LICENSE`), usernames, e-mail addresses, home paths, host names or employer names. Write `~`, `<Herdr home>`, `<vault>`, `<owner>`.
+- Examples use generic text. Never copy content from a real vault or window into tests, docs or the sample vault.
+- Do not add the Obsidian logo, name artwork or application files. Icons come from Lucide with its license text.
+- Do not commit generated data: `data/`, caches, screenshots of real windows.
+
+## Commits
+
+Small, logical commits with a clear subject and a body that says why. Commit only the files your task owns. End the message with the attribution lines the owner's workflow asks for (a `Co-Authored-By` line and a session link). Never force-push `main`; never change repository visibility, settings or topics.
+
+## Documentation upkeep
+
+Docs must match the code. When you change a requirement, a message, a key, a limit or a setting, update in the same change: `README.md` (requirements table), `docs/requirements.html`, `docs/configuration.html`, `docs/troubleshooting.html`, this file and `CHANGELOG.md`. Then copy `llms.txt` to `docs/llms.txt` and run `node scripts/check-docs.mjs`. The script compares the requirements tables, the keys table, the two `llms.txt` copies and the messages quoted in the troubleshooting page against the code.
