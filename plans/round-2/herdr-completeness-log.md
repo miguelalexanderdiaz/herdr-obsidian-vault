@@ -80,10 +80,6 @@ on a small window.
   PUBLISH.md step 8.
 - **Default chord list**: a snapshot of Herdr 0.1.12; Herdr offers no command that prints default key bindings.
 
-## Checks run (on this branch alone, then in a throw-away merge of the three role branches)
-
-See "Final pass".
-
 ## Handoffs for round 3
 
 - Author: install the workflow (`gh auth refresh -s workflow`, `node scripts/install-ci.mjs`), watch the first run on windows and
