@@ -1128,7 +1128,7 @@ Step | Do | Expect
 
 14. Keep and Esc | Press Keep and choose New tab. Then open any note from the panel and press Esc. | A tab named obsidian holds the kept note. Esc closes the floating reader.
 
-15. Web images (optional) | Add a line ![](https://example.com/x.png) to a scratch copy of the vault, never to your own. | The reader bar gets Web images: on and the picture downloads, or says why not. The sample vault itself has no web image, so this step is skipped there.
+15. Web images (optional) | Add a line ![](https://example.com/x.png) to a throw-away copy of the vault, never to your own. | The reader bar gets Web images: on and the picture downloads, or says why not. The sample vault itself has no web image, so this step is skipped there.
 
 A step that shows a plain message instead of the result is a pass when the message names the missing program and gives the install command for your system: that is the designed behaviour. A step that shows nothing, a blank reader or a raw error is a fail. The messages are listed on the troubleshooting page.
 
@@ -1226,7 +1226,7 @@ If you are an AI agent asked to install, adapt or change these mods, start with 
 
 - Check your install: the checklist on the sample vault and the report template, if you are asked to confirm a Linux or Windows install.
 
-- RECIPE.md: the brief to rebuild the mods from scratch (behaviour and intent only).
+- RECIPE.md: the brief to rebuild the mods from nothing (behaviour and intent only).
 
 - Privacy: the list of what to tell the person before adding the mods.
 
