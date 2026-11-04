@@ -5,7 +5,7 @@ selected vault with a vault picker and a search box. Clicking a note, canvas, dr
 rendered, in a floating **reader** window: properties, callouts, wikilinks, embeds, tags, tasks, tables, code,
 Mermaid, math, Excalidraw drawings and Canvas boards. Notes are read only; nothing is ever written to your vault.
 
-<!-- publish: preview (the author captures preview.png, scripts/PREVIEW.md, then removes the two comment lines around the image)
+<!-- publish: preview. Take preview.png (scripts/PREVIEW.md), then delete this comment's first and last lines so the picture below shows.
 ![Obsidian Vault](preview.png)
 -->
 
@@ -17,7 +17,7 @@ open folder format.
 ## What you see
 
 **Vault panel** (mod `vault`, a rounded 10px card with a 1px `border` line, `background` fill, 13px text). It is
-shown as a popup of 420 x 640 px with the key below, or docked wherever a layout puts a block
+shown as a popup of 420 x 640 px near the top of the window with the key below, or docked wherever a layout puts a block
 `{ "type": "block", "content": { "mod": "vault" } }`. Top to bottom:
 
 1. A 42px header: a vault selector pill (the generic vault icon, the current vault's name, a chevron; the
@@ -98,7 +98,10 @@ Files: `mods/vault/` (`main.js`, `search.js`, `platform.js`, `mod.json`, `icons/
 `icons/`, `vault.svg`, `obsidian.png`, `render/` with `render.mjs`, `page.html`, `page.js`, `excalidraw.js`,
 `lzstring.js`), `keys.json`, `examples/sample-vault/`.
 
-`mods/vault/mod.json`: `{ "place": "none", "title": "Vault", "overlay": { "width": 420, "height": 640 } }`.
+`mods/vault/mod.json`: `{ "place": "none", "title": "Vault", "overlay": { "kind": "popup", "at": "top", "offset": 40, "width": 420, "height": 640 } }`
+(a popup placed at the top of the window, 40 px down, so it does not depend on where the pointer was when
+the key was pressed; `kind`, `at` and `offset` are the fields Herdr's own picker mods and its official examples use,
+and the placement has not been checked on a small window, see Watch out).
 `mods/vault-reader/mod.json`: `{ "place": "none", "title": "Vault reader", "focusable": true }`. Neither docks by
 itself; the reader is opened by the panel with `openOverlay({ mod: "vault-reader", kind: "window",
 key: "vault-reader", width: 0.78, height: 0.86, props: { vault, file } })`.
@@ -167,6 +170,10 @@ indexing a vault; column 1040px; reader window 78% x 86%; popup 420 x 640 px; at
 jobs after 24 seconds so a batch stays under Herdr's 30 second `exec` limit and times out with a plain message.
 
 **Traps a fresh build falls into.**
+- The popup's `kind`, `at: "top"` and `offset` come from the shipped picker mods and the official examples, not from
+  a documented `mod.json` schema (Herdr's `AGENTS.md` documents only the overlay `width` and `height` there), and
+  `herdr-app check` does not validate them. If a small window clips the 640 px height, lower `height` (a value up to
+  1 is a share of the window) or open the panel docked instead.
 - Never write under a mod folder at run time (cache, profile, extracted libraries go to `data/vault/`): Herdr
   reloads the mod and throws away its state.
 - The reader must stay `"focusable": true` or `pane.go` cannot give a kept pane the keyboard.
